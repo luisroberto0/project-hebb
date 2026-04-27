@@ -189,4 +189,8 @@ project-hebb/
 ## 10. Visão de Longo Prazo
 
 Fase 1 (meses 1–3) — Fundação. Estamos aqui.
-Fase 2 (meses 3–6) — Formular modelo teórico próprio. Docu
+Fase 2 (meses 3–6) — Formular modelo teórico próprio. Documento de arquitetura.
+Fase 3 (meses 6–12) — Prova de conceito demonstrando capacidade que LLMs não têm.
+Fase 4 — Paper, demo pública, comunidade.
+
+Documente tudo desde o dia 1. Se isso funcionar, a história desse projeto vai importar.
