@@ -1,0 +1,43 @@
+# Ambiente conda/mamba pra pesquisa neuromorfa
+# Use:
+#   mamba env create -f environment.yml
+#   mamba activate neuro
+#
+# Depois instale PyTorch com CUDA por pip (mais confiável que conda):
+#   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+
+name: neuro
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - numpy>=1.26
+  - scipy>=1.12
+  - matplotlib>=3.8
+  - seaborn>=0.13
+  - pandas>=2.2
+  - scikit-learn>=1.4
+  - tqdm>=4.66
+  - jupyterlab>=4.1
+  - ipykernel>=6.29
+  - tensorboard>=2.16
+  # NEST é mais fácil via conda do que pip
+  - nest-simulator>=3.7
+  # build tools (Brian2 compila C++)
+  - cython
+  - gxx_linux-64  # só faz efeito em Linux/WSL
+  - pip:
+      - einops>=0.8
+      - snntorch>=0.9
+      - norse>=1.1
+      - brian2>=2.7
+      - brian2tools>=0.3
+      - learn2learn>=0.2.0
+      - pyro-ppl>=1.9
+      - dowhy>=0.11
+      - causalnex>=0.12
+      - wandb>=0.16
+      - ruff>=0.4
+      - black>=24.3
+      - mypy>=1.10
