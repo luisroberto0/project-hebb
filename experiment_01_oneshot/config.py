@@ -31,7 +31,21 @@ class SpikeConfig:
 
 @dataclass
 class STDPConfig:
-    """Hiperparâmetros da regra STDP (Song/Miller/Abbott 2000, Diehl/Cook 2015)."""
+    """Hiperparâmetros da regra STDP (Song/Miller/Abbott 2000, Diehl/Cook 2015).
+
+    NOTA 2026-04-27 (Etapa 2 sessão): tentativas de rebalancear A_pre/A_post
+    pra compensar regime esparso de k=1 WTA falharam. Razão pré:pós empírica
+    = 10.1 (tests/test_spike_balance.py). Trade-off observado:
+      R≈1 (paper original): LTD domina → pesos morrem → 17.76% acurácia
+      R≈10 (balance ideal): LTP domina → "rich-get-richer", 1 filtro vence
+                            sempre → 11.51% acurácia
+      R=3  (meio termo):    rich-get-richer ainda persiste → 11.36% acurácia
+    Conclusão: o gargalo NÃO é só ratio LTP/LTD. Diehl & Cook usam adaptive
+    threshold homeostático (não implementado aqui ainda) que força cada
+    filtro a disparar aproximadamente igualmente. Sem isso, qualquer regime
+    LTP>LTD colapsa filtros pra 1; qualquer LTP<LTD mata pesos.
+    Mantido valores originais do paper (= melhor estado conhecido até aqui).
+    """
     tau_pre_ms: float = 20.0
     tau_post_ms: float = 20.0
     A_pre: float = 0.01

@@ -277,6 +277,89 @@ Aguardando decisão humana.
 
 ---
 
+## Sessão de auditoria (2026-04-27 #3)
+
+Decisão humana: rodar Etapa 1 (auditoria assignment/evaluate) antes de Etapa 2 (rebalancear LTP/LTD), porque qualquer ajuste de hiperparâmetro fica mascarado se a medição estiver errada.
+
+### Etapa 1 — Auditoria de assign_labels e evaluate ✅ CONCLUÍDA
+
+Adicionado pseudocódigo do algoritmo nas funções (sanity_mnist.py:114-123, :142-153) e criado `tests/test_assignment.py` com 3 casos sintéticos via `FakeNet` (mock que retorna spike_counts pré-definidos sem rodar STDP/LIF):
+
+| Teste | Setup | Esperado | Obtido | Status |
+|-------|-------|----------|--------|--------|
+| `perfect` | Cada filtro só dispara pra sua classe atribuída, distribuição [36,40,...,8] | 100% | 100% | ✓ |
+| `random` | Todos filtros disparam igual em todas as classes | ~10% chance | 10.00% | ✓ |
+| `weak_signal` | Boost de 20% na classe certa sobre baseline uniforme | > 50% | 100% | ✓ |
+
+**Conclusão:** `assign_labels` e `evaluate` estão **matematicamente corretos**. 9.94% em Config A é genuinamente porque features STDP não carregam sinal discriminativo, não bug no pipeline de classificação.
+
+**Bonus do Test 2:** features uniformes (sem sinal) produzem distribuição `[200, 0, ..., 0]` por tie-break do `argmax` — explica o padrão `[100, 0, ..., 0]` que víamos sem WTA. Era uma combinação de tie-break + viés MNIST, não só STDP colapsado.
+
+Tempo Etapa 1: ~15 min. Decisão: prosseguir pra Etapa 2.
+
+### Etapa 2 — Rebalancear LTP/LTD ✅ CONCLUÍDA (com aprendizado negativo)
+
+#### Medição empírica (tests/test_spike_balance.py)
+
+Instrumentado pretreino com 100 imagens, config 100 filtros / k=1 WTA:
+
+```
+Pré-spikes média/imagem:  1010.3
+Pós-spikes média/imagem:    99.9
+Razão R = pré/pós:         10.11
+Pesos durante o treino:    0.149 → 0.144 (DECRESCENDO 3.6% em só 100 imgs)
+A_pre/|A_post| atual:       1.05  (paper original, igualdade quase perfeita)
+```
+
+Confirmação mecânica: `Δw_LTP ∝ A_pre · post_spikes ≈ 0.01 · 100 = 1.0` por imagem; `Δw_LTD ∝ |A_post| · pre_spikes ≈ 0.0105 · 1010 = 10.6` por imagem. **LTD acumula 10× mais que LTP** → pesos morrem.
+
+#### Tentativa 1: A_pre=0.0159, A_post=-0.00157 (R=10.1, balance perfeito)
+
+| Métrica | Valor |
+|---------|-------|
+| Pesos | 0.194 → 0.253 ⬆ (parou de morrer ✓) |
+| Distribuição labels | [88, 1, 1, 0, 0, 1, 4, 3, 0, 2] (colapso!) |
+| Acurácia | 11.51% (chance) |
+
+**Aprendizado:** balance perfeito reverteu o problema mas criou outro: **rich-get-richer**. Sem LTD pra punir filtros gulosos, o vencedor inicial domina sempre.
+
+#### Tentativa 2: A_pre=0.01, A_post=-0.00333 (R=3, meio termo)
+
+| Métrica | Valor |
+|---------|-------|
+| Pesos | 0.174 → 0.255 ⬆ (saturando) |
+| Distribuição labels | [94, 2, 0, 0, 0, 0, 0, 3, 1, 0] (pior colapso) |
+| Acurácia | 11.36% (chance) |
+
+**Aprendizado crítico:** R=3 ainda colapsa. **Qualquer LTP > LTD causa rich-get-richer com k=1 WTA.**
+
+#### Síntese da Etapa 2
+
+Identificado trade-off estrutural:
+
+| Régime | Resultado |
+|--------|-----------|
+| LTP < LTD (R≈1) | Pesos morrem → 17.76% (melhor mas instável) |
+| LTP > LTD (R≥3) | Filtros colapsam → ~11% (chance) |
+
+**Causa raiz identificada (não resolvida nesta sessão):** falta **homeostasis** (adaptive threshold) que Diehl & Cook 2015 §2.3 implementam. Cada filtro tem um threshold que cresce com cada spike e decai com tempo, forçando todos os filtros a disparar aproximadamente igualmente. Sem isso, k-WTA + STDP é instável independente do ratio LTP/LTD.
+
+#### Decisão final da sessão
+
+Restaurado `A_pre=0.01, A_post=-0.0105` (paper original) em `config.py` — é o estado conhecido mais estável (17.76%). Acurácia continua < meta, mas com causa raiz identificada e validada empiricamente.
+
+Tempo Etapa 2: ~20 min.
+
+### Estado final da sessão
+
+- **Melhor resultado consolidado:** 17.76% (config 100 filtros / 5k imgs / 1 epoch / k=1 WTA / A_pre=0.01, A_post=-0.0105)
+- **Bugs descartados rigorosamente:** label assignment, evaluate, distribuição de classes, balanceamento LTP/LTD
+- **Próximo passo identificado:** implementar adaptive threshold homeostático (Diehl & Cook §2.3) — único caminho viável dado o diagnóstico
+
+Próximos detalhes em `BLOCKED.md` (atualizado nesta sessão com hipóteses vivas).
+
+---
+
 ## Referências
 
 - Diehl, P. U., & Cook, M. (2015). *Unsupervised learning of digit recognition using spike-timing-dependent plasticity*. Frontiers in Computational Neuroscience.

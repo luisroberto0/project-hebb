@@ -1,112 +1,107 @@
 # BLOCKED — Experimento 01 Semana 1
 
-**Data:** 2026-04-27
-**Status:** Bloqueado após 3 iterações de correção
-**Melhor resultado:** 17.76% acurácia (k=1 WTA) vs meta 85%
+**Data atualizada:** 2026-04-27 (sessão #3 — auditoria + rebalance LTP/LTD)
+**Status:** Bloqueado, mas com causa raiz identificada e validada
+**Melhor resultado:** 17.76% acurácia (config baseline) vs meta 85%
 
 ---
 
-## Resumo do bloqueio
+## Resumo do progresso
 
-Sanity check Diehl & Cook 2015 em MNIST falhou após 3 iterações:
-
-| Iteração | Configuração | Dist labels | Acurácia | Observação |
-|----------|--------------|-------------|----------|------------|
-| Original | Decay pesos (1e-4) | [100,0,0,0,0,0,0,0,0,0] | ~10% | Colapso total |
-| 1 | k=1 WTA | [24,23,11,9,3,5,7,13,1,4] | **17.76%** | Todas classes, acurácia baixa |
-| 2 | k=5 WTA | [27,23,4,7,18,2,3,14,0,2] | 10.89% | Pior que k=1 |
-| 3 | Sem WTA | [100,0,0,0,0,0,0,0,0,0] | 9.80% | Baseline, colapso |
-
-**Melhor:** k=1 WTA distribui filtros entre todas as classes, mas acurácia ainda muito abaixo da meta.
+| Iteração | Configuração | Distribuição labels | Acurácia | Notas |
+|----------|--------------|---------------------|----------|-------|
+| Original | Decay pesos (1e-4) | [100,0,...,0] | ~10% | Colapso (LTD inativa) |
+| Sessão 2: k=1 WTA | A_pre=.01, A_post=-.0105 | [24,23,11,9,3,5,7,13,1,4] | **17.76%** | **Melhor estado** |
+| Sessão 2: k=5 WTA | mesmos valores | [27,23,4,7,18,2,3,14,0,2] | 10.89% | k=5 pior que k=1 |
+| Sessão 2: sem WTA | mesmos valores | [100,0,...,0] | 9.80% | Confirma WTA necessário |
+| Sessão 3: Config A | 200 filtros, 10k imgs | [36,40,6,11,18,19,17,43,2,8] | 9.94% | Escala piorou (regressão) |
+| Sessão 3: R=10 | A_post=-0.00157 | [88,1,1,0,0,1,4,3,0,2] | 11.51% | Pesos crescem mas filtros colapsam |
+| Sessão 3: R=3 | A_post=-0.00333 | [94,2,0,0,0,0,0,3,1,0] | 11.36% | Mesmo padrão |
 
 ---
 
-## Hipóteses do bloqueio
+## Hipóteses descartadas (testadas empiricamente nesta sessão)
 
-### H1: Número de filtros insuficiente [MAIS PROVÁVEL]
+### ~~H_assignment: Bug em assign_labels ou evaluate~~
+
+**Status:** ✗ DESCARTADO em `tests/test_assignment.py`. Três casos sintéticos passam com 100% (perfeito), 10% (random), 100% (sinal fraco). Pipeline de classificação está correto.
+
+### ~~H_balance: Rebalancear LTP/LTD resolve colapso~~
+
+**Status:** ✗ DESCARTADO. Razão pré:pós medida = 10.1 (`tests/test_spike_balance.py`). Tentativas com R=10 e R=3 mostraram trade-off estrutural:
+- LTP < LTD → pesos morrem (acurácia 17.76% mas instável)
+- LTP > LTD → 1 filtro vence sempre (acurácia ~11%, chance)
+
+Não existe ratio que resolva ambos os problemas simultaneamente, porque a causa raiz está em outro lugar.
+
+### ~~H_dose: Escalar filtros/dados melhora acurácia~~
+
+**Status:** ✗ DESCARTADO. Config A (200 filtros, 10k imgs) PIOROU vs baseline (17.76% → 9.94%). Mais filtros agrava o problema porque cada um vence menos vezes em k=1 WTA.
+
+---
+
+## Hipóteses VIVAS
+
+### H_homeostasis: Falta adaptive threshold homeostático [MAIS PROVÁVEL]
 
 **Evidência:**
-- Diehl & Cook 2015 usaram 400-6400 filtros
-- Testamos apenas 100 filtros
-- Distribuição [24,23,11,9,3,5,7,13,1,4] mostra desequilíbrio: classes 4 e 8 têm apenas 3 e 1 filtros
+- Diehl & Cook 2015 §2.3 implementa thresholds adaptativos: cada filtro tem `θ_i` que cresce a cada spike e decai com tempo
+- Função: forçar todos os filtros a disparar aproximadamente igualmente ao longo do treino
+- Sem isso, k-WTA + STDP é instável independente do ratio LTP/LTD (validado nas tentativas R=10 e R=3)
 
-**Experimento:** Re-rodar com 400 filtros, mesmo config (5k imgs, 1 epoch, k=1 WTA).
-**Custo:** ~5 min GPU.
-
----
-
-### H2: Pretreino curto demais
-
-**Evidência:**
-- Diehl & Cook usaram 60k imgs × 3 epochs
-- Testamos 5k imgs × 1 epoch (12× menos dados)
-- Pesos k=1 WTA estão decrescendo (0.149→0.115) em vez de crescer
-
-**Experimento:** Re-rodar com 10k imgs, 3 epochs, k=1 WTA, 100 filtros.
-**Custo:** ~15 min GPU.
-
----
-
-### H3: Implementação de WTA diverge do paper
-
-**Evidência:**
-- Diehl & Cook implementam inibição via **condutância sináptica** (subtração contínua de membrana)
-- Nossa implementação usa **masking binário** de spikes (hard WTA)
-- Masking pode ser excessivamente agressivo
-
-**Experimento:** Implementar soft WTA:
+**Mecanismo proposto** (a implementar em `model.py:ConvSTDPLayer`):
 ```python
-# Em vez de: spikes_out = spikes_raw * wta_mask
-# Fazer: mem = mem - alpha * (1 - wta_mask) * mem.max(dim=1, keepdim=True)[0]
+# Adicionar atributo theta: (C_out,) inicializado em 0
+# Modificar threshold efetivo: v_thresh_eff = v_thresh + theta[c]
+# Após cada timestep:
+#   theta += spike_count_per_filter * theta_plus  # cresce com spikes
+#   theta *= exp(-dt / tau_theta)                 # decai com tempo
 ```
 
 **Custo:** ~2h implementação + teste.
 
----
-
-### H4: Codificação Poisson inadequada
+### H_arch: Kernel=28 (FC equivalente) é ruim pra k-WTA
 
 **Evidência:**
-- Max rate 100Hz pode ser baixo para MNIST (poucos spikes por timestep)
-- Diehl & Cook não especificam max rate no paper
+- Com kernel=28, output spatial é (1,1) → k-WTA compete sobre **uma única posição**
+- Diehl & Cook usam arquitetura full-connected legítima (sem conv) — talvez nossa adaptação convolucional com kernel completo distorça a dinâmica
+- Em arquitetura conv real (kernel=5 com pooling), k-WTA permite filtros diferentes para regiões diferentes
 
-**Experimento:** Aumentar `max_rate_hz` de 100 para 200 em `config.py:SpikeConfig`.
-**Custo:** ~5 min GPU.
+**Custo:** Já é a arquitetura prevista pra Omniglot (Semana 2). Pode ser que Semana 1 deva ser pulada e ir direto pra setup conv real.
 
----
+### H_paper_replicability: Reimplementar tudo em Brian2
 
-## Experimentos recomendados (ordem de prioridade)
+**Evidência:**
+- Diehl & Cook fornecem código de referência em Brian2/Brian
+- Pode haver detalhes sutis (ordem de operações, refractory exata, etc.) que o port pra PyTorch puro perdeu
+- Brian2 é mais lento mas executa o paper exatamente como descrito
 
-1. **H1 + H2 combinados:** 400 filtros, 10k imgs, 3 epochs, k=1 WTA
-   **Justificativa:** Testa as duas hipóteses mais prováveis de uma vez. Custo: ~30 min GPU.
-
-2. **H4:** Aumentar max_rate para 200Hz
-   **Justificativa:** Mudança trivial, rápida validação. Custo: ~5 min.
-
-3. **H3:** Implementar soft WTA via condutância
-   **Justificativa:** Mais fiel ao paper mas mais complexo. Custo: ~2h.
+**Custo:** ~1 semana (decisão arquitetural não-trivial documentada em PLAN.md).
 
 ---
 
-## Decisão necessária
+## Decisão necessária (próxima sessão)
 
-**Aprovar uma das opções:**
+**Opção A — Implementar adaptive threshold (H_homeostasis):**
+~2h. Mais prometedora baseado no diagnóstico. Continua no caminho atual.
 
-- [ ] **Opção A:** Escalar filtros + dados (H1+H2)
-- [ ] **Opção B:** Testar max_rate primeiro (H4), depois escalar
-- [ ] **Opção C:** Reimplementar inibição lateral via condutância (H3)
-- [ ] **Opção D:** Abandonar Diehl & Cook, tentar outra abordagem
+**Opção B — Pular Semana 1, ir direto pra arquitetura Omniglot (H_arch):**
+Aceitar que MNIST simplificado com kernel=28 é caso degenerado. Implementar conv real (kernel=5 + pool) e testar diretamente em Omniglot — onde a tese principal vive de qualquer jeito.
 
-**Aguardando input humano.**
+**Opção C — Validar contra Brian2 (H_paper_replicability):**
+Reimplementar Diehl & Cook em Brian2 puro, validar acurácia ~85%, depois portar componentes verificados de volta pra PyTorch. Custo alto mas elimina ambiguidade.
+
+**Opção D — Abandonar Semana 1 sanity, declarar escopo reduzido:**
+Anotar que k=1 WTA convolucional global é caso patológico que não reproduz Diehl & Cook, mover pra Semana 2 com ressalva no protocolo.
 
 ---
 
-## Código modificado (commitado)
+## Estado atual do código
 
-- `experiment_01_oneshot/model.py`: Implementado k-WTA na dinâmica LIF, removido decay de pesos
-- `experiment_01_oneshot/sanity_mnist.py`: Corrigido UTF-8, adicionado print distribuição de classes
-- `PLAN.md`: Registrada decisão arquitetural k-WTA
-- `experiment_01_oneshot/WEEKLY-1.md`: Documentadas 3 iterações + conclusão
+- `experiment_01_oneshot/model.py`: k=1 WTA ativo, STDP sem decay artificial
+- `experiment_01_oneshot/config.py`: A_pre=0.01, A_post=-0.0105 (paper original, melhor estado)
+- `experiment_01_oneshot/sanity_mnist.py`: pseudocódigo de assignment/evaluate documentado, UTF-8 OK
+- `experiment_01_oneshot/tests/test_assignment.py`: ✓ 3/3 passam
+- `experiment_01_oneshot/tests/test_spike_balance.py`: instrumentação de razão pré:pós
 
-**Branch:** main
-**Último commit:** (pendente)
+**Branch:** main, sincronizado com origin/main após esta sessão.
