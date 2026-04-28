@@ -471,3 +471,115 @@ Roadmap de 10 sessões pra Marco 1 (#22-#31), originalmente em "Decisão Pós-Se
 - **#31:** refinement ou paper writing.
 
 Decisões 1-5 fechadas — não revisitar sem motivo forte (ex: implementação revela impossibilidade técnica).
+
+---
+
+## Reformulação Pós-Sessão #23 (sessão #24, 2026-05-01)
+
+**Contexto:** sessão #23 mediu naive ProtoNet sequential em Split-Omniglot 50-tasks (random class splits, com warmup) e obteve **ACC 82.58% / BWT −12.46 p.p.** — bem acima do critério "ACC 30-50% + BWT −30 a −50". Causa mecanística (não bug): ProtoNet não tem classifier head treinado, prototypes computados fresh no eval, encoder aprende métrica genérica do dataset robusta a tasks da mesma família. Resultado: pergunta científica oficial (`ACC ≥75% E BWT ≥−10% E batendo EWC por ≥3 p.p.`) é **trivialmente atingida pelo baseline naive em ACC**, anulando margem científica pra distinguir propostas.
+
+Esta seção avalia 4 opções de reformulação e escolhe uma. Decisão final é do Luis; eu recomendo provisionalmente.
+
+### Opções avaliadas
+
+#### (A) Skip warmup + mais episodes/task (mesmo Split-Omniglot random)
+
+- **O que muda:** `--warmup-episodes 0 --finetune-episodes 300` (3× mais drift, sem pretreino genérico).
+- **Custo de implementação:** mínimo (apenas CLI flags em `baseline_naive.py`).
+- **Naive esperado:** ACC 60-72%, BWT −15 a −25 p.p. — mais adversarial que #23 mas ainda dentro do regime "fácil" do ProtoNet (random splits compartilham features visuais entre tasks).
+- **Defensibilidade:** padrão menor; reviewers podem perguntar "por que random splits e não alphabets?".
+- **Compat replay-free:** ✓.
+- **Risco:** pode não ser adversarial o suficiente — random splits através de alfabetos preservam features genéricas (curvas, traços, simetria).
+
+#### (B) Tasks por alfabeto Omniglot
+
+- **O que muda:** cada task = 1 alfabeto (Greek, Hebrew, Korean, etc.). Omniglot tem 30 alfabetos no background + 20 no evaluation = 50 alfabetos totais. Episódios 5-way amostram 5 caracteres do alfabeto da task atual.
+- **Custo de implementação:** moderado (~1 sessão). Refatorar `build_tasks` pra agrupar por alfabeto via parse do path em `dataset._characters` (torchvision Omniglot expõe isso).
+- **Naive esperado:** ACC 50-65%, BWT −20 a −30 p.p. — alfabetos têm estilos de stroke específicos; switching entre alfabetos força encoder a "esquecer" features anteriores.
+- **Defensibilidade:** **alta**. Schwarz et al. 2018 ("Compress and Compare") e outros papers de CL usam alfabetos Omniglot como tasks naturais. Padrão da literatura.
+- **Compat replay-free:** ✓.
+- **Risco:** alfabetos variam em tamanho (14-55 caracteres); precisa normalizar (subsample 5 chars + 14 train / 6 test instances).
+
+#### (C) Cross-domain (Omniglot → MNIST → FashionMNIST → ...)
+
+- **O que muda:** task 1 = Omniglot, task 2 = MNIST, task 3 = FashionMNIST, etc. Forgetting cross-domain é dramático (literatura confirma).
+- **Custo de implementação:** **alto**. 3+ datasets, normalização de tamanho/canal, episode samplers por dataset, eval cross-task. ~3-5 sessões só de infra.
+- **Naive esperado:** ACC 20-40%, BWT −40 a −60 p.p. — exatamente o "floor brutal" do critério original.
+- **Defensibilidade:** **alta** mas em literatura diferente (lifelong learning cross-task: Aljundi 2018 MAS, Hadsell 2020).
+- **Compat replay-free:** ✓.
+- **Risco:** **escopo grande pra side project 5h/semana**. Inconsistência com decisão (b) "Split-Omniglot 50-tasks" da Confirmação Pós-#21 — exigiria pivot adicional.
+
+#### (D) Híbrido B+A (alphabets + skip warmup)
+
+- **O que muda:** alfabetos como tasks (B) + sem warmup, mais episodes/task (A).
+- **Custo de implementação:** ~igual ao (B) sozinho (warmup é só CLI flag).
+- **Naive esperado:** ACC 40-55%, BWT −25 a −35 p.p. — combina pressão de domain shift entre alfabetos com fragilidade de encoder fresh.
+- **Defensibilidade:** **alta** (alphabets é literatura padrão; skip warmup é ablação sensata).
+- **Compat replay-free:** ✓.
+- **Risco:** se naive cair pra <30%, ficamos em regime "task incremental" puro onde nem encoder genérico ajuda — pode ser adversarial demais. Mas isso é resolvível dialing back episodes/task se for o caso.
+
+### Critério de escolha
+
+| Critério | (A) | (B) | (C) | (D) |
+|---|---|---|---|---|
+| Custo de implementação | trivial | moderado | alto | moderado |
+| Naive esperado (target 40-60%) | 60-72% | 50-65% | 20-40% | **40-55%** ✓ |
+| Defensibilidade | média | alta | alta (outra lit) | **alta** ✓ |
+| Compat replay-free | ✓ | ✓ | ✓ | ✓ |
+| Compat side project | ✓ | ✓ | ❌ scope grande | ✓ |
+| Margem pra EWC e propostas | pequena | média | larga | **média-larga** ✓ |
+
+### Decisão: **OPÇÃO D (híbrido B+A)** — alphabets + skip warmup
+
+**Recomendação confirmada por:**
+
+1. **Naive esperado em sweet spot** (40-55%): deixa margem de ~15-25 p.p. pra técnicas (EWC, C2, C3) demonstrarem ganho real.
+2. **Alfabetos têm precedente sólido em literatura** (Schwarz 2018, outros). Reviewer não vai questionar setup.
+3. **Custo moderado de implementação** (~1 sessão). Compatível com ritmo side project.
+4. **Mantém Split-Omniglot** como dataset base — não viola decisão (b) da Confirmação Pós-#21.
+5. **Skip warmup é gratuito** (só CLI flag); benefício claro de fragilizar encoder.
+
+**Rejeitado por:**
+
+- (A) sozinho — risco de não ser adversarial o suficiente; reviewer pode pedir alphabets.
+- (B) sozinho — warmup mantém viés "genérico" que dilui forgetting.
+- (C) — escopo desproporcional pra side project; pivot adicional fora da Confirmação Pós-#21.
+
+### Pergunta científica oficial reformulada
+
+**Antiga (broken pelo #23):**
+> "Pode plasticidade meta-aprendida ou ProtoNet+k-WTA, sem replay, atingir ACC ≥75% e BWT ≥−10% em Split-Omniglot 50-tasks, batendo EWC por ≥3 p.p.?"
+
+**Nova (calibrada pra Opção D):**
+
+> "Em **Split-Omniglot por alfabeto** (50 tasks correspondentes aos 50 alfabetos, **sem warmup**, fine-tune sequencial), pode plasticidade meta-aprendida (estilo C2) ou ProtoNet+k-WTA (estilo C3), **sem replay buffer**, atingir **ACC absoluto ≥70%** com **BWT ≥−10 p.p.**, **batendo o baseline EWC por ≥3 p.p. em ACC**?"
+
+**Justificativa numérica calibrada (alvos absolutos):**
+
+| Linha | ACC esperado | BWT esperado |
+|---|---|---|
+| Naive (sem defesa) | 40-55% | −25 a −35 p.p. |
+| EWC (regularization) | 55-70% | −10 a −20 p.p. |
+| **Nossa proposta target** | **≥70%** (idealmente 73-78%) | **≥−10 p.p.** |
+| Sky reference (GEM com replay) | 75-85% | −5 a −10 p.p. |
+
+**Critérios numéricos exatos serão confirmados após sessão #25** (quando naive em Opção D for medido empiricamente). Se naive vier em range diferente do previsto (ex: já 65%+), a pergunta pode precisar de mais um ajuste — mas espera-se que Opção D coloque naive na faixa adversarial prevista.
+
+### Critério de fechamento atualizado
+
+| Resultado | Decisão |
+|---|---|
+| ACC ≥70% E BWT ≥−10 p.p. E bate EWC por ≥3 p.p. | **Sucesso → escrever paper** |
+| ACC 60-70%, ou BWT entre −10 e −20, ou bate EWC por <3 p.p. | **Mediano → reavaliar** vale workshop ou pivotar |
+| ACC <60% OU BWT <−20% OU pior que EWC | **Pivot** pra outro mecanismo |
+| Nada funciona após 20 sessões | **Encerrar como exploração documentada** |
+
+### Próximas sessões (roadmap atualizado)
+
+- **#25 (próxima):** implementar Opção D em `baseline_naive.py` — refatorar `build_tasks` pra agrupar por alfabeto, rodar naive 5 seeds. **Validar empiricamente que naive cai pra range adversarial (40-55% ACC).**
+- **#26:** se #25 confirma range, implementar EWC baseline.
+- **#27-#28:** escalar EWC, propostas C2-continual / C3-continual.
+- **#29:** ablações.
+- **#30:** status check sucesso/pivot.
+
+Se #25 mostrar naive ainda alto (>65% ACC), essa seção é re-aberta antes de seguir.

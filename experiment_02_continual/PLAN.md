@@ -8,9 +8,22 @@
 
 ## Pergunta de pesquisa
 
-> "Pode uma rede com **plasticidade local meta-aprendida** (estilo C2 do experimento 01) ou **encoder esparso ProtoNet com k-WTA** (estilo C3 do experimento 01), **sem replay buffer**, atingir **average accuracy ≥75% em Split-Omniglot 50-tasks sequenciais com forgetting (BWT) ≤−10%**, batendo baseline **EWC** por ≥3 p.p. em average accuracy?"
+**Reformulada após sessão #24** (ver `STRATEGY.md` "Reformulação Pós-Sessão #23"):
 
-Carry-over literal de `STRATEGY.md` "Decisão Pós-Sessão #20" item (c).
+> "Em **Split-Omniglot por alfabeto** (50 tasks correspondentes aos 50 alfabetos, **sem warmup**, fine-tune sequencial), pode plasticidade meta-aprendida (estilo C2) ou ProtoNet+k-WTA (estilo C3), **sem replay buffer**, atingir **ACC absoluto ≥70%** com **BWT ≥−10 p.p.**, **batendo o baseline EWC por ≥3 p.p. em ACC**?"
+
+**Pergunta antiga (broken pelo resultado da sessão #23, ACC 82.58% naive):** "ACC ≥75% E BWT ≥−10% E batendo EWC por ≥3 p.p. em Split-Omniglot 50-tasks com random class splits". Trivialmente atingida pelo baseline naive — anulava margem científica.
+
+**Justificativa numérica calibrada (alvos absolutos pra Opção D = alphabets + skip warmup):**
+
+| Linha | ACC esperado | BWT esperado |
+|---|---|---|
+| Naive (sem defesa) | 40-55% | −25 a −35 p.p. |
+| EWC (regularization) | 55-70% | −10 a −20 p.p. |
+| **Nossa proposta target** | **≥70%** (idealmente 73-78%) | **≥−10 p.p.** |
+| Sky reference (GEM com replay) | 75-85% | −5 a −10 p.p. |
+
+Critérios numéricos exatos serão confirmados após sessão #25 (medição empírica de naive na Opção D). Se naive vier em range diferente do previsto, ajustar.
 
 ---
 
@@ -30,11 +43,21 @@ Carry-over literal de `STRATEGY.md` "Decisão Pós-Sessão #20" item (c).
 3. Cabe em GPU laptop (RTX 4070), ciclos rápidos.
 4. Permite reuso direto do encoder ProtoNet treinado em C3.
 
-**Alternativas consideradas e rejeitadas:**
+**Estrutura específica pós-#24 (Opção D adversarial):**
 
-- *Permuted MNIST*: clássico mas demais (cada "task" é só uma permutação de pixels, não classes diferentes). Menos representativo.
+- **Tasks = alfabetos.** Omniglot tem 30 alfabetos no background + 20 no evaluation = 50 alfabetos totais. Cada task é 1 alfabeto, com seus N caracteres (N varia 14-55 entre alfabetos).
+- **Sem warmup.** Encoder fresh aprende cada alfabeto sequencialmente. Sem fase de pretreino genérico que dilua forgetting.
+- **Episode sampling:** 5-way 1-shot 5-query, com 5 caracteres amostrados aleatoriamente dos N do alfabeto.
+- **Train/test split por caractere:** mantido como pós-#23 (14 train + 6 test instances, deterministic shuffle por seed).
+
+**Alternativas consideradas e rejeitadas (pós-#24):**
+
+- *Permuted MNIST*: clássico mas pobre (cada "task" é só uma permutação de pixels). Menos representativo.
 - *Split CIFAR-10/100*: maior compute, dataset mais difícil — escapa do scope side project.
 - *CLEAR*: muito grande, requer infra cloud.
+- *Random class splits (setup #23)*: insuficientemente adversarial — naive atinge 82.58%, anulando margem científica.
+- *Cross-domain (Omniglot→MNIST→FashionMNIST)*: escopo grande pra side project, viola decisão (b) Pós-#21.
+- *Skip warmup sozinho com random splits (Opção A)*: insuficiente — alfabetos compartilham features genéricas que warmup-skip não destrói.
 
 ---
 
@@ -54,28 +77,32 @@ IC95% via bootstrap (1000 resamples), n_seeds = 3-5.
 
 ## Critérios de fechamento
 
-Carry-over literal de `STRATEGY.md` "Decisão Pós-Sessão #20" item (d):
+**Reformulado após sessão #24** (calibrado pra Opção D adversarial):
 
 | Resultado | Decisão |
 |---|---|
-| ACC ≥75% E BWT ≥−10% E bate EWC por ≥3 p.p. | **Sucesso → escrever paper** (workshop em 8 sessões, conference em 12-16). |
-| ACC 65-75%, ou BWT entre −10% e −20%, ou bate EWC por <3 p.p. | **Resultado mediano → reavaliar** se vale workshop paper ou pivotar. |
-| ACC <65% OU BWT <−20% OU pior que EWC | **Pivot:** plasticidade meta-aprendida não é o motor. Considerar replay-light ou pivotar pra outro critério pós-LLM. |
+| ACC ≥70% E BWT ≥−10 p.p. E bate EWC por ≥3 p.p. | **Sucesso → escrever paper** (workshop em 8 sessões, conference em 12-16). |
+| ACC 60-70%, ou BWT entre −10 e −20, ou bate EWC por <3 p.p. | **Resultado mediano → reavaliar** se vale workshop paper ou pivotar. |
+| ACC <60% OU BWT <−20% OU pior que EWC | **Pivot:** plasticidade meta-aprendida não é o motor. Considerar replay-light ou pivotar pra outro critério pós-LLM. |
 | Nada funciona após 20 sessões + ablações exaustivas | **Encerrar como exploração documentada.** Aprendizado pessoal mantido. |
+
+Critérios anteriores (pós-#20, baseado em random class splits): ACC ≥75% e BWT ≥−10. Ajustados pra refletir naive baseline esperado mais baixo na Opção D adversarial.
 
 ---
 
-## Roadmap previsto (sessões #22-#31)
+## Roadmap previsto (sessões #22-#32, atualizado pós-#24)
 
 | # | Tipo | Objetivo |
 |---|---|---|
-| **22 (esta)** | Admin | Confirmação decisões + literatura review (PAPERS.md) |
-| 23 | Code | Baseline naive sequential fine-tuning |
-| 24-25 | Code | Baseline EWC + escalar pra 50 tasks |
-| 26-28 | Code | C2-continual e/ou C3-continual implementação |
-| 29 | Code | Ablações |
-| 30 | Admin | Status check sucesso/pivot/encerramento |
-| 31 | TBD | Refinement ou paper writing conforme #30 |
+| 22 | Admin | Confirmação decisões + literatura review (PAPERS.md) — feito |
+| 23 | Code | Baseline naive sequential fine-tuning, random splits — feito (ACC 82.58%, broken) |
+| **24** | **Admin** | **Reformulação benchmark pra Opção D (alphabets + skip warmup) — feito** |
+| **25 (próxima)** | **Code** | **Re-implementar naive em Opção D, validar empiricamente naive cai pra 40-55%** |
+| 26 | Code | Baseline EWC em Opção D |
+| 27-29 | Code | Propostas C2-continual e/ou C3-continual implementação |
+| 30 | Code | Ablações |
+| 31 | Admin | Status check sucesso/pivot/encerramento |
+| 32 | TBD | Refinement ou paper writing conforme #31 |
 
 Cancelable em qualquer ponto. Sem cadência fixa — Luis decide sessão-a-sessão.
 
