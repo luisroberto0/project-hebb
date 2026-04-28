@@ -571,3 +571,88 @@ H_norm com target 0.3 quebrou o trade-off:
 | **H_norm_sweep** (target_mean ∈ {0.5, 0.6, 0.8}) | ~2h (3 trains + evals + cosines) | #12 mostrou que diversidade está ao alcance, falta calibrar magnitude. Sweep encontra sweet spot. |
 | **H_mult** (STDP multiplicativo) | ~1h | Soft-bound natural sem normalização hard. Pode preservar magnitude espontaneamente. |
 | **H_filter_diversity** (penalidade explícita de similaridade) | ~1-2h | Independente de magnitude — força diversidade via objetivo, em qualquer escala. |
+
+---
+
+## Sessão #13 — H_norm_sweep + diagnóstico do clamp em w_max
+
+**Hipótese:** sweet spot em target_mean ∈ {0.6, 0.8} pode preservar diversidade da #12 com magnitude suficiente pra spikes pós-LIF.
+
+**Setup:** mesmo da #9. Único delta: `norm_target_mean ∈ {0.6, 0.8}`, ambos clampados em [w_min=0, w_max=1.0].
+
+### Resultados de treino + eval
+
+| Setup | μ pesos | σ pesos | cosine cent L1 | cosine cent L2 | theta1/theta2 max | Acurácia 5w1s | IC95% |
+|---|---|---|---|---|---|---|---|
+| Iter 1 (sem H_norm, ref) | 0.999 | 0.001 | 0.20 | **0.55** | 20.7 / 31.0 | **35.98%** | [35.17, 36.79] |
+| H_norm 0.3 (sessão #12) | 0.300 | 0.127 | 0.04 | 0.04 | 11.8 / 12.1 | 20.04% | [20.01, 20.07] |
+| **H_norm 0.6 (#13)** | 0.600 | 0.218 | **0.08** | **0.02** | 22.9 / 24.5 | **20.07%** | [20.02, 20.12] |
+| **H_norm 0.8 (#13)** | 0.800 | 0.189 | **0.21** | **0.02** | 28.9 / 32.5 | **20.11%** | [20.06, 20.18] |
+
+**Todos os 3 targets dão chance.** Magnitude maior NÃO destravou sinal apesar das diferenças cosseno (L1 sobe com mag 0.04→0.08→0.21, L2 fica baixo ~0.02 em todos).
+
+### Controles random com clamp
+
+Pra isolar contribuição do treino vs distribuição (protocolo padrão pós-#10), criados controles random com clamp em w_max=1.0:
+
+| Setup | μ efetivo | σ efetivo | Acurácia 5w1s | IC95% |
+|---|---|---|---|---|
+| Random U(0, 1.0) (sessão #10, **sem clamp efetivo**) | 0.50 | 0.29 | **32.89%** | [32.19, 33.62] |
+| Random U(0, 1.2)→clamp [0,1] (mass em 1.0) | 0.58 | 0.33 | 20.51% | [20.30, 20.71] |
+| Random U(0, 1.6)→clamp [0,1] (mass em 1.0) | 0.68 | 0.34 | 20.65% | [20.43, 20.89] |
+
+**Achado central #13:** distribuições com **massa significativa em w_max=1.0** (saturação parcial via clamp) **matam o sinal arquitetural** — independente de mean. Random U(0, 1.0) puro entrega 32.89% porque virtualmente nenhuma amostra atinge 1.0. Random U(0, 1.2) e U(0, 1.6) clampados têm 17% e 38% das amostras em exatamente 1.0 → caem pra chance.
+
+### Por que H_norm em qualquer target falha?
+
+Combinação de dois mecanismos:
+
+1. **Massa em w_max=1.0 via clamp:** após normalização (multiplicação por target_sum/w_sums), valores extremos acima de 1.0 são clampados → distribuição final tem cauda em 1.0. Especialmente em targets altos (0.6, 0.8), essa cauda é grossa.
+2. **σ alta + theta alta:** H_norm preserva σ ~0.2 (vs Iter 1 com σ=0.001), e theta cresce até ~30 (similar a Iter 1). Mas o regime fica em "limbo": pesos altos suficientes pra disparar, mas sem o "matched filter trivial" do Iter 1 saturado nem a estrutura uniforme do random U(0,1).
+
+**Padrões funcionais observados:**
+
+| Regime | Pesos | Sinal? |
+|---|---|---|
+| Saturação total uniforme (~0.999 σ=0.001) | matched filter | ✅ 36% |
+| Distribuição rica sem clamp (U(0, 1) puro, mass em 1.0 desprezível) | seletividade aleatória | ✅ 33% |
+| Mistura clamp-saturada + variável (H_norm targets ≥0.5, random clamped ≥1.2) | "limbo" | ❌ chance |
+| Magnitude muito baixa (U(0, 0.3) ou H_norm 0.3) | spikes raros | ❌ chance |
+
+### Critério literal: H_norm_sweep falhou
+
+- **Sucesso forte** (≥50% acc E STDP > random correspondente em 10 p.p.): NÃO (todos chance)
+- **Sucesso parcial** (38-50% acc E STDP > random em 5-15 p.p.): NÃO (todos chance)
+- **Falha** (todos chance OU STDP ≤ 3 p.p. acima random): SIM (todos chance)
+
+### Implicação revelada: o clamp em [0, 1] é parte do problema
+
+A hipótese H_norm assumia que normalização → impede saturação → preserva variância. Mas com `w_max=1.0` (paper), normalização acaba criando distribuição com **mass em w_max** quando target ≥ 0.5. Essa mass mata o sinal.
+
+**Próximas direções implicadas:**
+
+| Hipótese | Custo | Justificativa pós-#13 |
+|---|---|---|
+| **H_no_clamp** (w_max muito maior, ex 5.0) + H_norm | ~30 min | Permite normalização sem clamp parasita. Se isso funcionar, H_norm com mag livre vira viável. |
+| **H_mult** (STDP multiplicativo) | ~1h | Δw ∝ (w_max - w) — soft bound natural, sem clamp hard. Não cria mass em w_max. |
+| **H_filter_diversity** | ~1-2h | Não depende de clamp/mag. Mas mais ambicioso. |
+
+### Estado final pós-#13
+
+- `config.py`: `norm_target_mean=None` (revertido pra default desativado).
+- `model.py`: código de normalização preservado, condicional ao flag.
+- Checkpoints: `stdp_model_hnorm06.pt`, `stdp_model_hnorm08.pt`, `stdp_model_random_u012clamped.pt`, `stdp_model_random_u016clamped.pt` preservados pra comparação futura.
+- Sinal arquitetural (Iter 1: 35.98%, random U(0,1): 32.89%) continua reproduzível.
+- Sessões consecutivas sem sinal>chance: **2** (#12 e #13). STRATEGY.md prevê revisão se chegar a 3.
+
+### Insight cumulativo (sessões #11-#13)
+
+- #11 mostrou que filtros saturados são "matched filter" pra estatística do Omniglot, não Gabor.
+- #12 mostrou que H_norm 0.3 destrava diversidade mas matando magnitude → mata sinal.
+- #13 mostrou que H_norm em magnitudes maiores (0.6, 0.8) **continua matando sinal** — não é só magnitude baixa, é **clamp gerando mass em w_max=1.0**.
+
+O sinal arquitetural depende de uma das condições:
+(a) Pesos *todos* saturados uniformemente (matched filter trivial via Iter 1)
+(b) Pesos *uniformemente distribuídos sem clamp* (random U(0, 1.0))
+
+Não há um "sweet spot intermediário" como esperávamos pré-sweep. Isso é um achado mecanístico não-trivial.
