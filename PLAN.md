@@ -56,6 +56,7 @@ A ordem reflete maturidade teórica decrescente: 01 tem décadas de fundamentaç
 - **2026-04-27 (sessão #7) — Semana 2 Etapas 0-1: pipeline integra mas STDP em conv real satura pesos.** Etapa 0: smoke test confirmou pipeline end-to-end (Pixel kNN 45.76%, ProtoNet 85.88%, evaluate fecha) e expôs bug de pickling em `data.py:build_transforms` (lambda local) — corrigido com função module-level. Pretreino smoke (500 imgs) revelou colapso de layer 1 (w1=μ0.000). Etapa 1: criado `tests/test_spike_balance_omniglot.py`, mediu R1=1.51 e R2=0.69 (próximos do paper, NÃO o problema dominante). Trace step-by-step revelou mecanismo: A_pre=0.01 do paper produz Δw ≈0.86 por param/timestep — pesos saturam em 10 ts, depois oscilam e morrem (theta locked-out em ~2.9). Calibração A_pre=0.0001 (100× menor) resolve transitório curto (500 imgs OK, w1=0.114), mas em 5000 imgs satura novamente (w1=0.999, σ=0.011, todos os pesos = 1.0). Acurácia 5w1s recalibrada: 23.08% (z=0.4) com 500 imgs, volta pra 20.52% (chance) com 5000 imgs (saturação destrói sinal). Bloqueio novo: saturação STDP em escala média/longa. Próximo: testar hipóteses H_norm (normalização de Σw), H_mult (STDP multiplicativo), H_theta_omn (recalibrar theta_plus). Detalhes em `WEEKLY-2.md`.
 - **2026-04-27 (sessão #7 encerramento) — Estratégia de pesquisa formalizada em `STRATEGY.md`.** Próximas 2-3 sessões focam em H_theta_omn e H_norm (custo baixo, alto ROI). Se não destravarem, considera pivot pra abordagem adjacente (Hopfield puro, meta-learning bio, prototypical com features esparsas) antes de cair pra Brian2. Cadência: sessão 60-90 min, max 2x/semana, atualizar Notas de iteração após cada uma; revisar STRATEGY.md se 3 sessões consecutivas sem progresso (sinal acima de chance).
 - **2026-04-27 (sessão #8) — H_theta_omn descartada empiricamente.** Testado theta_plus em 3 valores (0.0005 baseline, 0.001 médio, 0.005 alto) com mesmo setup (5000 imgs / 1 epoch / k=1 WTA / A_pre=0.0001). Todos eval ≈ chance: 20.52%, 20.32%, 20.00% (este último com IC zero, predição constante porque theta=9 silenciou todos filtros). Causa raiz isolada: **tau_theta=1e7 (do paper) não permite decay efetivo no nosso regime** (500k oportunidades de update por treino vs decay desprezível) → theta cresce monotonicamente, qualquer theta_plus gera trade-off (silenciar todos OU não frear pesos). Restaurado theta_plus=0.0005. Próxima sessão: H_norm (recomendação STRATEGY.md) ou nova hipótese H_tau_theta (derivada deste diagnóstico). Sessões consecutivas sem sinal>chance: 1.
+- **2026-04-28 (sessão #9) — H_tau_theta ✅ CONFIRMADA: primeiro sinal acima de chance.** Iter 1 com tau_theta=1e4 (1000× menor que paper) deu 5w1s=35.98% IC95%[35.17,36.79] z≈1.3 (+15.98 p.p. acima de chance). Surpresa metodológica: proxies estruturais (w1 saturado em 0.999 σ=0.001; theta cresceu monotonicamente até 20.68) FALHARAM, mas critério funcional bateu com folga. 3/3 verificações de robustez passaram: V1 eval seed=100 → 36.06%; V2 retrain seed=43 → 35.96%; V3 20w1s → 9.80% IC95%[9.58,10.01] z≈1.4 (chance=5%). Mecanismo conjecturado inicialmente (theta diferenciada carrega sinal) **refutado pelo V2**: seed=43 tem theta range ainda mais apertado [20.78,20.86] que seed=42 [20.55,20.68], mesma acurácia. Sinal real, mecanismo não identificado. Fixado tau_theta_ms=1e4 como decisão arquitetural (ver abaixo). Sessões consecutivas sem sinal>chance: 0 (resetado).
 
 ---
 
@@ -131,6 +132,23 @@ A ordem reflete maturidade teórica decrescente: 01 tem décadas de fundamentaç
 **Custo de reverter:** ~30 min (remover buffer theta + simplificar forward). Mantém compatibilidade.
 
 **Marca de teste:** estado consolidado 17.76% (igual a sem homeostasis) com distribuição de filtros melhor. Decisão se consolida quando combinada com solução pro LTP/LTD imbalance.
+
+### 2026-04-28 — `tau_theta_ms=1e4` (homeostasis 1000× mais rápida que paper) — primeira config com sinal>chance
+
+**Decisão:** fixar `STDPConfig.tau_theta_ms = 1e4` em `experiment_01_oneshot/config.py` (vs 1e7 do paper Diehl & Cook 2015). Manter resto inalterado: `theta_plus=0.0005`, `A_pre=0.0001`, `A_post=-0.000105`.
+
+**Alternativa rejeitada:** voltar pra tau_theta=1e7 (paper) e atacar saturação por outras vias (H_norm, H_mult). Rejeitada porque a config atual produz **primeiro sinal acima de chance do projeto** (5w1s=35.98%, 20w1s=9.80%) — restaurar tau_theta=1e7 destruiria esse sinal.
+
+**Raciocínio:**
+
+1. **Empírico, não teórico.** Sessão #9 mediu sinal robusto em 3 verificações ortogonais (seed eval, seed treino, escala de dificuldade). 35.98% ± ~0.8 p.p. IC95% em três runs distintas. Não é ruído.
+2. **Diehl & Cook calibram tau_theta=1e7 ms pra um regime diferente.** Paper original tem ~7000 timesteps por imagem com poucos spikes ativos via refractory longo. Nosso regime tem 78400 spikes denso em 100 ms — homeostasis precisa atuar em escala de tempo proporcional ao volume de spikes, não ao tempo de wall-clock simulado.
+3. **Surpresa: mecanismo não identificado.** Pesos saturam em 0.999 σ=0.001 (filtros aparentemente indistinguíveis). Theta range é ~0.1 entre filtros. Conjectura inicial "theta diferenciada carrega sinal" foi refutada (V2: seed diferente produz theta range ainda mais apertado, mesma acc). Pode ser initialization bias preservado, dinâmica LIF residual, ou amplificação não-linear via pooling. **A investigar nas próximas sessões.**
+4. **Limitação reconhecida.** 35.98% ainda está MUITO abaixo das metas (≥90% 5w1s, vs ProtoNet 85.88%). Sinal é prova de viabilidade, não solução final. Pode ser que tau_theta=1e4 só destrava um patamar; ainda há gap arquitetural pra fechar (H_norm, H_mult, ou outras hipóteses ainda vivas).
+
+**Custo de reverter:** ~10 min (mudar valor + retreinar 5000 imgs + reavaliar). **Mas:** reverter destrói o único sinal acima de chance medido. Reversão só faz sentido se uma config futura provar ser melhor *e* tau_theta=1e4 deixar de ajudar.
+
+**Marca de teste:** próxima sessão investiga mecanismo (qual canal carrega o sinal). Se mecanismo for identificado e for trivial (ex: bug de eval), decisão pode ser revertida. Se mecanismo for genuíno, decisão se consolida e a próxima questão é como amplificar (escalar imgs, mexer em arquitetura, etc.).
 
 ### 2026-04-27 — Inibição lateral em ConvSTDPLayer via k-WTA na dinâmica LIF (não decay de pesos)
 

@@ -70,7 +70,10 @@ class STDPConfig:
                                    # Causa raiz isolada: tau_theta=1e7 não permite decay
                                    # efetivo no nosso regime → theta cresce monotonicamente,
                                    # qualquer theta_plus gera trade-off (silenciar OU saturar).
-    tau_theta_ms: float = 1e7      # 10.000s — propositalmente lento (paper)
+    tau_theta_ms: float = 1e4      # Sessão #9: 1000× menor que paper (1e7). Primeira config
+                                   # com sinal acima de chance (5w1s=35.98%, 20w1s=9.80%, z≈1.3).
+                                   # 3/3 verificações de robustez passaram. Decisão arquitetural
+                                   # registrada em PLAN.md (2026-04-28). Mecanismo a investigar.
 
 
 @dataclass

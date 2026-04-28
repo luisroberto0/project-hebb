@@ -214,3 +214,58 @@ theta cresce **monotonicamente** em todos os casos — porque `tau_theta=1e7 ms`
 - Hipóteses vivas: **H_norm** (próxima recomendação por STRATEGY.md), H_mult, H_omniglot_inhib, H_tau_theta (nova, derivada do diagnóstico desta sessão)
 - Acurácia consolidada: 17.76% (MNIST sanity) / ~20% Omniglot (chance, todos os tunings de Semana 2 falharam até agora)
 - Sessões consecutivas sem progresso (>chance): **1** (esta). STRATEGY.md prevê revisão se chegar a 3.
+
+---
+
+## Sessão #9 — H_tau_theta ✅ PRIMEIRO SINAL ACIMA DE CHANCE
+
+**Hipótese:** tau_theta=1e7 (do paper) não permite decay efetivo no nosso regime — reduzir 100-1000× pode estabilizar homeostasis.
+
+**Setup:** mesma config da sessão #8 (5000 imgs / 1 epoch / k=1 WTA / A_pre=0.0001 / theta_plus=0.0005 / seed treino=42), variando apenas `tau_theta_ms`.
+
+### Iter 1: tau_theta_ms=1e4 (1000× menor que paper)
+
+**Pretreino:** 5000 imgs em 126.4s (39.6 imgs/s).
+
+| Métrica | Esperado (critério) | Observado | Status |
+|---|---|---|---|
+| `w1` saudável | μ ∈ [0.1, 0.5], σ > 0.05 | μ=0.999, σ=0.001 | ❌ saturado |
+| `theta1` estabiliza | pico < 5 | max=20.68, mean=20.63, range [20.55, 20.68] | ❌ |
+| Acurácia 5w1s (z>1) | > 25% | **35.98%** IC95% [35.17, 36.79], **z≈1.3** | ✅ **+15.98 p.p.** |
+
+**Surpresa metodológica:** proxies estruturais (w1, theta) falharam mas critério funcional bateu com folga. Pesos saturados → filtros teoricamente indistinguíveis → embeddings deveriam ser constantes → predição deveria ser chance. Mas não é.
+
+### Verificações de robustez (3/3 passaram)
+
+| Verificação | Setup | Resultado | Critério | Status |
+|---|---|---|---|---|
+| **V1 — eval seed diferente** | mesmo ckpt, eval seed=100 | 36.06% IC95% [35.31, 36.83] | 30-40% | ✅ |
+| **V2 — retrain seed diferente** | retrain seed=43, eval seed=42 | 35.96% IC95% [35.17, 36.71] | 30-40% | ✅ |
+| **V3 — escalar dificuldade** | mesmo ckpt, 20w1s | 9.80% IC95% [9.58, 10.01], +4.80 p.p., z≈1.4 | >8-10% | ✅ |
+
+Sinal não é ruído de seed (V1), não depende da combinação seeds-treino/seeds-eval (V2), e escala em dificuldade preservando ~5 p.p. acima de chance e z≈1 (V3).
+
+### Mecanismo: NÃO é theta diferenciada (conjectura inicial refutada)
+
+Conjectura inicial pós-Iter 1: "theta diferenciada por filtro carrega o sinal via timing" (range [20.55, 20.68] no seed=42 sugere variabilidade discriminativa).
+
+**Refutado pelo V2:** retrain com seed=43 produziu theta1 com range AINDA MAIS APERTADO [20.78, 20.86] (Δ=0.08 vs Δ=0.13 no seed=42), e ainda assim acurácia idêntica (35.96% vs 35.98%). Se theta diff fosse o canal do sinal, seed=43 daria menos sinal.
+
+**Mecanismo real: a investigar.** Hipóteses pra próxima sessão:
+- Initialization bias preservado na saturação: pesos saturam em 0.999 com σ=0.001, mas a *direção* (qual neurônio satura primeiro, ordem temporal de saturação) pode codificar sinal mesmo no estado terminal.
+- Dinâmica temporal LIF residual: spike timing dentro de cada filtro depende de input × peso saturado + ruído + reset, gerando spike trains discriminativos mesmo com pesos quase iguais.
+- Combinação não-linear filter1 × filter2 via pooling: pequenas diferenças (σ=0.001) amplificadas pela não-linearidade do segundo layer.
+
+### Estado final do código
+
+- `config.py`: **tau_theta_ms=1e4** (alterado, fixado nesta sessão como decisão arquitetural — ver PLAN.md). Resto inalterado.
+- Checkpoints salvos:
+  - `checkpoints/stdp_model_iter1_seed42.pt` — Iter 1 original (35.98%)
+  - `checkpoints/stdp_model_iter1_seed43.pt` — V2 reproduce (35.96%)
+  - `checkpoints/stdp_model.pt` — sobrescrito por V2 (idêntico a seed43)
+
+### Conclusão
+
+H_tau_theta ✅ **CONFIRMADA empiricamente como solução parcial.** Primeiro sinal acima de chance do projeto inteiro (35.98% / 9.80% em 5w1s / 20w1s, z≈1.3-1.4 ambos). Sessões consecutivas sem progresso: **0** (resetado).
+
+Importante: ainda longe das metas finais (≥90% 5w1s, ≥70% 20w1s do CONTEXT.md §4 — vs 85.88% do ProtoNet baseline). Sinal é **prova de viabilidade**, não estado de produção. Próximas sessões devem investigar mecanismo antes de tunar pra escala maior.
