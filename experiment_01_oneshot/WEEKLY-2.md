@@ -362,3 +362,41 @@ O salto principal é de magnitude (0.3→1.0): **+12 p.p. ganhos só por escalar
 - Ablação adicional A3b: random U(0,1) + theta_iter1 (preservada). Se for ≈36%, STDP+homeostasis **realmente** não contribui. Se for 33%, theta agrega algo sobre magnitude.
 - Investigar por que magnitude alta sozinha gera 33%: estrutura da conv saturada vs estrutura random — o que é discriminativo aqui?
 - Se decisão é reverter `tau_theta=1e4`: voltar pra `tau_theta=1e7` e atacar H_norm (próxima da ordem de STRATEGY.md).
+
+### A3b — Random U(0,1) + theta_iter1 preservada
+
+**Setup:** carrega checkpoint Iter 1 pra extrair theta1 e theta2 treinadas, sobrescreve apenas os conv weights com U(0,1) random, preserva theta. `tests/ablate_random_with_theta.py`. 5w1s 1000 eps seed=42.
+
+**Resultado:**
+
+| Setup | Acurácia 5w1s | IC95% | z |
+|---|---|---|---|
+| A3 — random U(0,1) + theta=0 | 32.89% | [32.19, 33.62] | 1.1 |
+| **A3b — random U(0,1) + theta_iter1 (~20.6, ~30.8)** | **32.65%** | [31.95, 33.36] | 1.1 |
+| Δ (theta_iter1 vs theta=0) | **−0.24 p.p.** | dentro do IC | — |
+
+**Interpretação:** theta treinada (~20.6, ~30.8) **não agrega nada** sobre magnitude alta dos pesos random. A diferença entre A3 e A3b é dentro do ruído.
+
+### Decomposição final dos 16 p.p. acima de chance (Iter 1 = 35.98%)
+
+| Componente | Contribuição | Evidência |
+|---|---|---|
+| Magnitude alta dos pesos (U(0, 0.3) → U(0, 1.0)) | **+12 p.p.** | A3 (32.89%) − sessão #7 baseline U(0,0.3) (20.92%) |
+| Estrutura específica dos pesos saturados pelo STDP | **+3 p.p.** | Iter 1 (35.98%) − A3b (32.65%) — isolado controlando theta |
+| Theta treinada (homeostasis adaptativa) | **~0 p.p.** | A3 vs A3b: −0.24 p.p. dentro do IC |
+| Total acima de chance | 16 p.p. | |
+
+**Implicação mecanística:** o sinal de 35.98% é **arquitetural+magnitude** dominantemente. STDP contribui na margem (3 p.p.) via estrutura espacial sutil que sobrevive à saturação σ=0.001. Homeostasis (theta) é **inerte** no regime testado.
+
+### Decisão pós-#10
+
+**Reverter `tau_theta_ms=1e7`** (paper original). Leitura do espírito do critério de STRATEGY: STDP+homeostasis explica só 3 p.p. de 16 p.p. — ~80% do sinal é arquitetural. Decisão arquitetural da sessão #9 (`tau_theta=1e4`) foi prematura: o que destravou sinal **não foi** tau_theta calibrado, foi **magnitude saturada** dos pesos (que aparece em qualquer config que satura) **+ Hopfield + Poisson**.
+
+`tau_theta=1e4` consegue saturar pesos (porque homeostasis efetiva freia LTD ineficiente o suficiente). `tau_theta=1e7` também saturaria com config diferente. O sinal não vem da homeostasis funcionar — vem da magnitude alta + estrutura de Omniglot esparsa.
+
+### Estado final pós-#10
+
+- `config.py`: revertido `tau_theta_ms=1e7` (estado conhecido pré-#9).
+- `PLAN.md`: decisão arquitetural sessão #9 substituída por nota de reversão + lições aprendidas.
+- `STRATEGY.md`: nova framing pra "Pós-Sessão #10" — pergunta é "como amplificar sinal arquitetural via STDP?", não "como STDP aprende features?".
+- Sessões consecutivas sem sinal>chance: **0** (sinal arquitetural existe, é real). O que mudou é entendimento — não há regressão de sinal.
