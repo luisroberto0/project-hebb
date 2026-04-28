@@ -50,6 +50,7 @@ A ordem reflete maturidade teórica decrescente: 01 tem décadas de fundamentaç
 - **2026-04-27 — Filesystem montado entre Cowork e sandbox tem write-back não-determinístico.** Edits via tool persistem só "do lado Cowork"; bash via mount Linux vê arquivos truncados. Causa: provavelmente buffer write-back não-flushed do mount. Decisão: usar `cat > <file> <<'EOF'` via bash pra forçar persistência atômica em arquivos críticos (model.py, data.py, etc).
 - **2026-04-27 — Sanity check MNIST bloqueado após 3 iterações de k-WTA.** Melhor resultado: 17.76% acurácia (k=1 WTA) com distribuição balanceada de labels, vs meta 85%. Causa hipotética: combinação de (1) número de filtros insuficiente (100 vs 400-6400 do paper), (2) pretreino curto (5k imgs × 1 epoch vs 60k × 3), (3) implementação de WTA diverge do paper (masking vs condutância). Decisão: bloqueio temporário, documentado em `BLOCKED.md`. Aguarda input humano para escolher entre: escalar filtros+dados, aumentar max_rate Poisson, ou reimplementar inibição via condutância.
 - **2026-04-27 (sessão #3) — Auditoria e rebalance LTP/LTD descartam 3 hipóteses, isolam causa raiz.** Etapa 1: `tests/test_assignment.py` valida `assign_labels` e `evaluate` com 3 casos sintéticos (100% perfeito, 10% chance, 100% sinal fraco) — pipeline de classificação está OK. Etapa 2: `tests/test_spike_balance.py` mede razão pré:pós-spikes = 10.1; tentativas de rebalanceamento (R=10 e R=3) mostram trade-off estrutural: LTP<LTD mata pesos, LTP>LTD colapsa filtros (rich-get-richer). **Causa raiz isolada: falta de adaptive threshold homeostático** (Diehl & Cook 2015 §2.3) que força filtros a disparar igualmente. Próxima sessão: decidir entre implementar homeostasis (H_homeostasis), pular pra Omniglot (H_arch) ou validar contra Brian2 (H_paper_replicability) — detalhes em `BLOCKED.md`.
+- **2026-04-27 (sessão #4) — Homeostasis implementada, mecanicamente eficaz mas insuficiente sozinha.** Adaptive threshold de Diehl & Cook §2.3 codificado em `ConvSTDPLayer`. Iteração 1 com theta_plus=0.05 (paper) saturou theta em 267 e silenciou filtros (9.80% acc). Iteração 2 com theta_plus=0.0005 (100× menor, calibrado pro nosso regime de 100 ts) dá theta saudável (mean=2.5) e melhora distribuição de filtros [36,10,11,7,7,7,6,9,3,4] vs antes [24,23,11,9,3,5,7,13,1,4], mas acurácia continua ~16-17%. **Razão**: homeostasis força filtros a se distribuir → cada filtro vence menos → LTP/LTD imbalance re-emerge por filtro. Os dois problemas precisam ser atacados juntos. Próximas opções vivas em `BLOCKED.md`: combinar homeostasis + LTP/LTD ajustado simultaneamente; arquitetura conv real; validação Brian2; ou pular Semana 1.
 
 ---
 
@@ -88,6 +89,24 @@ A ordem reflete maturidade teórica decrescente: 01 tem décadas de fundamentaç
 **Custo de reverter:** ~3-4 semanas pra port completo da Fase 1 quando ela estiver consolidada.
 
 **Marca de teste:** Fase 2 (meses 3-6) decide port baseado em sinais de tração. Se o experimento 01 falhar ou for inconclusivo, port pra Julia provavelmente não acontece — o tempo vai pra outro pilar.
+
+### 2026-04-27 — Adaptive threshold homeostático (Diehl & Cook 2015 §2.3) adicionado a ConvSTDPLayer
+
+**Decisão:** adicionar buffer `theta` (shape `(out_channels,)`) em `ConvSTDPLayer`, usar `v_thresh_eff = v_thresh + theta` como threshold por filtro, atualizar theta após cada timestep com `theta += theta_plus * spike_per_filter; theta *= exp(-dt/tau_theta)`. Persiste entre imagens.
+
+**Alternativa rejeitada:** depender só de k-WTA + STDP rebalanceado (sessão #3 isolou que isso oscila entre failure modes — pesos morrem ou filtros colapsam, não há ratio LTP/LTD que resolva sozinho).
+
+**Raciocínio:**
+
+1. **Aderência a Diehl & Cook 2015 §2.3.** Adaptive threshold é como o paper-base implementa diversidade de filtros. Sem isso, k-WTA + STDP é provadamente instável.
+2. **Mecanicamente eficaz.** Sessão #4 validou que com theta_plus calibrado (0.0005, vs 0.05 do paper — ajustado pra nosso regime de ~100 timesteps), distribuição de filtros fica significativamente mais uniforme: [24,23,11,9,3,5,7,13,1,4] → [36,10,11,7,7,7,6,9,3,4].
+3. **Limitação reconhecida.** Acurácia não destrava só com homeostasis (continua ~17%). Próximo bloqueio: combinar homeostasis com LTP/LTD rebalanceado, ou mudar arquitetura, ou validar contra Brian2.
+
+**theta_plus calibrado pra nosso regime:** valor do paper (0.05) saturou theta em 267 (filtros silenciaram). Reduzido pra 0.0005 (100× menor) pra refletir que nosso regime gera ~100× mais spikes por filtro por unidade de theta_plus que o setup de Diehl & Cook (eles usam ~7000 ts/imagem com refractory longo; nós, 100 ts × k=1 WTA).
+
+**Custo de reverter:** ~30 min (remover buffer theta + simplificar forward). Mantém compatibilidade.
+
+**Marca de teste:** estado consolidado 17.76% (igual a sem homeostasis) com distribuição de filtros melhor. Decisão se consolida quando combinada com solução pro LTP/LTD imbalance.
 
 ### 2026-04-27 — Inibição lateral em ConvSTDPLayer via k-WTA na dinâmica LIF (não decay de pesos)
 

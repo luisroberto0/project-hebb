@@ -61,7 +61,10 @@ class STDPConfig:
     # Função: forçar todos os filtros a disparar aproximadamente igualmente,
     # quebrando rich-get-richer do k-WTA + STDP. Sessão #3 isolou este como
     # causa raiz do colapso de filtros.
-    theta_plus: float = 0.05
+    theta_plus: float = 0.0005     # 100× menor que paper (0.05): nosso regime de
+                                   # spikes (100 ts × k=1 WTA) gera theta 100× mais
+                                   # rápido que o setup original. Iteração 1 com 0.05
+                                   # saturou em theta=267 e silenciou todos os filtros.
     tau_theta_ms: float = 1e7      # 10.000s — propositalmente lento (paper)
 
 

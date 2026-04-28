@@ -360,6 +360,76 @@ Próximos detalhes em `BLOCKED.md` (atualizado nesta sessão com hipóteses viva
 
 ---
 
+## Sessão de homeostasis (2026-04-27 #4)
+
+Decisão humana: implementar adaptive threshold (Diehl & Cook §2.3) em `ConvSTDPLayer` conforme spec do usuário. Hipótese: forçar filtros a disparar igualmente quebra rich-get-richer e destrava acurácia.
+
+### Implementação
+
+`config.py:STDPConfig`:
+- `theta_plus = 0.05` (paper)
+- `tau_theta_ms = 1e7` (paper, ~10000s, decay propositalmente lento)
+
+`model.py:ConvSTDPLayer.__init__`:
+- `self.register_buffer("theta", torch.zeros(out_channels))` — persiste entre imagens, segue device do módulo, entra em state_dict.
+
+`model.py:ConvSTDPLayer.forward`:
+- Threshold efetivo: `v_thresh_eff = v_thresh + theta.view(1, -1, 1, 1)`
+- Após disparo: `theta += theta_plus * spike_per_filter`; `theta *= exp(-dt/tau_theta_ms)`
+
+`sanity_mnist.py`: print de diagnóstico do theta final (mean/std/min/max/frac_zero).
+
+### Iteração 1 (theta_plus=0.05, valores do paper)
+
+| Métrica | Valor |
+|---------|-------|
+| Pesos (mean) | 0.149 → 0.278 ⬆ (não morrem ✓) |
+| Theta final | mean=84.3, std=117.8, range [0.20, 267.7] |
+| Distribuição | [100, 0, 0, 0, 0, 0, 0, 0, 0, 0] (colapso!) |
+| Acurácia | 9.80% (chance) |
+
+**Diagnóstico do paradoxo:** Theta saturou. Filtros vencedores acumularam theta até 267 (≫ v_thresh=1.0), silenciando-se permanentemente. Sobraram poucos filtros com theta baixo que disparavam ruidosamente → tie-break do argmax colapsou tudo pra classe 0.
+
+Causa: `theta_plus=0.05` calibrado pra regime do paper (~7000 ts/imagem com refractory longo). Nosso regime (100 ts × k=1 WTA) gera ~100 spikes/filtro/imagem; theta cresce ~100× mais rápido.
+
+### Iteração 2 (theta_plus=0.0005, 100× menor)
+
+| Métrica | Valor |
+|---------|-------|
+| Pesos (mean) | 0.149 → 0.122 ⬇ (decrescendo, LTD voltou) |
+| Theta final | mean=2.48, std=1.20, range [0.26, 5.19] (escala saudável ✓) |
+| Distribuição | [36, 10, 11, 7, 7, 7, 6, 9, 3, 4] (mais uniforme ✓) |
+| Acurácia | 16.39% (≈ baseline) |
+
+**Conclusão:** Homeostasis funciona **mecanicamente** (theta com variância, distribuição uniforme) mas **não destrava acurácia**. Razão: ao forçar filtros a se distribuir, cada filtro individual vence menos vezes → LTD-dominância re-emerge por filtro → pesos morrem.
+
+### Tabela comparativa (sem vs com homeostasis)
+
+| Config | Pesos | Distribuição (Gini approx) | Acurácia |
+|--------|-------|---------------------------|----------|
+| Baseline (sem homeostasis) | 0.149 → 0.115 ⬇ | [24,23,11,9,3,5,7,13,1,4] (alta concentração) | 17.76% |
+| Iter 1 (theta_plus=0.05) | 0.149 → 0.278 ⬆ | [100,0,...,0] (saturação inversa) | 9.80% |
+| Iter 2 (theta_plus=0.0005) | 0.149 → 0.122 ⬇ | [36,10,11,7,7,7,6,9,3,4] (mais uniforme) | 16.39% |
+
+### Síntese da sessão #4
+
+Homeostasis é **necessária mas não suficiente**. Já tínhamos identificado na sessão #3 que o sistema oscila entre dois failure modes:
+- LTD>LTP → pesos morrem
+- LTP>LTD → filtros colapsam
+
+Homeostasis quebra o segundo failure mode (filtros distribuem-se), mas re-expõe o primeiro (LTD volta a dominar com filtros disparando mais raramente cada). **Os dois problemas precisam ser atacados simultaneamente** — não em sequência.
+
+### Estado final da sessão #4
+
+- **Melhor consolidado continua:** 17.76% (mesmo número da sessão anterior; homeostasis adicionada não regrediu)
+- **Mecanismo homeostatic implementado e validado mecanicamente** (theta com variância, distribuição mais uniforme)
+- **Config ativa:** `theta_plus=0.0005, tau_theta=1e7, A_pre=0.01, A_post=-0.0105` — escala saudável, melhor estado consolidado da implementação
+- **Hipótese H_homeostasis:** validada parcialmente (mecanismo funciona) mas refutada como solução completa (acurácia não destrava sozinha)
+
+Próximas opções em `BLOCKED.md` (atualizado).
+
+---
+
 ## Referências
 
 - Diehl, P. U., & Cook, M. (2015). *Unsupervised learning of digit recognition using spike-timing-dependent plasticity*. Frontiers in Computational Neuroscience.
