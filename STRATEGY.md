@@ -245,3 +245,155 @@ A framing "amplificar sinal arquitetural via STDP" assumia continuidade entre os
 
 - **A não foi descartado**: H_no_clamp e H_mult ficam como hipóteses dormentes. Se C1 falhar (≤35%), Caminho A volta ao topo da fila como diagnóstico (clamp era único gargalo? OU é estrutural?).
 - **B não foi descartado**: Brian2 e H_filter_diversity ficam como rotas se C1 entregar 50-70% mas C2/C3 não fecharem o gap até 90%.
+
+---
+
+## Decisão Pós-Sessão #20: Projeto B definido
+
+**Contexto:** sessão #20 fechou Caminho C com sucesso numérico (C3b 93.10% 5w1s, atinge as duas metas quantitativas do CONTEXT.md §4) mas falha mecanística (C3 usa backprop + SGD, não plasticidade local). A meta original era "≥90% sem backprop end-to-end". C3 atingiu metade da meta. Resta decidir o que fazer com o resto.
+
+Esta seção responde **6 perguntas concretas** sobre o "Projeto B" — a continuação após C3, na rota mecanisticamente fiel. Onde houver incerteza honesta, recomenda mas não decide; decisão final é do Luis.
+
+### (a) Versão do Projeto B
+
+**Recomendação: B HÍBRIDO** (publicar C3 como milestone primeiro, depois B reduzido focado).
+
+| Versão | Tempo | Compatível com founder Rytora? | Risco |
+|---|---|---|---|
+| B ambicioso (atacar 4 critérios pós-LLM, 3-5 anos) | 15-20h/semana | **Não** — exigiria mudança radical de alocação de tempo, conflita com obrigação comercial Rytora | Burnout, atrito conjugal/Rytora, ROI distante |
+| **B reduzido** (atacar 1 critério em 1-2 anos, 5-7h/semana) | 5-7h/semana | **Sim** — encaixa em "side project disciplinado" do CONTEXT.md §2 | Saturação, falta de novidade real, perda de motivação |
+| **B híbrido** (publicar C3 + B reduzido) | 5-7h/semana + 2 weekends de paper | **Sim** | Distração entre escrita e exploração; diluir foco |
+
+**Por que híbrido > reduzido puro:**
+- C3 atinge metas numéricas e tem mecanismo defensável ("k-WTA preserva ProtoNet com 75% sparsity"). Não publicar é desperdício de evidência empírica acumulada.
+- Workshop paper publicado (mesmo que de bench-incremental) cria credenciamento mínimo no campo bio-plausible learning, abre porta pra reviewer feedback.
+- Custo de escrever C3 paper é finito e independente do trabalho de B — pode ser feito em 1-2 weekends sem comprometer cadência de pesquisa.
+
+**Por que híbrido > ambicioso:**
+- Founder de Rytora não pode realisticamente alocar 15-20h/semana em side project não-comercial sem prejudicar produto comercial.
+- 3-5 anos atacando 4 critérios simultâneos é receita pra produzir nada concreto. Disciplina > entusiasmo (CONTEXT.md §8).
+
+**Risco principal de híbrido:** distração ao escrever C3 paper enquanto B precisa de continuidade conceitual. Mitigado por: paper de C3 é workshop (~6-8 páginas) com experimentos prontos; escrita pode ser modular (intro/methods/experiments) e separada da pesquisa de B.
+
+### (b) Critério pós-LLM atacado primeiro
+
+**Recomendação: CONTINUAL LEARNING sem catastrophic forgetting.**
+
+Análise dos 4 critérios contra realidade pós-#20:
+
+| Critério | Maturidade | Conecta com C2/C3? | Benchmark | ROI estimado |
+|---|---|---|---|---|
+| **Continual learning** | Alta (EWC 2017, SI 2017, GEM 2017, A-GEM 2019, MAS 2018, lots of recent work) | Sim — C2 plasticity meta-learning + C3 sparsity podem balancear stability-plasticity | Split-Omniglot, Permuted MNIST, Split-CIFAR-10/100, CLEAR, COIL-100 | **Alto** |
+| One-shot inédito | Média | Já em Omniglot one-shot; pra ser "inédito" precisa cross-domain (Mini-ImageNet → CUB, generated novel chars) | Cross-domain few-shot benchmarks existem mas menos estabelecidos | Médio |
+| Eficiência radical | Baixa pra setup atual | Requer SNN simulation detalhada (Brian2/NEST) ou hardware neuromórfico (Loihi, $$) | Pouco padronizado; cada paper define próprio | Baixo (founder, sem capital pra hardware) |
+| Raciocínio temporal | Baixa | Conecta com SNN temporal coding mas distante de C2/C3 | Niche, poucos benchmarks padrão | Baixo |
+
+**Por que continual learning:**
+
+1. **Conexão direta com missão LLM-relativa.** LLMs não fazem continual learning — fine-tuning sequencial corrompe modelo (well-documented). Demonstrar plasticidade local meta-aprendida pra continual = ataque honesto a uma capacidade que LLM não tem.
+2. **Continuidade técnica com C2/C3.** Meta-aprender uma regra de plasticidade que **explicitamente** balanceia stability vs plasticity é extensão natural do C2. Sparsity adaptativa via k-WTA pode reduzir interferência (cf. Sparse Distributed Memory).
+3. **Métricas quantitativas claras.** Average Accuracy, Forgetting (BWT), Forward Transfer — bem definidas. Permite avaliar empiricamente sem ambiguidade.
+4. **Benchmark adequado pra side project 5h/semana.** Split-Omniglot (50 tarefas, 5 chars cada) cabe em GPU laptop, treina rápido, cycle de iteração curto.
+5. **Literatura aberta.** Continual learning é área quente; publicações em workshops de NeurIPS/ICML toda iteração. Não é dead-end nem over-saturated.
+
+**Por que NÃO escolher os outros agora:**
+- *One-shot inédito*: scope difícil, pode virar "rodar Mini-ImageNet" que é mais incremental que continual learning.
+- *Eficiência radical*: requer capital hardware ou aprendizado profundo de Brian2/NEST. ROI baixo pra founder.
+- *Raciocínio temporal*: especulativo, lit menos consolidada, conecta menos com o que já temos.
+
+### (c) Pergunta científica concreta e mensurável
+
+**Pergunta:**
+
+> "Pode uma rede com **plasticidade local meta-aprendida** (estilo C2) ou **encoder esparso ProtoNet com k-WTA** (estilo C3), **sem replay buffer**, atingir **average accuracy ≥75% em Split-Omniglot 50-tasks sequenciais com forgetting (BWT) ≤−10%**, batendo baseline **EWC** por ≥3 p.p. em average accuracy?"
+
+Quebrando os termos:
+- **Sem replay buffer:** restrição mecanística — replay é capability de hippocampus mas exige memória episódica explícita; pra esta primeira pergunta, queremos que a *plasticidade* sozinha + *arquitetura* faça o trabalho.
+- **Split-Omniglot 50-tasks:** 50 grupos de classes treinadas sequencialmente, 1 task por vez. Métrica padrão: avg accuracy nas 50 tasks no fim.
+- **BWT (Backward Transfer):** −10% significa "tasks antigas degradam só 10 p.p. quando 49 novas tasks são aprendidas em sequência". Liminar realista pós-EWC (typical EWC tem BWT de −15% a −25% em 50 tasks).
+- **Bater EWC por ≥3 p.p.:** EWC é baseline padrão da área. Se nova abordagem não bate por ≥3 p.p., é incremental sem novidade científica clara.
+
+### (d) Critério de fechamento
+
+| Resultado | Decisão |
+|---|---|
+| Avg acc ≥75% E BWT ≥−10% E bate EWC por ≥3 p.p. | **Sucesso → escrever paper** (workshop-quality em 8 sessões, conference em 12-16). |
+| Avg acc 65-75%, ou BWT entre −10% e −20%, ou bate EWC por <3 p.p. | **Resultado mediano → reavaliar:** vale escrever workshop paper ainda? Ou pivotar pra outro critério? Decisão administrativa em sessão dedicada. |
+| Avg acc <65% OU BWT <−20% OU pior que EWC | **Pivot:** plasticidade meta-aprendida não é o motor pra continual learning. Considerar replay-based methods, ou pivotar pra eficiência radical. |
+| Nada funciona após 20 sessões + ablações exaustivas | **Encerrar como exploração documentada.** O projeto vira documentação rigorosa do que NÃO funcionou. Aprendizado pessoal mantido. Rytora segue como prioridade comercial. |
+
+### (e) Orçamento de tempo aceito
+
+**Pré-condições assumidas (sujeitas a correção pelo Luis):**
+- Founder de Rytora; tempo principal alocado ao produto comercial.
+- Project Hebb é side project disciplinado (CONTEXT.md §2).
+
+**Proposta:**
+- **5-7 horas/semana**, distribuídas em 1-2 sessões de 60-90 min cada.
+- **Cycle de avaliação:** a cada 5 sessões, status check de 30-60 min — está progredindo? Critério de fechamento ainda alcançável?
+- **Marco 1 (continual learning):** 8 sessões de exploração + 2 de ablação = **10 sessões** = ~10-15 horas. Em cadência de 1-2 sessões/semana, **6-10 semanas**.
+- **Marco 2 (paper writing, se sucesso):** 5-8 sessões de escrita = ~10-15 horas adicionais. **4-8 semanas**.
+- **Total Marco 1 → workshop submission:** 4-6 meses.
+- **Decisão de continuar Projeto B além do marco 1:** após resultado, não antes. Se sucesso, considerar Marco 2 (atacar segundo critério). Se mediano/falha, encerrar ou pivotar.
+
+### (f) Status de C3
+
+**Decisão: PUBLICAR como workshop paper.**
+
+Justificativa:
+- C3 atinge as duas metas numéricas do CONTEXT.md §4 (≥90% 5w1s, ≥70% 20w1s).
+- Mecanismo defensável: "k-WTA esparso preserva ProtoNet metric learning com 75% sparsity at minimal cost (-1.45 p.p.)".
+- Validação random+kWTA confirma ganho vem do treino, não de artifact.
+- Workshop targets viáveis:
+  - **NeurIPS Workshop on Self-Supervised Learning / Bio-plausible Learning**
+  - **ICML Workshop on AI for Science / Bio-Inspired Computing**
+  - **CCN (Cognitive Computational Neuroscience)** — não é proceedings mas tem visibility no campo
+- Custo: 1-2 weekends de escrita (~8-12 horas). Experimentos já rodados, figs já geradas (pelo menos parcialmente, pode precisar refinar plots de sparsity × acc).
+
+**Honestidade do paper:**
+- **Não claim** "post-LLM"; claim sobre sparsity-tolerance em metric learning.
+- **Reconhecer** que usa backprop end-to-end (não plasticidade local).
+- **Posicionar** como evidência empírica de que esparsidade biológica não impede deep representation learning — ponte conceitual entre bio-inspired e mainstream metric learning.
+
+**Custo de NÃO publicar:** evidência empírica fica em weekly notes; não traz feedback externo, não consolida narrativa pra Project B; pode ser overshadowed por trabalho similar publicado por outros grupos.
+
+### Refino do CONTEXT.md (proposto)
+
+Após 20 sessões, as duas mudanças honestas no framing original:
+
+1. **"STDP biofísico fiel" → "plasticidade local diferenciável".**
+   Sessões #1-#13 mostraram que STDP aditivo + k-WTA + clamp tem barreira estrutural na parametrização padrão (Diehl & Cook 2015). Sessões #17-#19 mostraram que plasticidade meta-aprendida (estilo Najarro & Risi 2020) é mais próxima de "differentiable plasticity" que de "Hebb biofísico" — ablações refutaram que termo Hebbian puro carrega o sinal. **A missão pós-LLM não exige fidelidade biofísica; exige mecanismos com propriedades target (local, online, no backprop end-to-end).**
+
+2. **Adicionar nota sobre Caminho C (incrementalismo aceito como milestone).**
+   C3 (ProtoNet + k-WTA) é incrementalismo defensável: atinge metas numéricas mas não as restrições mecanísticas. **Próximo marco honesto: continual learning sem replay** — capacidade que LLMs não têm e que plasticidade local pode atacar diretamente.
+
+Atualização proposta abaixo (ver seção "Refino #21" em CONTEXT.md, criada nesta sessão).
+
+### Roadmap de 10 sessões pra Marco 1 (continual learning sem replay)
+
+| # | Tipo | Tempo | Objetivo concreto | Outputs |
+|---|---|---|---|---|
+| **22** | Admin | 60 min | Literatura: ler EWC (Kirkpatrick 2017), SI (Zenke 2017), GEM (Lopez-Paz 2017), A-GEM (Chaudhry 2019), Hadsell 2020 review. Escolher benchmark exato (Split-Omniglot 50-tasks vs alternativa). | Lista de 5 papers anotados em `experiment_02_continual/PAPERS.md`; benchmark escolhido + métricas definidas (avg acc, BWT) |
+| **23** | Code | 90 min | Implementar Split-Omniglot dataset wrapper + baseline naive sequential fine-tuning (encoder ProtoNet treinado em task 1, fine-tuned em task 2, etc., sem defesa). Medir forgetting. | `experiment_02_continual/baseline_naive.py`; baseline accumulating forgetting medido em ~30-50% típico |
+| **24** | Code | 90 min | Implementar EWC baseline (importance via Fisher) sobre encoder ProtoNet. | `baseline_ewc.py`; EWC vs naive em 10 tasks pra confirmar implementação correta antes de escalar |
+| **25** | Code | 90 min | Escalar EWC pra 50 tasks Split-Omniglot. Estabelecer número exato de baseline EWC (referência alta) e baseline naive (referência baixa) com IC95% bootstrap. | Tabela: avg acc + BWT pra naive vs EWC, 5 seeds |
+| **26** | Code/admin | 90 min | Proposta C2-continual: meta-aprender regra de plasticidade com 2 termos: (a) loss task atual, (b) penalidade de drift em representations das tasks anteriores via small probe set. Sketch arquitetura + pseudocódigo. | `proposta_c2_continual.md` + esqueleto de código (sem treinar) |
+| **27** | Code | 90 min | Implementar e treinar C2-continual em Split-Omniglot 10 tasks. Validar que loop fecha. | `c2_continual.py`; primeiro número (mesmo que ruim) |
+| **28** | Code | 90 min | Escalar pra 50 tasks. Comparar com EWC baseline. | Tabela: C2-continual vs EWC vs naive em 50 tasks |
+| **29** | Code | 90 min | Se C2-continual mostra promessa: ablações (variar sparsity, penalidade, regra simplificada). Se não mostra: testar C3-continual (k-WTA + small replay buffer). | Ablações registradas |
+| **30** | Admin | 60 min | **Status check.** Bate critério de sucesso (≥75% avg acc + BWT ≥−10% + bate EWC por ≥3 p.p.)? Se sim, abrir Marco 2 (paper writing). Se mediano, decidir pivot. | Decisão registrada em STRATEGY.md "Pós-Sessão #30" |
+| **31** | Code/admin | 90 min | Buffer/refinement com base na #30. | A definir conforme resultado |
+
+**Cancelable em qualquer ponto.** Se nas 5 primeiras sessões já fica claro que abordagem não funciona, encerra cedo e documenta como exploração.
+
+### Decisões pendentes do Luis
+
+Esta seção é minha recomendação. Decisões finais a tomar (idealmente em outra sessão administrativa de 30-60 min):
+
+1. **(a)** Híbrido confirmado, ou prefere reduzido puro (skip publicação C3)?
+2. **(b)** Continual learning confirmado, ou prefere atacar one-shot inédito (cross-domain) primeiro?
+3. **(e)** Cadência 1-2 sessões/semana realista, ou mais conservador (1 a cada 2 semanas)?
+4. **(f)** Workshop submission target específico — qual venue prioritário?
+5. **CONTEXT.md refino:** aceitar mudança "STDP biofísico → plasticidade local diferenciável", ou manter framing original e tratar C2 ablações como apêndice?
+
+Sem decisão dessas, pode-se rodar sessão #22 mesmo assim — leitura de literatura é independente do critério escolhido. Mas decidir antes de #23 (implementação) é necessário pra evitar refazer trabalho.

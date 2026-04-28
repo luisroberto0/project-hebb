@@ -13,9 +13,19 @@ Construir uma arquitetura de IA fundamentalmente nova, inspirada em neurociênci
 - **Eficiência radical** — rodar em CPU comum, não em clusters de GPU
 - **Raciocínio temporal** via timing de spikes (event-driven, esparso)
 
-Não é incrementalismo de LLM. É outra premissa: em vez de predição estatística de tokens em redes densas treinadas com backpropagation, usamos **spiking neural networks (SNNs)** com **plasticidade local sináptica (STDP)** — a regra de aprendizado real do cérebro.
+Não é incrementalismo de LLM. É outra premissa: em vez de predição estatística de tokens em redes densas treinadas com backpropagation, usamos **plasticidade local diferenciável** — regras de update que operam só com sinais locais (pré, pós, modulação) e podem rodar online, sem backprop end-to-end.
 
 > "Não tente construir a mente. Construa um neurônio que funcione diferente."
+
+### 1.1 Refino #21 (2026-04-28, pós-sessão #20)
+
+A missão original (acima) foi escrita antes das 20 primeiras sessões. Após elas, dois refinos honestos:
+
+**(1) "STDP biofísico fiel" → "plasticidade local diferenciável".**
+Sessões #1-#13 mostraram que STDP aditivo + k-WTA + clamp na parametrização Diehl & Cook (2015) tem barreira estrutural; melhor produzido foi 35.98% 5w1s com matched filter trivial. Sessões #17-#19 mostraram que plasticidade meta-aprendida (estilo Najarro & Risi 2020) é mais próxima de "differentiable plasticity" (Miconi 2018) que de Hebb biofísico — ablações refutaram que o termo Hebbian puro `A·pre·post` carrega o sinal. **A missão pós-LLM não exige fidelidade biofísica; exige mecanismos com propriedades target — locais, online, sem backprop global.** Isso amplia o espaço de exploração sem perder a tese central.
+
+**(2) Sucesso numérico ≠ sucesso mecanístico.**
+Sessão #20 (C3: ProtoNet + k-WTA esparso) atinge as duas metas numéricas do §4 (≥90% 5w1s, ≥70% 20w1s) MAS usa backprop end-to-end. **Atingiu metade da meta.** Documentar como milestone publicável (workshop) é honesto; tratar como objetivo cumprido seria desonesto. Próximo marco do projeto é **continual learning sem replay buffer** — capacidade que LLMs não têm, e que plasticidade local meta-aprendida pode atacar diretamente. Ver `STRATEGY.md` "Decisão Pós-Sessão #20".
 
 ---
 
