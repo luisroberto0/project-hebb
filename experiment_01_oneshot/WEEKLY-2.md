@@ -306,3 +306,59 @@ Importante: ainda longe das metas finais (≥90% 5w1s, ≥70% 20w1s do CONTEXT.m
 **Interpretação:** chance exata, predição constante (IC zero). **Conv é necessária** — não há bypass não-óbvio (ex: theta sozinha modulando algo, ou Poisson chegando direto no Hopfield). Resultado é exatamente a predição rigorosa, **valida o pipeline conceitualmente** (o caminho de informação realmente passa por conv→spikes→embedding).
 
 **Implicação:** theta sozinha (sem pesos não-zero) **não carrega sinal**. Logo, qualquer mecanismo que produz 35.98% precisa envolver os pesos da conv — mesmo saturados em 0.999 com σ=0.001.
+
+### A3 — Pesos random U(0,1) sem treino algum
+
+**Setup:** `tests/ablate_random_weights.py` cria `STDPHopfieldModel` novo, sobrescreve `layer1.conv.weight` e `layer2.conv.weight` com U(0,1) (range que cobre os 0.999 saturados do Iter 1). `theta=0` (modelo nunca foi treinado). Salva como `stdp_model_random_u01.pt`. `evaluate.py` 5w1s 1000 eps seed=42.
+
+**Predição:** se ≈36%, STDP não está aprendendo nada útil — toda a estrutura vem da arquitetura + Hopfield + Poisson. Se cai pra chance, treino contribui.
+
+**Resultado:**
+
+| Setup | Acurácia 5w1s | IC95% | z |
+|---|---|---|---|
+| Baseline Iter 1 (treinado) | 35.98% | [35.17, 36.79] | 1.3 |
+| **A3 — random U(0,1) sem treino** | **32.89%** | [32.19, 33.62] | 1.1 |
+| Random U(0, 0.3) sem treino (sessão #7) | 20.92% | (chance) | 0.2 |
+| Diferença Iter 1 − A3 | **3.09 p.p.** | IC95% não se sobrepõem | — |
+
+**Interpretação:** **descoberta importante e desconfortável.** Pesos random U(0,1) sem treino algum entregam 32.89% — quase tudo do "sinal" que Iter 1 produz. STDP+homeostasis treinada agrega só **~3 p.p.** acima desse baseline arquitetural.
+
+Comparando os 3 pontos:
+
+- U(0, 0.3) + theta=0: 20.92% (chance) — magnitude baixa, não satura, embedding ralo.
+- U(0, 1.0) + theta=0: 32.89% (z≈1.1) — magnitude alta cobrindo regime saturado.
+- Iter 1 saturado em 0.999 σ=0.001 + theta=20.6: 35.98% (z≈1.3).
+
+O salto principal é de magnitude (0.3→1.0): **+12 p.p. ganhos só por escalar o range dos pesos**, sem treino. STDP em cima desse regime ganha **+3 p.p.** adicionais.
+
+**Mecanismo provável (revisado):** o sinal não vem de "STDP aprendendo features de Omniglot" — vem de **conv com pesos saturados em magnitude alta produzir embeddings cuja taxa de spikes é discriminativa pela natureza esparsa do input** (caracteres Omniglot, traços brancos sobre fundo preto). Random pesos altos já fazem 90% do trabalho. STDP só ajusta a margem.
+
+### Critério de decisão (de STRATEGY.md "Pós-Sessão #9")
+
+> "Se algum teste de ablação atinge ~36% sem o componente ablacionado: descoberta é artefato. Reverte decisão `tau_theta=1e4`."
+
+**A3 atinge 32.89% sem treino algum.** Não é exatamente 36%, mas é tão próximo (3 p.p., IC95% [32.19, 33.62]) que a interpretação literal do critério é **ambígua**:
+
+- **Leitura estrita:** "atinge ~36%" → 32.89% não é 36% → critério não dispara → não reverte.
+- **Leitura do espírito:** "STDP não é o que carrega sinal" → A3 mostra que STDP carrega só 3 p.p. de 16 p.p. acima de chance → ~80% do sinal é arquitetural → critério dispara em espírito → reverte.
+
+**Esta decisão é do Luis, não minha.** O que está empiricamente claro:
+
+1. ✅ A1 não invalida (sinal sobrevive sem _proj).
+2. ✅ A2 confirma pipeline (conv é necessária, theta sozinha não basta).
+3. ⚠️ A3 mostra que STDP+homeostasis treinada **agrega ~3 p.p.** sobre baseline arquitetural com pesos random U(0,1). Maior parte do sinal de 35.98% vem de "pesos com magnitude alta" + Poisson + Hopfield, não de STDP.
+
+### Estado final pós-#10 (pendente decisão)
+
+- Código: inalterado (`tau_theta_ms=1e4` ainda em config.py).
+- Checkpoints novos:
+  - `stdp_model_zeroed.pt` (A2: conv=0, theta_iter1)
+  - `stdp_model_random_u01.pt` (A3: random U(0,1), theta=0)
+- Scripts: `tests/ablate_no_proj.py`, `tests/ablate_zero_conv.py`, `tests/ablate_random_weights.py`.
+- Sessões consecutivas sem sinal>chance: ainda 0 (sinal real, mas com mecanismo agora parcialmente entendido como **arquitetural+magnitude**, não **STDP**).
+
+**Hipóteses pra próxima sessão (caso decisão seja reverter):**
+- Ablação adicional A3b: random U(0,1) + theta_iter1 (preservada). Se for ≈36%, STDP+homeostasis **realmente** não contribui. Se for 33%, theta agrega algo sobre magnitude.
+- Investigar por que magnitude alta sozinha gera 33%: estrutura da conv saturada vs estrutura random — o que é discriminativo aqui?
+- Se decisão é reverter `tau_theta=1e4`: voltar pra `tau_theta=1e7` e atacar H_norm (próxima da ordem de STRATEGY.md).
