@@ -49,7 +49,11 @@ class STDPConfig:
     tau_pre_ms: float = 20.0
     tau_post_ms: float = 20.0
     A_pre: float = 0.01
-    A_post: float = -0.0105       # leve assimetria pra estabilidade
+    A_post: float = -0.0105       # paper original (Diehl & Cook 2015). Mantido como melhor
+                                  # estado conhecido: H_combo (sessão #5) testou A_post=-0.001
+                                  # com homeostasis, deu 13.76% (pior que homeostasis sozinha 16.39%
+                                  # e que baseline 17.76%). Quanto mais LTP relativo a LTD, mais
+                                  # colapso — homeostasis não compensa rich-get-richer.
     w_min: float = 0.0
     w_max: float = 1.0
     w_init_low: float = 0.0

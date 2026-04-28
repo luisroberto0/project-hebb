@@ -1,7 +1,7 @@
 # BLOCKED — Experimento 01 Semana 1
 
-**Data atualizada:** 2026-04-27 (sessão #4 — homeostasis implementada)
-**Status:** Bloqueado, com mais um mecanismo validado mas não suficiente
+**Data atualizada:** 2026-04-27 (sessão #5 — H_combo descartada)
+**Status:** Bloqueado, espaço de hipóteses HP-paramétricas exaurido
 **Melhor resultado:** 17.76% acurácia (config baseline) vs meta 85%
 
 ---
@@ -18,6 +18,7 @@
 | #3 | R=3 (A_post=-0.00333) | [94,2,0,0,0,0,0,3,1,0] | 11.36% | Mesmo padrão |
 | #4 | homeostasis theta_plus=0.05 | [100,0,...,0] | 9.80% | Theta saturou em 267 |
 | #4 | homeostasis theta_plus=0.0005 | [36,10,11,7,7,7,6,9,3,4] | 16.39% | Distribuição uniforme, acc igual |
+| #5 | H_combo (homeostasis + A_post=-0.001) | [87,1,1,2,1,0,0,6,2,0] | 13.76% | Pior que componentes isolados |
 
 ---
 
@@ -37,67 +38,65 @@
 
 ### ~~H_homeostasis (sozinha): Adaptive threshold resolve colapso e destrava acurácia~~
 
-**Status:** ✗ DESCARTADO PARCIALMENTE. Implementada (sessão #4), mecanicamente eficaz: theta com variância (mean=2.48, std=1.20), distribuição mais uniforme [36,10,11,7,7,7,6,9,3,4]. Mas acurácia continua ~17%. Razão: homeostasis força filtros a vencerem menos → LTP/LTD imbalance re-emerge por filtro.
+**Status:** ✗ DESCARTADO PARCIALMENTE. Mecanicamente eficaz (distribuição [36,10,11,7,7,7,6,9,3,4]) mas acurácia continua 16.39%.
+
+### ~~H_combo: Homeostasis + LTP/LTD calibrado simultaneamente~~
+
+**Status:** ✗ DESCARTADO empiricamente em sessão #5. Testado com theta_plus=0.0005 + A_post=-0.001 (R=10): acurácia 13.76%, PIOR que ambos componentes isolados. Padrão observado: **quanto mais LTP relativo a LTD, mais colapso** (não menos). Theta std subiu 4× (1.20 → 5.33), 16% dos filtros nunca dispararam, distribuição colapsou [87,1,...]. Homeostasis não compensa rich-get-richer no regime esparso PyTorch independente do tuning.
 
 ---
 
-## Hipóteses VIVAS
+## Hipóteses VIVAS (apenas 2 restantes)
 
-### H_combo: Homeostasis + LTP/LTD calibrado simultaneamente [MAIS PROVÁVEL agora]
+### H_paper_replicability: Reimplementar e validar contra Brian2 [MAIS HONESTA]
 
-**Evidência:**
-- Sessão #3 isolou que LTP/LTD desbalanceia por R=10 (com k=1 WTA, sem homeostasis)
-- Sessão #4 mostrou que homeostasis funciona mas re-expõe LTP/LTD imbalance individualmente
-- **Conjectura:** se aplicarmos AMBAS correções juntas (homeostasis ativa + A_post reduzido), os dois problemas se resolvem
-- Sessão #4 NÃO testou isso — só rodou homeostasis com hiperparâmetros default
+**Evidência crescente da relevância:**
+- 5 sessões de tuning hiperparamétrico (k-WTA, A_pre/A_post, theta_plus, combos) não destravaram nada acima de 17.76%
+- Espaço de hiperparâmetros parece exaurido — qualquer ajuste adicional é especulação cega
+- Diehl & Cook 2015 publicaram com 85%+; nossa implementação PyTorch tem alguma divergência arquitetural ou algorítmica não-óbvia
+- Brian2 é a referência canônica do paper, com ordem de operações e dinâmicas exatas
 
-**Experimento mínimo:**
-1. Manter homeostasis (theta_plus=0.0005, tau_theta=1e7)
-2. Rebalancear: A_pre=0.01, A_post=-0.001 (razão R=10, similar a iteração da sessão #3)
-3. Rodar baseline 100/5k. Critério: distribuição uniforme (já validado) + pesos crescentes + acurácia > 30%.
+**O que validar contra Brian2:**
+1. Roda Diehl & Cook 2015 puro em Brian2, atinge ~85% como o paper reporta
+2. Compara passo-a-passo com nossa implementação PyTorch
+3. Identifica divergência (provavelmente: refractory exata, ordem de update de traces vs spikes, ou algo na inhibitória)
+4. Porta correção de volta pra PyTorch
 
-**Custo:** ~5 min GPU. Trivial. Não foi feito por restrição da spec da sessão #4 (max 2 iter de homeostasis).
+**Custo:** ~1 semana (decisão arquitetural). Mas é o único caminho que elimina ambiguidade.
 
-### H_arch: Kernel=28 (FC equivalente) é caso degenerado pra k-WTA
-
-**Evidência:**
-- Output spatial (1,1) → k-WTA compete sobre única posição
-- Diehl & Cook usam FC genuíno; nossa "Conv-com-kernel-completo" pode distorcer dinâmica
-- Em conv real (kernel=5 + pool), k-WTA permite filtros diferentes por região
-
-**Experimento:** Pular Semana 1, ir direto pra Semana 2 (Omniglot conv real). Aceitar que sanity MNIST com kernel=28 é caso patológico.
-
-### H_paper_replicability: Reimplementar e validar contra Brian2
+### H_arch: Pular Semana 1 (kernel=28 é caso degenerado, ir direto pra Omniglot conv)
 
 **Evidência:**
-- Diehl & Cook fornecem código de referência em Brian2
-- Detalhes sutis podem ter sido perdidos no port pra PyTorch (refractory exata, ordem de operações)
+- Output spatial (1,1) torna k-WTA degenerado (compete sobre única posição)
+- Diehl & Cook usam FC genuíno; nosso "Conv-com-kernel-completo" pode introduzir distorções não-óbvias
+- Em conv real (kernel=5 + pool), k-WTA pelo menos permite filtros diferentes por região (mais perto da arquitetura prevista pra Omniglot)
 
-**Custo:** ~1 semana (decisão arquitetural não-trivial).
+**Risco:** se Omniglot conv também não funcionar, voltamos a estar bloqueados sem ter validado a Semana 1. Mas pelo menos estaríamos atacando o problema real do experimento (Omniglot, não MNIST sanity).
+
+**Custo:** zero (só usar `train.py` que já existe, com a infraestrutura validada).
 
 ---
 
 ## Decisão necessária (próxima sessão)
 
-**Opção A — H_combo (RECOMENDADA por menor custo):**
-~5 min. Combina dois ajustes já implementados (homeostasis + LTP/LTD ratio). Se resolver, fecha Semana 1. Se não, hipóteses A_combo descartada e descemos pra B/C.
-
-**Opção B — H_arch (pular pra Omniglot conv):**
-Aceitar que MNIST com kernel=28 é caso degenerado. Mover pra Semana 2 com nota no protocolo. Custo zero, mas pula validação.
-
 **Opção C — H_paper_replicability (Brian2):**
-~1 semana. Elimina ambiguidade mas custo alto.
+Caminho rigoroso. Custo alto (~1 semana). Elimina ambiguidade definitivamente.
+
+**Opção B — H_arch (pular pra Omniglot):**
+Custo zero. Aceita 17.76% MNIST como "caso patológico de kernel completo". Move pra arquitetura conv real prevista no PLAN.md.
 
 **Opção D — Reduzir escopo Semana 1:**
-Aceitar 17.76% como "sanity passou parcialmente" e mover. Equivalente a B na prática.
+Documenta MNIST com kernel=28 como anti-padrão e move. Equivalente a B na prática.
+
+**Opções A, H_combo, H_homeostasis, H_balance, H_dose, H_assignment:** todas descartadas empiricamente.
 
 ---
 
 ## Estado atual do código
 
 - `experiment_01_oneshot/model.py`: k=1 WTA + adaptive threshold homeostático ativo
-- `experiment_01_oneshot/config.py`: theta_plus=0.0005, tau_theta=1e7, A_pre=0.01, A_post=-0.0105
-- `experiment_01_oneshot/sanity_mnist.py`: print de diagnóstico do theta
+- `experiment_01_oneshot/config.py`: theta_plus=0.0005, tau_theta=1e7, **A_pre=0.01, A_post=-0.0105** (restaurado paper original como melhor estado conhecido)
+- `experiment_01_oneshot/sanity_mnist.py`: print de diagnóstico do theta + UTF-8 fix + distribuição classes
 - `experiment_01_oneshot/tests/test_assignment.py`: ✓ 3/3 passam
 - `experiment_01_oneshot/tests/test_spike_balance.py`: instrumentação de razão pré:pós
 

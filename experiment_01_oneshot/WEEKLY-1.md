@@ -430,6 +430,60 @@ Próximas opções em `BLOCKED.md` (atualizado).
 
 ---
 
+## Sessão de H_combo (2026-04-27 #5)
+
+Decisão humana: testar H_combo — homeostasis (theta_plus=0.0005) + LTP/LTD rebalanceado simultaneamente (A_post=-0.001, R=10). Hipótese: ao corrigir os dois failure modes juntos, acurácia destrava.
+
+### Configuração
+
+| Parâmetro | Valor | Origem |
+|-----------|-------|--------|
+| theta_plus | 0.0005 | sessão #4 (calibrado pro nosso regime) |
+| tau_theta_ms | 1e7 | paper |
+| A_pre | 0.01 | paper |
+| **A_post** | **-0.001** | **NOVO — R=10 conforme razão pré:pós medida** |
+| Filtros | 100 | baseline |
+| Imagens | 5000 | baseline |
+| Epochs | 1 | baseline |
+| Seed | 42 | reprodutibilidade |
+
+### Resultado
+
+| Métrica | Valor | Sinal |
+|---------|-------|-------|
+| Pesos (mean) | 0.182 → 0.264 ⬆ | LTD não domina mais ✓ |
+| Theta final | mean=2.48, std=**5.33**, max=14.38, **frac_zero=16%** | Homeostasis perdendo a corrida |
+| Distribuição labels | [87, 1, 1, 2, 1, 0, 0, 6, 2, 0] | Colapso reverso |
+| Acurácia | **13.76%** | < 25% threshold = falha |
+| Tempo | 65.5s | OK |
+
+### Análise do padrão sequencial
+
+| Config | Distribuição | Acurácia | Mecanismo |
+|--------|--------------|----------|-----------|
+| Baseline (sem homeostasis) | [24,23,11,9,3,5,7,13,1,4] | 17.76% | LTD-dominante por filtro, mas WTA distribui em primeira ordem |
+| Homeostasis + A_post=-0.0105 | [36,10,11,7,7,7,6,9,3,4] | 16.39% | Homeostasis força distribuição uniforme |
+| **Homeostasis + A_post=-0.001 (combo)** | **[87,1,...]** | **13.76%** | LTP-dominante vence homeostasis, rich-get-richer reaparece |
+
+**Padrão observado: quanto mais LTP relativo a LTD, MAIS colapso (não menos).** Homeostasis NÃO compensa rich-get-richer no regime esparso. Theta std cresceu 4× (1.20 → 5.33) com mesmo theta_plus — confirma que a homeostasis está perdendo a corrida pro ganho de peso quando LTP > LTD.
+
+### Decisão (conforme protocolo)
+
+Acurácia 13.76% < 25% = **H_combo descartada empiricamente**. Não fiz tuning porque a tendência é monotonicamente errada (mais LTP = mais colapso); ajuste fino só trocaria 13.76% por 11-15%, não chegaria a 40%.
+
+Restaurado config: A_post=-0.0105 (paper original, melhor estado consolidado).
+
+### Estado final da sessão #5
+
+- **Melhor consolidado continua:** 17.76% (sem alteração)
+- **Hipótese H_combo:** ✗ DESCARTADA empiricamente
+- **Hipóteses vivas restantes:** H_arch (kernel=28 caso patológico) e H_paper_replicability (Brian2)
+- **Implicação forte:** sistema PyTorch puro tem instabilidade arquitetural irrecuperável via hiperparâmetros num espaço amplo. Caminho honesto: validar contra Brian2 (Opção C) ou aceitar caso patológico e mover (Opção B).
+
+Detalhes em `BLOCKED.md` (atualizado).
+
+---
+
 ## Referências
 
 - Diehl, P. U., & Cook, M. (2015). *Unsupervised learning of digit recognition using spike-timing-dependent plasticity*. Frontiers in Computational Neuroscience.
