@@ -400,3 +400,74 @@ O salto principal é de magnitude (0.3→1.0): **+12 p.p. ganhos só por escalar
 - `PLAN.md`: decisão arquitetural sessão #9 substituída por nota de reversão + lições aprendidas.
 - `STRATEGY.md`: nova framing pra "Pós-Sessão #10" — pergunta é "como amplificar sinal arquitetural via STDP?", não "como STDP aprende features?".
 - Sessões consecutivas sem sinal>chance: **0** (sinal arquitetural existe, é real). O que mudou é entendimento — não há regressão de sinal.
+
+---
+
+## Sessão #11 — H_visualize: o que os pesos saturados estão capturando?
+
+**Pré-condição:** STRATEGY.md "Pós-Sessão #10" recomendou H_visualize antes de H_norm/H_mult. Se filtros saturados estão capturando algo Gabor-like apesar de σ=0.001, otimização vale. Se são ruído puro, abordagem precisa mudar mais radicalmente.
+
+**Setup:** análise sobre os 2 checkpoints existentes (sem treino novo): `stdp_model_iter1_seed42.pt` (35.98%) e `stdp_model_random_u01.pt` (32.89%). Script `tests/visualize_filters_session_11.py`. Saída em `figs/sessao_11/` (10 PNGs, 222 KB total).
+
+### Métricas quantitativas
+
+| Métrica | Iter 1 (saturado) | Random U(0,1) |
+|---|---|---|
+| Layer 1 — μ global | 0.9985 | 0.5018 |
+| Layer 1 — σ global | 0.0011 | 0.2971 |
+| Layer 1 — σ espacial por filtro (média) | 0.00080 | 0.29266 |
+| Layer 1 — cosine raw off-diag (mean) | **1.0000** (todos quase constantes) | 0.7277 |
+| Layer 1 — **cosine *centered* off-diag** (mean) | **0.2047** (estrutura compartilhada!) | −0.0561 (independentes) |
+| Layer 2 — cosine raw off-diag (mean) | 1.0000 | 0.7473 |
+| Layer 2 — **cosine *centered* off-diag** (mean) | **0.5461** (alta correlação espacial) | −0.0057 |
+
+A coluna **centered cosine** é o achado central: subtrai a média de cada filtro antes de calcular cosseno, isolando estrutura espacial fina (escala da σ=0.001) do offset constante. Iter 1 tem **estrutura espacial sistemática e compartilhada** entre filtros; random tem padrões independentes.
+
+### Interpretação visual (`figs/sessao_11/`)
+
+**`layer1_filters_delta.png` (Iter 1 menos média do random):**
+Os 8 filtros do Iter 1 mostram **praticamente o mesmo padrão espacial** — vermelho/positivo nas regiões superiores e centro-esquerda, azul/negativo concentrado no canto inferior direito. Padrão visualmente idêntico em todos os 8 filtros. Confirma o cosine centered alto: STDP convergiu todos os filtros pra uma única "direção espacial sistemática".
+
+**`layer1_filters_iter1_centered.png`:**
+Cada filtro zero-mean mostra padrões parecidos (com variação local). σ ~0.001 mas estruturado. Não é ruído gaussiano — é informação sub-pixel.
+
+**`layer1_filters_random_centered.png`:**
+Padrões espaciais visivelmente diferentes entre os 8 filtros — cada um capta uma direção arbitrária do espaço de pesos.
+
+**`layer2_filters_iter1.png` (16×8 grid):**
+Saturação visível (predominância de amarelo = alto), mas **canais de entrada `in1` e `in2`** mostram estrutura claramente diferente — zonas mais escuras concentradas no canto superior esquerdo, replicadas nos 16 filtros de saída. Outros canais (`in0`, `in3`-`in7`) saturam mais homogeneamente. Hipótese mecânica: filtros 1 e 2 da Layer 1 (out1, out2) eram os que mais disparavam, então as conexões da Layer 2 que recebiam input deles receberam mais updates LTD → menos saturação local, mais estrutura.
+
+**`cosine_matrix_layer1.png` e `_layer2.png`:**
+Iter 1 cosine raw é uniformemente vermelho (~1.0 em tudo) porque filtros são quase constantes. Random mostra diagonal forte + off-diagonal moderada (~0.7-0.8 por causa de média positiva U(0,1)).
+
+### O que o STDP está capturando? Hipótese consolidada
+
+**Não é Gabor / orientação / frequência espacial.** É **matched filter pra estatística do Omniglot:**
+
+- Caracteres do Omniglot têm distribuição não-uniforme de "tinta" no bounding box (após inversão pra fundo preto + traços brancos): centro e superior tendem a ter mais ativação que canto inferior direito.
+- STDP no regime saturado converge **todos os filtros** pra esse padrão estatístico médio (não pra padrões diversos).
+- Resultado: efetivamente **1 dimensão útil** (replicada 8×16 vezes), capturando "quão bem a imagem casa com o protótipo médio do Omniglot".
+- Random U(0,1) tem **8 dimensões independentes** com padrões arbitrários — cada uma é uma projeção aleatória, mais ruidosa individualmente mas mais diverso.
+
+**Por que o matched filter (Iter 1) bate random em 3 p.p.?** Possivelmente porque a 1 dimensão útil tem signal-to-noise melhor pra discriminar Omniglot grosseiramente. Random tem mais dimensões mas cada uma é mais ruidosa — o ganho de diversidade não compensa a perda de "matched-ness".
+
+### Implicação pra hipóteses H_norm / H_mult
+
+**Trade-off não-óbvio revelado:**
+
+- H_norm/H_mult vão **impedir saturação** → preservar variância **dentro de cada filtro** → MAS perder o "matched filter" trivial (porque sem saturação, STDP não convergiria todos pra mesmo lugar — ou convergiria, mas com magnitude menor).
+- O que se quer: **filtros distintos (cosine centered baixo) E informativos individualmente** (não matched filter trivial, não ruído puro).
+- Diehl & Cook resolve isso com **homeostasis distribuindo spike rate entre filtros** — testamos, não funciona no nosso regime denso.
+
+**Conclusão honesta:** o gargalo arquitetural é mais profundo que tau_theta ou normalização. STDP no regime saturado **descobre 1 protótipo médio**; STDP sem saturação **não converge** (sessões #2-#5 documentaram). Pra ter diversidade real, precisa **mecanismo que force filtros a competir por nichos diferentes** — não k-WTA por posição (que já temos), não homeostasis Diehl & Cook (testado), mas algo como inibição lateral entre filtros independente de posição, ou competição via normalização de Σ por filtro.
+
+### Estado final pós-#11
+
+- Nenhuma mudança em código de produção (`config.py`, `model.py` inalterados).
+- Adicionado: `experiment_01_oneshot/tests/visualize_filters_session_11.py`, `figs/sessao_11/` (10 PNGs).
+- Achado central: filtros saturados não são ruído. Capturam estatística média do dataset, mas não oferecem diversidade de features.
+- Hipóteses futuras refinadas:
+  - **H_norm**: ainda viável, mas com expectativa baixa — pode preservar variância sem destravar diversidade. Custo: ~30 min.
+  - **H_mult**: idem, soft-bound natural.
+  - **H_filter_diversity** (nova, derivada do achado): mecanismo explícito de competição entre filtros independente de posição (ex: penalidade no loss STDP por similaridade entre filtros, ou normalização Σw por filtro como em H_norm mas combinada com ortogonalização periódica). Custo: ~1-2h, mais ambicioso.
+- Sessões consecutivas sem sinal>chance: **0** (não rodou treino novo, sinal arquitetural ainda em 35.98%).
