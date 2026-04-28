@@ -741,3 +741,87 @@ Em **uma única sessão**, com features triviais e sem nenhum mecanismo bio-insp
 | **C3 — ProtoNet+features esparsas** (k-WTA na entrada do encoder, não em camadas treinadas) | ~2h | ProtoNet treinado dá 85.88%. Adicionar k-WTA esparso pode preservar capacidade com mecanismo neuro-inspirado. |
 | **C1d — Hopfield + autoencoder simples** | ~1h | Encoder 784→32 treinado *uma vez* (autoencoder reconstrutivo simples) pode bater PCA-32 sem ser "feature learning bio". Compromisso entre C1 e C2. |
 | **Caminho A revisitado: H_no_clamp** | ~30min | Diagnóstico, não solução. Se H_no_clamp + STDP bate 56% (=C1b), dá ~30 p.p. sobre Iter 1 → confirma que clamp era único gargalo do A. |
+
+---
+
+## Sessão #16 — C1d: Hopfield + autoencoder MLP simples
+
+**Pergunta:** features APRENDIDAS via autoencoder não-linear simples (objetivo de reconstrução MSE, sem meta-objetivo) podem bater PCA-32 estatístico em features-pra-Hopfield?
+
+**Setup:** novo script `experiment_01_oneshot/c1d_autoencoder_baseline.py`. Reusa `HopfieldMemory` e `EpisodeSampler`. Sem alterações em `model.py` ou `config.py`.
+
+**Arquitetura AE (fixa, não modificada mid-sessão):**
+- Encoder: 784 → 128 → 32 (ReLU)
+- Decoder: 32 → 128 → 784 (sigmoid no fim)
+- Loss: MSE pixel-wise
+- Optim: Adam lr=1e-3, batch=64
+- Data: 5000 imgs do Omniglot background set, 30 epochs
+
+**Eval:** encoder(image) → L2-norm → 32D → HopfieldMemory (β=8, cosine).
+
+### Resultados — bottleneck 32D (default)
+
+| Encoder | 5w1s | IC95% | 20w1s | cos cent | Treino |
+|---|---|---|---|---|---|
+| C1d AE-32 | 50.57% | [49.76, 51.37] | 30.59% | -0.2438 | MSE final 0.01345, 30 epochs, 146.4s |
+
+Resultado virtualmente idêntico a C1a (Pixels+L2, 50.17%) — AE-32 com reconstrução **não agrega nada sobre features de pixels brutos** (dentro do IC).
+
+**Interpretação:** o objetivo de reconstrução força o latent space a preservar variância pixel-wise (igual PCA), mas sem garantia matemática de ortogonalidade ou preservação de distância cosseno. AE pode encontrar direções não-lineares que reconstroem bem mas misturam classes próximas no latent space. PCA tem garantia explícita; AE não.
+
+### Variação obrigatória pelo critério: bottleneck 64D
+
+Pelo protocolo do user: "se <54%, considera bottleneck 64D antes de descartar".
+
+| Encoder | 5w1s | IC95% | 20w1s | cos cent | Treino |
+|---|---|---|---|---|---|
+| C1d AE-64 | 52.64% | [51.77, 53.47] | 32.54% | -0.2463 | MSE final 0.01107, 30 epochs |
+
+Sobe ~2 p.p. sobre AE-32 (latent dobrado preserva mais informação) mas **ainda 3.6 p.p. abaixo de C1b PCA-32 (56.28%)** e ainda < 54%.
+
+### Tabela final consolidada (família C1)
+
+| Encoder | latent | 5w1s | 20w1s | Treino |
+|---|---|---|---|---|
+| C1a — Pixels+L2 (#15) | 784 | 50.17% | 30.30% | nenhum |
+| **C1b — PCA-32 (#15)** | 32 | **56.28%** | **35.37%** | 1 vez no background |
+| C1c — RandomProj-32 (#15) | 32 | 41.23% | 20.05% | nenhum |
+| C1d — AE-32 (#16) | 32 | 50.57% | 30.59% | 30 epochs MSE |
+| C1d — AE-64 (#16) | 64 | 52.64% | 32.54% | 30 epochs MSE |
+
+### Critério literal pelo protocolo da sessão
+
+| Critério | Threshold | C1d AE-32 | C1d AE-64 |
+|---|---|---|---|
+| Forte | ≥65% | NÃO | NÃO |
+| Médio | 58-65% | NÃO | NÃO |
+| Empate | 54-58% | NÃO | NÃO |
+| **Pior — descartar** | <54% | **SIM** (50.57%) | **SIM** (52.64%) |
+
+**C1d descartado.** Bottleneck dobrado não recupera o gap. Próxima sessão: decisão consciente entre C2 e C3.
+
+### Insight central pós-#16
+
+**PCA-32 é a fronteira realista de "features sem meta-objetivo".**
+
+- Linear estatístico (PCA): 56.28% — preserva variância em direções ortogonais.
+- Linear random (RandomProj): 41.23% — não preserva o que importa, perde 15 p.p.
+- Não-linear reconstrução (AE-32): 50.57% — quase igual a pixels brutos.
+- Não-linear reconstrução com mais capacidade (AE-64): 52.64% — sobe mas não bate PCA.
+
+**Por que reconstrução não bate variância?** Reconstrução pixel-wise força o encoder a preservar **detalhes irrelevantes** (ruído de digitalização, variação de espessura de traço) tanto quanto a estrutura discriminativa. PCA-32 descarta naturalmente direções de baixa variância (que são mais ruído que sinal) ao escolher os top-32 componentes principais. AE com 32D tenta preservar TUDO em 32 dimensões → sobrecarga representacional.
+
+**Implicação direta:** pra ultrapassar 56-58%, próximas hipóteses precisam **meta-objetivo de discriminação** (não só reconstrução):
+
+- C2: meta-learning bio (objetivo de classificação one-shot via plasticidade local)
+- C3: ProtoNet features esparsas (objetivo de classificação via metric learning)
+
+Ambos têm gradiente que diz "esses dois embeddings devem estar separados", o que reconstrução não diz.
+
+### Estado final pós-#16
+
+- **Código novo:** `experiment_01_oneshot/c1d_autoencoder_baseline.py`.
+- `model.py`, `config.py` inalterados (conforme restrição).
+- Sem checkpoints persistidos (modelo AE descartado pós-eval, treino é determinístico via seed).
+- Sessões consecutivas sem sinal>chance: 0 (mantido — C1d entregou 50%+ com z 2.4-4.7).
+- **Caminho C confirmado mas com fronteira clara:** PCA-32 é o teto sem meta-objetivo. Próxima sessão escolhe entre C2 (bio-inspirado, mais ambicioso) e C3 (ProtoNet+esparso, mais provável de fechar gap até 70%+).
