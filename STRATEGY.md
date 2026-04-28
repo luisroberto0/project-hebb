@@ -114,3 +114,100 @@ Custo: ~10 min. Teria evitado a decisão prematura da sessão #9.
 ### Critério de revisão
 
 Mantém: 3 sessões consecutivas sem sinal>chance dispara revisão de STRATEGY.md. Pós-#10, o contador continua em 0 — sinal arquitetural existe e é reproducível.
+
+---
+
+## Pós-Sessão #13 (2026-04-28): Reavaliação após 13 sessões
+
+### Status do framing "Pós-#10"
+
+A framing pós-#10 propunha: "existe sinal arquitetural baseline (~33%); como amplificar isso de 33% pra 70%+ via STDP?". Recomendou H_visualize → H_norm → H_norm_sweep como cadência barata.
+
+**Após executar essa cadência (#11, #12, #13), a framing precisa ser revisitada.**
+
+O que aprendemos:
+
+- **#11 (H_visualize):** filtros saturados são "matched filter trivial" pra estatística do Omniglot, não Gabor — STDP no regime saturado **converge todos os filtros pra 1 protótipo médio replicado**. Não é seletividade de features; é compressão de dataset.
+- **#12 (H_norm 0.3):** normalização destrava diversidade dramaticamente (centered cosine L2: 0.55→0.04) **mas magnitude baixa mata atividade pós-LIF** → chance.
+- **#13 (H_norm sweep 0.6, 0.8 + controles random clampados):** magnitudes maiores também dão chance. Diagnóstico via controles: **distribuições com massa em `w_max=1.0` (clamp) matam o sinal arquitetural**, independente de mean ou treino.
+
+**Padrão consolidado das 3 sessões:** sinal arquitetural depende de (a) saturação total uniforme [Iter 1] **OU** (b) distribuição rica sem mass em w_max [random U(0,1)]. **Sweet spot intermediário NÃO existe** com a parametrização padrão (`w_min=0`, `w_max=1.0`, k-WTA por posição).
+
+A framing "amplificar sinal arquitetural via STDP" assumia continuidade entre os dois polos. Não há. STDP padrão **não tem como produzir um regime intermediário discriminativo** dentro dessa parametrização — qualquer configuração que evita ambos os polos cai pra chance.
+
+### Realidade observada após 13 sessões
+
+**Pergunta original do projeto** (CONTEXT.md §4): "como SNN+STDP+Hopfield atinge ≥90% em Omniglot 5w1s sem backprop end-to-end?"
+
+**Realidade observada:**
+- Sinal acima de chance: **35.98% (z≈1.3)** — o melhor produzido em 13 sessões.
+- Decomposição: ~32 p.p. arquitetural (random U(0,1)) + ~3 p.p. matched filter trivial via STDP saturado + ~0 p.p. de tudo o mais (theta, calibração de tau, normalização de Σw).
+- Gap até a meta: **54 p.p.** acima do que a abordagem atual produz (35.98% → 90%).
+- Custo de cada experimento: ~60-90 min de sessão; 13 sessões já gastas.
+- Padrão das últimas 3 sessões: hipóteses razoáveis a priori → resultado em chance ou em magnitude do sinal arquitetural.
+
+**Diagnóstico estrutural:** a combinação STDP aditivo + k-WTA por posição + clamp hard em [w_min, w_max] tem **barreira estrutural identificada**. Hiperparâmetros dentro dessa parametrização não atravessam a barreira — sessões #4, #5, #8, #9, #12, #13 confirmam.
+
+### Três caminhos honestos (pendente decisão na próxima sessão)
+
+#### A) Mais 1-2 sessões de tuning (H_no_clamp, H_mult)
+
+**O que seria:**
+- H_no_clamp: aumentar `w_max` pra ~5.0 e reativar H_norm. Se sinal voltar com mag média sem mass em w_max, confirma diagnóstico do clamp como gargalo único (não estrutural).
+- H_mult: STDP multiplicativo (Δw ∝ (w_max − w)). Soft bound natural sem clamp hard.
+
+**Pros:**
+- Custo barato (~30-60 min cada), código de normalização já está em `model.py` com flag.
+- H_no_clamp testa diretamente a hipótese mecanística de #13 (clamp em w_max é o problema).
+- Se H_no_clamp destravar sinal intermediário (ex 45-55%), confirma que a barreira é o clamp, não estrutural.
+
+**Cons:**
+- Padrão das últimas 3 sessões (#11, #12, #13) sugere que mais tuning dentro da mesma parametrização tem ROI baixo. Cada hipótese parecia óbvia a priori e não entregou.
+- Mesmo se H_no_clamp/H_mult destravarem +10-15 p.p., gap até 90% (atual 35.98% → meta 90%) ainda exige ganhos de 40+ p.p. — improvável dentro do mesmo regime.
+- Risco de sunk cost: justificar continuidade só porque "já investimos tanto" em vez de avaliar honestamente o que cada nova sessão acrescenta.
+
+#### B) Mudança arquitetural ambiciosa (H_filter_diversity ou Brian2)
+
+**O que seria:**
+- H_filter_diversity: penalidade explícita de similaridade entre filtros no objetivo STDP, ou ortogonalização periódica. Força diversidade independente de magnitude/clamp.
+- Brian2 port: reproduzir Diehl & Cook 2015 fielmente em Brian2 (CPU-only, ~1 semana). Resolve "nossa implementação PyTorch tem bug sutil?" e dá baseline de paper validado.
+
+**Pros:**
+- Atacam causa raiz (convergência pra mesmo protótipo) em vez de tunar margens.
+- Brian2 alinha com Diehl & Cook §2.3 fielmente — inibição via membrana, não weights — o que sessões #4-#5 isolaram como diferencial não replicado.
+- Se H_filter_diversity funcionar, é resultado positivo defensável academicamente (mecanismo novo, não só hyperparam tuning).
+
+**Cons:**
+- Custo alto. H_filter_diversity é ~1-2h de implementação + experimentos; Brian2 é ~1 semana real.
+- Risco de implementação: STDP+homeostasis em Brian2 é não-trivial; mais 1 semana sem garantia de que Brian2 vai entregar 90%.
+- Sucesso parcial provável: ganhos +10-20 p.p. mas não os 54 p.p. necessários pra meta.
+
+#### C) Pivot pra abordagem adjacente
+
+**O que seria:**
+- Hopfield puro com features pré-extraídas: usar embeddings de modelo simples (ex: PCA de imagens, pixel-kNN sobre patches) + Hopfield Moderno. Aceita que STDP pra feature learning não está funcionando.
+- Meta-learning bio-inspirado: MAML-like com regras de plasticidade local em vez de gradient descent (literatura mais recente: Najarro 2020, Pedersen 2023).
+- Prototypical Networks com features esparsas: replica ProtoNet (que já dá 85.88% em Omniglot baseline) mas com camada esparsa neuro-inspirada.
+
+**Pros:**
+- Aceita honestamente que reproduzir Diehl & Cook 2015 fielmente em PyTorch puro está custando ROI baixo.
+- Mantém a missão (CONTEXT.md §1: capacidades que LLMs não têm — one-shot, continual learning) sem prender em STDP específico.
+- Hopfield puro é fundamentalmente bem caracterizado (Ramsauer 2020) — provavelmente atinge 70%+ rapidamente com features adequadas.
+- Permite avaliar honestamente: o problema é STDP especificamente, ou é a combinação STDP+arquitetura?
+
+**Cons:**
+- Pivot perde a tese central original ("STDP é a regra real do cérebro, vamos provar que funciona em ML").
+- Curva de aprendizado nova pra abordagem adjacente.
+- Risco de virar incrementalismo de baselines existentes (ProtoNet+ruído ≠ contribuição clara).
+- Sem garantia que adjacente também não trava em barreira similar.
+
+### Nova framing pra próxima fase
+
+> **STDP+k-WTA+threshold em PyTorch puro tem barreira estrutural identificada após 13 sessões.** O melhor que essa parametrização produz é ~36% (5w1s), dominantemente arquitetural, com STDP contribuindo ~3 p.p. via matched filter trivial. Sweet spot intermediário entre saturação total e distribuição rica sem clamp não existe na parametrização atual.
+>
+> Decisão estratégica entre A (mais tuning), B (mudança arquitetural ambiciosa) ou C (pivot pra abordagem adjacente) **fica pra próxima sessão com cabeça fresca**, depois de revisar este documento.
+
+### Critério de revisão atualizado
+
+- Sessões consecutivas sem sinal>chance: **2** (#12, #13). #14 é administrativa (não conta). Se a decisão da próxima sessão for caminho A e a sessão seguinte continuar em chance, contador chega a 3 → revisão obrigatória de STRATEGY.md (já estamos fazendo agora preventivamente).
+- Recomendação implícita ao Luis: independente do caminho A/B/C escolhido, **definir antes do experimento qual sinal seria suficiente pra continuar** vs. qual sinal motivaria pivot. Critérios numéricos a priori, igual sessões #9/#10/#12/#13.
