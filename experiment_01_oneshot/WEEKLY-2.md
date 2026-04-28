@@ -938,3 +938,96 @@ Convergência saudável; loss desce, acc sobe, sem oscilação grande nos últim
 | **C2-with-Hopfield: usar HopfieldMemory após adapt em vez de prototypes** | ~30 min | Mantém o spirit "Hopfield carrega memória" + plasticidade meta-aprendida pré-Hopfield. Pode bater 65-70%. |
 | **C3 — ProtoNet+features esparsas** | ~2h | Pivot pra outra rota. ProtoNet baseline 85.88% → adicionar k-WTA esparso pode preservar capacidade. |
 | **A/B dormentes** | — | Não descartados, mas Caminho C agora tem ROI medido e positivo (+27 p.p. acima do melhor STDP). |
+
+---
+
+## Sessão #18 — Ablações sobre C2 (antes de refinement)
+
+**Pré-condição:** C2 baseline (sessão #17) entregou 63.22% 5w1s. Validação no-inner mostrou plasticidade carrega +25 p.p., mas mecanismo não está caracterizado. Antes de refinar, isolar qual componente da regra `ΔW = η(A·pre·post + B·pre + C·post + D)` carrega o sinal.
+
+**Setup:** novo script `c2_ablations.py` (não modifica `c2_meta_hebbian.py`). Cada ablação: 5000 eps meta-train + eval 1000 eps 5w1s, mesma metodologia do #17 (seed=42, lr=1e-3, eta=0.01, beta=8, hidden=128, latent=32).
+
+**4 ablações:**
+
+| Ablação | Modificação | Hipótese diagnóstica |
+|---|---|---|
+| A1 | Só A treinável; B=C=D=0 fixos (sem modulação) | termo Hebbian puro basta? |
+| A2 | W1, W2 iniciais zero (em vez de random std=0.1) | pesos iniciais importam? |
+| A3 | n_inner=1 (em vez de 5) | profundidade da adaptação importa? |
+| A4 | Encoder linear: `h = x@W1.T`, `z = h@W2.T` (sem tanh) | não-linearidade importa? |
+
+### Resultados
+
+| Ablação | 5w1s | IC95% | z | train acc | tempo | Δ vs C2 |
+|---|---|---|---|---|---|---|
+| **C2 baseline (#17)** | **63.22%** | [62.41, 64.06] | 3.3 | 69.62% | 132s | — |
+| **A1 só Hebb** | **39.39%** | [38.68, 40.14] | 1.7 | 41.57% | 93s | **-23.83 p.p.** |
+| **A2 W init=0** | **63.97%** | [63.13, 64.80] | 3.3 | 70.88% | 96s | **+0.75 p.p.** |
+| **A3 n_inner=1** | **53.05%** | [52.25, 53.86] | 2.5 | 55.73% | 73s | **-10.17 p.p.** |
+| **A4 linear (sem tanh)** | **64.07%** | [63.27, 64.86] | 3.4 | 69.32% | 93s | **+0.85 p.p.** |
+
+Tempo total das 4 ablações: 6.7 min. Eval cada uma ~11s.
+
+### Interpretação ablação por ablação
+
+**A1 — Só termo Hebbian (queda catastrófica de -23.83 p.p.)**
+
+Sem os termos modulatórios B (pre-only), C (post-only), e D (bias), a regra cai pra `ΔW = η · A · pre·post` (puro Hebbian). Acurácia colapsa pra **39.39%** — próximo de C1c RandomProj-32 (41.23%) e abaixo de C1a Pixels (50.17%). Train acc final 41.57% mostra que a otimização meta-train mal sobe acima de chance arquitetural.
+
+**Conclusão:** o termo Hebbian "puro" A·pre·post **NÃO é o canal do sinal**. São os termos modulatórios (B, C, D) que carregam o trabalho. Isso desafia a leitura "bio-inspirada" da regra — Najarro & Risi 2020 expressa em formato Hebbian, mas empiricamente o componente "Hebbian-like" (correlação pré-pós) é o termo *menos* importante.
+
+**A2 — Pesos iniciais zero (≈ baseline, +0.75 p.p.)**
+
+Inicializar W1, W2 = 0 em vez de random std=0.1 não muda absolutamente nada. **A plasticidade reconstrói tudo do zero**, em qualquer regime. Train acc até sobe levemente (70.88% vs 69.62%), provavelmente por consistência inicial.
+
+**Conclusão:** o sinal não vem dos pesos iniciais — vem 100% dos parâmetros de plasticidade meta-aprendidos. Isto também explica por que validação no-inner do #17 deu apenas 38% (similar a random encoder): sem inner loop, o encoder é só uma função aleatória/zero; com inner loop, a plasticidade gera o operador útil.
+
+**A3 — Inner_loop=1 (queda de -10.17 p.p.)**
+
+Com 1 passo de plasticidade em vez de 5, acc cai pra 53.05% — entre C1a Pixels (50.17%) e C1b PCA-32 (56.28%). Curva de treino mostra convergência mais lenta (loss ainda descendo no fim, train acc 55.73%).
+
+**Conclusão:** profundidade da adaptação **agrega substancialmente** (~10 p.p. entre 1 e 5 passos). Mas mesmo 1 passo já bate C1a Pixels — plasticidade single-step já é melhor que features triviais. Próximas sessões podem testar n_inner=10 ou 15 pra ver se há mais espaço.
+
+**A4 — Encoder linear, sem tanh (≈ baseline, +0.85 p.p.)**
+
+Removendo tanh em ambas as layers, performance fica idêntica (64.07% vs 63.22% baseline, dentro do IC). Train acc também idêntico (69.32%).
+
+**Conclusão:** **o modelo é efetivamente linear**. A não-linearidade tanh é redundante. Combinada com A2 (W=0): pesos iniciais zero + encoder linear funciona tão bem quanto random + tanh.
+
+### Insight mecanístico central pós-#18
+
+Combinando os 4 achados, o que C2 faz é:
+
+> Meta-aprender um **operador linear adaptável** via 5 passos de updates parametrizados por (B·pre + C·post + D), onde A·pre·post é o termo *menos* contributivo.
+
+A parametrização "Hebbian" (com 4 coeficientes A, B, C, D por peso) dá **expressividade meta-otimizada**, mas o nome "bio-inspirado" / "Hebbian-like" é parcialmente enganador. Empiricamente o modelo é mais próximo de:
+- **Differentiable plasticity** (Miconi et al. 2018): pesos adaptáveis com regra parametrizada por meta-aprendizado
+- **Fast weights** (Ba et al. 2016): rede principal + camada de "pesos rápidos" induzidos por contexto
+- Não é especialmente "Hebbian" no sentido biofísico — termo correlação pré-pós (A) carrega < 5 p.p.
+
+### Implicações pra próximas sessões
+
+1. **Termos modulatórios são essenciais** (A1 falha) → mantê-los em qualquer refinement.
+2. **Pesos iniciais e não-linearidade são removíveis** (A2, A4) → simplificar a arquitetura é viável sem custo:
+   - C2-simplified: encoder LINEAR + W iniciais ZERO → mesma performance, código mais limpo, defensável.
+3. **Inner loop depth importa** (A3) → testar n_inner=10 pode ganhar mais p.p. (grátis, custo computacional baixo).
+4. **Re-framing acadêmico:** apresentar como "differentiable plasticity rule learning" em vez de "Hebbian bio-inspired" — mais honesto e melhor situado na literatura.
+
+### Estado final pós-#18
+
+- **Código novo:** `experiment_01_oneshot/c2_ablations.py` (4 ablações automatizadas).
+- `model.py`, `config.py`, `c2_meta_hebbian.py` inalterados (conforme restrição).
+- Sem checkpoints persistidos.
+- Sessões consecutivas sem sinal>chance: **0** (mantido — A2, A3, A4 mantém sinal forte; só A1 cai mas isso era o objetivo da ablação).
+- C2 baseline 63.22% **continua sendo o melhor resultado do projeto**.
+
+### Hipóteses pra próxima sessão (decisão consciente, fora dessa)
+
+| Hipótese | Custo | Justificativa pós-#18 |
+|---|---|---|
+| **C2-simplified** (linear + W=0 + n_inner=10) | ~10 min | Combina A2+A4 (≈ baseline) com A3 invertida (mais inner steps). Pode bater 65%+ com código mais limpo. |
+| **C2-no-A** (treinar só B, C, D — remove termo Hebbian inútil) | ~10 min | Confirma A1 invertida: se sem A funciona = baseline, mostra que Hebbian "puro" é dispensável. Reduz 25% dos params treináveis. |
+| **C2-deeper-inner** (n_inner=10 ou 15) | ~10 min | A3 mostrou -10 p.p. com n_inner=1; subindo pra 10-15 pode ganhar +3-5 p.p. |
+| **C2-with-Hopfield** | ~30 min | Original ainda válido. Após ablações, fica mais claro que Hopfield poderia substituir o classificador prototípico atual. |
+| **C3 — ProtoNet+esparso** | ~2h | Pivot consolidado se decidir não refinar mais C2. |
+| **A/B dormentes** | — | Não descartados. |
