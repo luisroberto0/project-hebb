@@ -114,6 +114,13 @@ def assign_labels(net: SanityNet, loader: DataLoader, device: torch.device, n_cl
     Pra cada filtro, mede acumulação de spikes por classe sobre conjunto
     rotulado. Filtro recebe label da classe que mais o ativou em média.
     Retorna tensor (n_filters,) com label int de cada filtro.
+
+    Algoritmo (Diehl & Cook §2.5):
+      response[f, c] = Σ_{i∈class_c} spike_count[i, f]   # acumula sobre imgs
+      avg[f, c]      = response[f, c] / N_c              # normaliza por #imgs/classe
+      label[f]       = argmax_c avg[f, c]                # filtro pega classe top
+    Normalização por N_c importa quando subset é desbalanceado; com balanceado
+    é equivalente a usar response cru. Sem viés algorítmico inerente.
     """
     net.eval()
     response = torch.zeros(net.n_filters, n_classes, device=device)
@@ -136,13 +143,24 @@ def assign_labels(net: SanityNet, loader: DataLoader, device: torch.device, n_cl
 # ---------------------------------------------------------------------------
 def evaluate(net: SanityNet, loader: DataLoader, filter_labels: torch.Tensor,
              device: torch.device, n_classes: int = 10) -> float:
+    """
+    Avaliação por voto majoritário ponderado.
+
+    Algoritmo:
+      pra cada imagem i e classe c:
+        score[i, c] = (Σ_{f: label[f]=c} spike_count[i, f]) / |{f: label[f]=c}|
+      pred[i] = argmax_c score[i, c]
+    Divisão por #filtros do grupo evita que classes com muitos filtros
+    dominem. Classes sem nenhum filtro atribuído ficam com score=0 → nunca
+    são preditas (potencial silent-class bug se distribuição for muito
+    desbalanceada — mitigado por k-WTA durante treino).
+    """
     net.eval()
     correct = total = 0
     with torch.no_grad():
         for img, label in loader:
             img = img.to(device); label = label.to(device)
             sc = net.forward_image(img, train_stdp=False)  # (B, F)
-            # Pra cada classe, soma spikes dos filtros atribuídos a ela
             class_score = torch.zeros(img.shape[0], n_classes, device=device)
             for c in range(n_classes):
                 mask = (filter_labels == c)
