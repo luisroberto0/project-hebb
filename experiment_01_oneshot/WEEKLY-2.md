@@ -471,3 +471,103 @@ Iter 1 cosine raw é uniformemente vermelho (~1.0 em tudo) porque filtros são q
   - **H_mult**: idem, soft-bound natural.
   - **H_filter_diversity** (nova, derivada do achado): mecanismo explícito de competição entre filtros independente de posição (ex: penalidade no loss STDP por similaridade entre filtros, ou normalização Σw por filtro como em H_norm mas combinada com ortogonalização periódica). Custo: ~1-2h, mais ambicioso.
 - Sessões consecutivas sem sinal>chance: **0** (não rodou treino novo, sinal arquitetural ainda em 35.98%).
+
+---
+
+## Sessão #12 — H_norm com target_mean=0.3: destrava diversidade, mata sinal
+
+**Hipótese:** normalizar Σ|w| por (out, in) sub-kernel após cada STDP update pra impedir saturação total observada nas sessões #7-#11 (Iter 1 satura em 0.999 σ=0.001 → 1 protótipo replicado em todos os filtros).
+
+**Setup:** mesmo da sessão #9: 5000 imgs / 1 epoch / k=1 WTA / theta_plus=0.0005 / tau_theta=1e7 / A_pre=0.0001 / seed=42. Único delta: `norm_target_mean=0.3` ativo (alvo de mean(|w|)=0.3 por sub-kernel pós-update + clamp).
+
+**Implementação:** flag `STDPConfig.norm_target_mean` (default None = desativado, backward compat). Modificação em `model.py:ConvSTDPLayer.stdp_update` aplica normalização condicionalmente após o clamp existente:
+
+```python
+if cfg.norm_target_mean is not None:
+    w = self.conv.weight.data
+    target_sum = (kH * kW) * cfg.norm_target_mean  # 7.5 pra 5x5 com target=0.3
+    w_sums = w.abs().sum(dim=(2, 3), keepdim=True).clamp(min=1e-8)
+    w.mul_(target_sum / w_sums)
+    w.clamp_(cfg.w_min, cfg.w_max)
+```
+
+### Resultados de treino e eval
+
+**Treino (5000 imgs, 120s):** pesos preservaram μ=0.300 alvo durante todo o treino. σ caiu gradualmente de 0.229→0.128 (L1) e 0.125→0.097 (L2). **Não saturaram** (vs Iter 1 sem H_norm que satura em 100 steps).
+
+**Eval 5w1s 1000 eps:** **20.04% IC95% [20.01%, 20.07%]**, z≈0.1.
+
+Praticamente chance, IC quase zero (predição quase constante). Pior que Iter 1 (35.98%) e até pior que random U(0,1) sem treino (32.89%).
+
+### Análise pós-treino: cosine centered + magnitude
+
+| Métrica | Iter 1 sem H_norm | **H_norm 0.3 treinado** |
+|---|---|---|
+| Layer 1 — μ global | 0.999 | 0.300 |
+| Layer 1 — σ espacial mean | 0.0008 | 0.126 (~158× maior) |
+| Layer 1 — **cosine centered off-diag mean** | 0.20 | **0.04** (5× menor) |
+| Layer 2 — μ global | 0.999 | 0.300 |
+| Layer 2 — σ espacial mean | 0.0007 | 0.097 (~138× maior) |
+| Layer 2 — **cosine centered off-diag mean** | **0.55** | **0.04** (13× menor!) |
+| theta1 max | 20.68 | 11.82 |
+| theta2 max | 30.98 | 12.14 |
+
+H_norm **destravou diversidade DRAMATICAMENTE**: filtros agora são estatisticamente independentes (cosine ~0.04 em ambas layers, comparado a 0.55 em L2 do Iter 1). Variância intra-filtro também preservada (σ ~100× maior).
+
+### Controle: random U(0, 0.6) com mesma magnitude
+
+Pra isolar contribuição do treino vs arquitetura+magnitude (protocolo padrão pós-#10), criado checkpoint random U(0, 0.6) (mean ≈ 0.3, matching H_norm) sem treino, theta=0. Eval idêntica.
+
+| Setup | Magnitude alvo | Acurácia 5w1s | Centered cosine L2 |
+|---|---|---|---|
+| Iter 1 (sem H_norm) | 1.0 (saturado) | 35.98% | 0.55 |
+| Random U(0, 1) | 0.5 | 32.89% | ~0 |
+| **H_norm 0.3 treinado** | 0.3 | **20.04%** (chance) | **0.04** |
+| **Random U(0, 0.6)** | 0.3 | **20.33%** (chance) | ~0 |
+
+Ambos os setups com magnitude ~0.3 dão chance (treinado ou não). Ambos com magnitude ≥0.5 dão sinal (33-36%). **Magnitude 0.3 é insuficiente pra atravessar threshold LIF + theta** → spikes pós são esparsos demais → embedding ralo → predição quase constante.
+
+### Decomposição final
+
+H_norm 0.3 cumpriu o objetivo mecanístico (destravou diversidade) mas falhou no objetivo funcional (matar sinal por insuficiência de magnitude).
+
+| Componente | Em H_norm 0.3 | Em Iter 1 |
+|---|---|---|
+| Diversidade entre filtros (cosine centered baixo) | ✅ destravada | ❌ ausente |
+| Variância intra-filtro (σ espacial alta) | ✅ preservada | ❌ matada |
+| Magnitude alta o suficiente pra disparos pós-LIF | ❌ insuficiente | ✅ presente |
+| Sinal acima de chance | ❌ chance | ✅ 35.98% |
+
+### Critério literal: falhou
+
+Critério **forte** (acc ≥ 50% E centered cosine < 0.05): **NÃO** (acc 20.04%, mas cosine 0.04 ✅).
+Critério **médio** (acc 38-50% E centered cosine 0.05-0.15): **NÃO** (acc 20.04%).
+Critério **falha** (acc ≤ 35% OU centered cosine > 0.15): **SIM** (acc=20.04% ≤ 35%).
+
+**H_norm 0.3 declarado falha pelo critério acc**, mesmo tendo destravado diversidade.
+
+### Insight central pós-#12
+
+O sinal de 35.98% (Iter 1) e 32.89% (random U(0,1)) **depende criticamente de magnitude alta dos pesos** (≥0.5). Magnitude 0.3 não atravessa threshold LIF → sem spikes → sem sinal.
+
+H_norm com target 0.3 quebrou o trade-off:
+- Cosine centered baixo (boa diversidade) ✅
+- Magnitude baixa (mata spikes) ❌
+
+**Hipótese pra próxima sessão:** sweet spot em magnitude maior. target=0.6 ou 0.8 pode preservar parte da diversidade enquanto mantém magnitude suficiente. Mas com target alto demais (ex 1.0), normalização vira no-op (clamp impede crescimento) → volta pra Iter 1 saturado.
+
+### Estado final pós-#12
+
+- `config.py`: `norm_target_mean=None` (revertido pra default desativado). Estado conhecido restaurado.
+- `model.py`: código de normalização **mantido** em `ConvSTDPLayer.stdp_update`, condicional ao flag (backward compat — sem flag, comportamento pré-#12 idêntico).
+- Checkpoints: `stdp_model_hnorm03.pt` (treinado) e `stdp_model_random_u006.pt` (controle) preservados pra comparação futura.
+- Sinal arquitetural (35.98%) continua reproduzível com `norm_target_mean=None`.
+- Sessões consecutivas sem sinal>chance: **1** (esta — pelo critério "treinou e mediu, não atingiu sinal>chance"). STRATEGY.md prevê revisão se chegar a 3.
+
+### Hipóteses pra próximas sessões
+
+| Hipótese | Custo | Justificativa pós-#12 |
+|---|---|---|
+| **H_norm_sweep** (target_mean ∈ {0.5, 0.6, 0.8}) | ~2h (3 trains + evals + cosines) | #12 mostrou que diversidade está ao alcance, falta calibrar magnitude. Sweep encontra sweet spot. |
+| **H_mult** (STDP multiplicativo) | ~1h | Soft-bound natural sem normalização hard. Pode preservar magnitude espontaneamente. |
+| **H_filter_diversity** (penalidade explícita de similaridade) | ~1-2h | Independente de magnitude — força diversidade via objetivo, em qualquer escala. |

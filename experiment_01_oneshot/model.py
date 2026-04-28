@@ -145,6 +145,17 @@ class ConvSTDPLayer(nn.Module):
         # Clip pra manter pesos no intervalo definido (inibição lateral agora é via k-WTA no forward)
         self.conv.weight.data.clamp_(cfg.w_min, cfg.w_max)
 
+        # H_norm (sessão #12): normaliza Σ|w| por (out, in) sub-kernel pra alvo configurado.
+        # Impede saturação total observada na sessão #7+ (pesos vão pra 0.999 σ=0.001 com
+        # STDP cumulativo). Mecanismo: divide por σ atual e escala pra alvo. Aplicado depois
+        # do clamp pra garantir que update raw está em range válido antes de renormalizar.
+        if cfg.norm_target_mean is not None:
+            w = self.conv.weight.data
+            target_sum = (kH * kW) * cfg.norm_target_mean
+            w_sums = w.abs().sum(dim=(2, 3), keepdim=True).clamp(min=1e-8)
+            w.mul_(target_sum / w_sums)
+            w.clamp_(cfg.w_min, cfg.w_max)
+
     def clip_weights(self) -> None:
         with torch.no_grad():
             self.conv.weight.clamp_(self.cfg.stdp.w_min, self.cfg.stdp.w_max)

@@ -77,6 +77,14 @@ class STDPConfig:
                                    # config que satura produz isso), não a calibração de
                                    # tau_theta. Theta treinada é inerte (A3b). Estado conhecido
                                    # do paper restaurado.
+    # H_norm (sessão #12): normalização de Σ|w| por (out, in) sub-kernel pós-STDP-update.
+    # None = desativado (default; estado pré-#12 e pós-#12).
+    # Float = alvo de mean(|w|) por sub-kernel.
+    # Sessão #12: testado com 0.3 → destravou diversidade (centered cosine L2: 0.55 → 0.04)
+    # MAS magnitude 0.3 é insuficiente pra gerar spikes pós-LIF → acc 20.04% (chance).
+    # Sweet spot a investigar em sessão futura (target maior, ex 0.6, 0.8).
+    # Código de normalização permanece em model.py:ConvSTDPLayer.stdp_update.
+    norm_target_mean: float | None = None
 
 
 @dataclass
