@@ -397,3 +397,77 @@ Esta seção é minha recomendação. Decisões finais a tomar (idealmente em ou
 5. **CONTEXT.md refino:** aceitar mudança "STDP biofísico → plasticidade local diferenciável", ou manter framing original e tratar C2 ablações como apêndice?
 
 Sem decisão dessas, pode-se rodar sessão #22 mesmo assim — leitura de literatura é independente do critério escolhido. Mas decidir antes de #23 (implementação) é necessário pra evitar refazer trabalho.
+
+---
+
+## Confirmação Pós-Sessão #21 (sessão #22, 2026-05-01)
+
+Após 3 dias de reflexão sobre as 5 decisões pendentes em "Decisões pendentes do Luis", **decisões finais registradas pelo Luis:**
+
+### (a) Versão do Projeto B: **HÍBRIDO** ✓
+
+Confirmado: publicar C3 como workshop paper + continuar Projeto B (continual learning sem replay) em paralelo.
+
+- C3 paper: trabalho independente de pesquisa, executável em weekend dedicado.
+- Projeto B: 5-7h/semana de pesquisa.
+- Sem conflito de tempo entre os dois — atacam estágios diferentes (escrita vs experimentação).
+
+### (b) Critério pós-LLM atacado primeiro: **CONTINUAL LEARNING sem replay buffer** ✓
+
+Confirmado: catastrophic forgetting é a capacidade que LLMs não têm e que plasticidade local meta-aprendida pode atacar diretamente.
+
+**Pergunta científica oficial** (carry-over de "Decisão Pós-Sessão #20" item c):
+
+> "Pode uma rede com plasticidade local meta-aprendida (estilo C2) ou encoder esparso ProtoNet com k-WTA (estilo C3), **sem replay buffer**, atingir **average accuracy ≥75% em Split-Omniglot 50-tasks sequenciais com forgetting (BWT) ≤−10%**, batendo baseline EWC por ≥3 p.p. em average accuracy?"
+
+### (c) Cadência: **SEM TETO FORMAL** ✓
+
+Mudança em relação à recomendação original (que sugeriu "5-7h/semana, 1-2 sessões/semana"). Decisão final do Luis:
+
+- **Sem teto formal de horas/semana ou sessões/semana.** Luis decide sessão-a-sessão se continua ou para.
+- **Limite por sessão mantido** (90 min hard, watchdog pra implementações).
+- **Sem regra "X sessões por semana".**
+
+**Implicação:** projeto pode parar dias ou semanas sem prejuízo formal. Critério de continuidade vira intrínseco (Luis julga se vale continuar) em vez de extrínseco (calendário). Combina com "deixar ele decidir rumo" — disciplina é dele, não imposta pelo plano.
+
+### (d) Venue C3: **NeurIPS Workshop on Bio-plausible Learning** ✓
+
+Confirmado:
+
+- **Target:** NeurIPS Workshop on Bio-plausible Learning (submissão típica setembro/outubro de cada ano).
+- **Próxima janela:** ~setembro 2026.
+- **Paper writing:** pode começar a qualquer momento. Ideal: 1-2 weekends dedicados.
+- **Backup venues** se NeurIPS Bio-plausible não tiver workshop em 2026: ICML AI for Science, NESY (Neuro-Symbolic), CCN (Cognitive Computational Neuroscience).
+
+### (e) CONTEXT.md refino: **ACEITO** ✓
+
+A seção §1.1 "Refino #21" adicionada à CONTEXT.md (sessão #21) torna-se **parte oficial da missão**:
+
+- "STDP biofísico fiel" foi superado por **"plasticidade local diferenciável"** como framing operacional.
+- Sucesso numérico ≠ sucesso mecanístico (C3 atingiu metas mas usa backprop).
+
+Implicação: decisões futuras de mecanismo são avaliadas contra "plasticidade local diferenciável" (mais permissivo) em vez de "Hebb biofísico estrito" (mais restritivo).
+
+### Estado oficial pós-Confirmação #21
+
+| Item | Status | Onde está |
+|---|---|---|
+| Caminho A (mais STDP tuning) | Dormente | STRATEGY.md "Pós-#10" e "Pós-#13" |
+| Caminho B (mecanístico fiel original) | **Reformulado como "plasticidade local diferenciável" + continual learning** | Esta seção, CONTEXT.md §1.1 |
+| Caminho C (ProtoNet+esparso) | **Concluído como milestone** — vira workshop paper NeurIPS Bio-plausible | Esta seção (d) |
+| Marco 1 ativo | Continual learning sem replay em Split-Omniglot | `experiment_02_continual/` (a criar nesta sessão) |
+| Cadência | Sem teto formal; Luis decide sessão-a-sessão | Esta seção (c) |
+
+### Próximas sessões (roadmap reativado)
+
+Roadmap de 10 sessões pra Marco 1 (#22-#31), originalmente em "Decisão Pós-Sessão #20", agora com decisões fechadas:
+
+- **#22 (esta):** confirmar decisões + literatura review (5 papers core).
+- **#23:** baseline naive sequential fine-tuning sobre encoder ProtoNet pré-treinado.
+- **#24-#25:** baseline EWC, escalar pra 50 tasks.
+- **#26-#28:** propostas C2-continual e/ou C3-continual.
+- **#29:** ablações.
+- **#30:** status check sucesso/pivot.
+- **#31:** refinement ou paper writing.
+
+Decisões 1-5 fechadas — não revisitar sem motivo forte (ex: implementação revela impossibilidade técnica).
