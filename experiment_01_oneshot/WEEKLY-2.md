@@ -176,3 +176,41 @@ A homeostasis (theta) não consegue acompanhar a velocidade da saturação em re
 ### Decisão pra próxima sessão
 
 **Não rodar pretreino completo (24k imgs) sem resolver saturação** — vai dar acurácia próxima de chance, desperdiçando ~1h de GPU. Recomendado começar pela H_norm ou H_mult que atacam saturação por construção (custo curto, alto ROI). H_theta_omn é teste rápido que pode dar pista (custo ínfimo).
+
+---
+
+## Sessão #8 — H_theta_omn ❌ DESCARTADA
+
+**Hipótese:** recalibrar `theta_plus` pra Omniglot pode quebrar saturação observada na sessão #7.
+
+**Setup:** baseline 5000 imgs / 1 epoch / k=1 WTA, mesmo seed (42), variando apenas `theta_plus`.
+
+**Resultados:**
+
+| theta_plus | w1 final | w2 final | theta1 max | theta2 max | Acurácia 5w1s |
+|------------|----------|----------|-----------|-----------|---------------|
+| 0.0005 (sessão #7 baseline) | μ0.999/σ0.011 (saturado) | μ0.725 | (não medido na #7) | — | 20.52% (z=0.2) |
+| **0.005** (10× maior) | μ0.167/σ0.110 (estável!) | μ0.158 (constante) | **9.0** | 6.2 | **20.00%** (IC zero, predição constante — theta silencia tudo) |
+| **0.001** (2× maior) | μ0.892/σ0.150 (saturando) | μ0.323 | **33.0** | 17.6 | **20.32%** (z=0.2) |
+
+**Padrão estrutural revelado:**
+
+theta cresce **monotonicamente** em todos os casos — porque `tau_theta=1e7 ms` (do paper) não permite decay efetivo no nosso regime (5000 imgs × 100 ts = 500k chances de update vs decay desprezível por step). Resultado: theta_plus controla a velocidade de crescimento mas não a estabilização. Trade-off:
+
+- **theta_plus alto** (0.005): theta atinge ~7 rapidamente → v_thresh_eff ≈ 8 → todos filtros silenciados → embedding constante → predição constante
+- **theta_plus baixo** (0.0005): theta não freia o suficiente nas primeiras 100s de steps → pesos saturam em 0.999 → filtros indistinguíveis → embedding sem sinal
+- **theta_plus médio** (0.001): trade-off ruim em ambos eixos (theta=33 + w1=0.89)
+
+**Causa raiz: tau_theta inadequado pro nosso regime, não theta_plus.** Diehl & Cook calibram tau_theta=1e7 ms pra setup com refractory longo + 350ms/imagem (paper original tem ~7000 timesteps por imagem com poucos spikes ativos). Nosso regime tem 78400 spikes denso em 100 ms, então tau_theta efetivo deveria ser drasticamente menor (~1e3 ou 1e4 ms) pra theta ter ciclo de decay dentro do treino.
+
+**Conclusão:** H_theta_omn descartada como solução isolada. Próxima sessão: H_norm (normalização de Σw, ataca saturação por construção) ou nova hipótese H_tau_theta (recalibrar tau_theta pro regime denso). Restaurado `theta_plus=0.0005` (estado conhecido, baseline pra próximas comparações).
+
+---
+
+## Estado pós-sessão #8
+
+- `config.py`: theta_plus=0.0005 (restaurado), tau_theta=1e7 (problema isolado nesta sessão), A_pre=0.0001, A_post=-0.000105 (calibrados na sessão #7)
+- Hipóteses descartadas (Semana 2): H_theta_omn (sozinha)
+- Hipóteses vivas: **H_norm** (próxima recomendação por STRATEGY.md), H_mult, H_omniglot_inhib, H_tau_theta (nova, derivada do diagnóstico desta sessão)
+- Acurácia consolidada: 17.76% (MNIST sanity) / ~20% Omniglot (chance, todos os tunings de Semana 2 falharam até agora)
+- Sessões consecutivas sem progresso (>chance): **1** (esta). STRATEGY.md prevê revisão se chegar a 3.
