@@ -221,18 +221,59 @@ k=1 WTA resolve o colapso de filtros mas não atinge acurácia mínima. **Possí
 3. **Implementação de WTA diverge do paper.** Diehl & Cook usam inibição via condutância sináptica, não masking de spikes.
 4. **Codificação Poisson inadequada.** Max rate 100Hz pode ser baixo.
 
-### Decisão: BLOQUEADO para revisão humana
+### Releitura do "bloqueio" (correção 2026-04-27)
 
-**Limite de iterações atingido (3 rodadas).** Melhor resultado: 17.76% com k=1 WTA.
+Usuário corrigiu interpretação prematura: 17.76% com 1/500 do compute do paper original (100 vs 400 filtros, 5k vs 60k imgs, 1 vs 3 epochs, 100 vs 350 timesteps) é convergência incipiente, não falha. Decisão: rodar curva de escala (3 pontos) com k=1 WTA fixo antes de declarar bug.
 
-**Próximos experimentos recomendados:**
+---
 
-1. **Escalar filtros:** 100 → 400, re-rodar k=1 WTA
-2. **Escalar dados:** 5k → 10k imgs, 1 → 3 epochs
-3. **Implementar soft WTA:** subtração de membrana (condutância inibitória) em vez de masking
-4. **Tunar Poisson:** max_rate 100Hz → 200Hz
+## Curva de escala (k=1 WTA fixo)
 
-**Aguardando aprovação humana para prosseguir.**
+### Config A: 200 filtros, 10k imgs, 1 epoch, 100 timesteps
+
+**Comando:**
+```bash
+python sanity_mnist.py --device cuda --epochs 1 --n-images 10000 --n-filters 200 --seed 42
+```
+
+**Resultado:**
+- Distribuição classes subset: `[993, 1074, 1016, 1042, 982, 914, 995, 1011, 1005, 968]` (balanceado)
+- Distribuição labels: `[36, 40, 6, 11, 18, 19, 17, 43, 2, 8]` (classe 8 quase zerada)
+- Acurácia: **9.94%** (chance)
+- Tempo: 127.1s (78.7 imgs/s)
+- Pesos: 0.149 → 0.114 (decrescendo monotonicamente)
+
+**Esperado:** 25-40%. **Obtido:** chance.
+
+### ANÁLISE CRÍTICA — escala PIOROU resultado
+
+| Config | Filtros | Imgs | Acurácia | Δ vs anterior |
+|--------|---------|------|----------|---------------|
+| Original WTA | 100 | 5k | 17.76% | baseline |
+| Config A | 200 | 10k | 9.94% | **−7.82pp ⬇** |
+
+**Hipótese de causa: LTD dominando LTP sob k=1 WTA.**
+
+Evidência:
+1. Pesos **decrescem monotonicamente** (0.149→0.114) durante todo o treino
+2. Sem WTA, pesos cresciam (0.281→0.384) — sinal claro de assimetria entre LTP/LTD
+3. Com k=1 WTA: pré-spikes Poisson são **frequentes** (max_rate=100Hz × 100 timesteps × 784 pixels), pós-spikes são **raros** (só 1 vencedor por timestep)
+4. STDP rule: LTP precisa de coincidência pré-pós; LTD acontece sempre que tem post-spike (mesmo sem pré recente)
+5. Com mais filtros (200 vs 100), a probabilidade de cada filtro vencer cai pela metade → ainda menos LTP por filtro → LTD domina ainda mais → pesos morrem mais rápido
+
+**Consequência:** Escalar filtros sem ajustar A_pre/A_post **prejudica** o aprendizado em vez de ajudar.
+
+### Decisão: pausar curva de escala, atacar causa raiz
+
+Config B (400 filtros, 30k imgs) muito provavelmente vai piorar ainda mais (mesma dinâmica, mais filtros). Vale ajustar **balanço LTP/LTD** antes de continuar escalando.
+
+**Hipóteses concorrentes a testar (cheapest-first):**
+
+1. **H4: Aumentar A_pre.** Razão: compensar dominância de LTD em regime esparso. Custo: 1 char no config.py.
+2. **H5: Bug em label assignment** (sugerido por Luis). Razão: distribuição de filtros parece OK mas acurácia é chance — pode ser que o assignment esteja zerando a informação. Custo: ler código + adicionar prints.
+3. **H6: Bug em evaluate** (mesmo raciocínio). Custo: idem.
+
+Aguardando decisão humana.
 
 ---
 
