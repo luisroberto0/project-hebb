@@ -47,6 +47,12 @@ class ConvSTDPLayer(nn.Module):
         # Traços alocados sob demanda em reset_traces.
         self.apre: torch.Tensor | None = None
         self.apost: torch.Tensor | None = None
+        # Adaptive threshold homeostático (Diehl & Cook 2015 §2.3).
+        # theta[i] = boost adicional ao v_thresh do filtro i, cresce com
+        # spikes próprios e decai com tempo. Persiste entre imagens —
+        # registrado como buffer (não-treinável, segue device do módulo,
+        # entra em state_dict pra checkpoint).
+        self.register_buffer("theta", torch.zeros(out_channels))
 
     def reset_traces(self, batch_size: int, in_shape: tuple, out_shape: tuple, device: torch.device) -> None:
         self.apre = torch.zeros(batch_size, *in_shape, device=device)
@@ -54,22 +60,23 @@ class ConvSTDPLayer(nn.Module):
 
     def forward(self, spikes_t: torch.Tensor, mem: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """
-        Um único timestep com k-WTA (k=1) lateral inhibition.
+        Um único timestep com k-WTA (k=1) + adaptive threshold homeostático.
         spikes_t: (B, C_in, H, W)
         mem:      (B, C_out, H', W')
 
-        Inibição lateral implementada como winner-take-all por posição espacial:
-        apenas o filtro com maior membrana em cada (B, H, W) pode disparar.
-
-        MELHOR RESULTADO EM TESTES: distribui filtros entre todas as classes,
-        acurácia 17.76% (vs 9.80% sem WTA, 10.89% com k=5).
+        Threshold efetivo do filtro i: v_thresh + theta[i]
+        Pós-disparo: theta[i] += theta_plus * spike_count[i]; theta *= exp(-dt/tau_theta).
+        Diehl & Cook 2015 §2.3 — força filtros a dispararem igualmente, quebra
+        rich-get-richer do k-WTA + STDP.
         """
         I = self.conv(spikes_t)
-        decay = torch.exp(torch.tensor(-self.cfg.spike.dt_ms / self.cfg.lif.tau_mem_ms, device=spikes_t.device))
-        mem = decay * mem + I
+        dt = self.cfg.spike.dt_ms
+        decay_mem = torch.exp(torch.tensor(-dt / self.cfg.lif.tau_mem_ms, device=spikes_t.device))
+        mem = decay_mem * mem + I
 
-        # Spikes brutos (sem inibição lateral)
-        spikes_raw = (mem >= self.cfg.lif.v_thresh).float()
+        # Threshold efetivo por filtro (broadcast pra (1, C_out, 1, 1))
+        v_thresh_eff = self.cfg.lif.v_thresh + self.theta.view(1, -1, 1, 1)
+        spikes_raw = (mem >= v_thresh_eff).float()
 
         # k-WTA (k=1): só o filtro com maior membrana por posição espacial dispara
         max_filter_idx = mem.argmax(dim=1, keepdim=True)  # (B, 1, H', W')
@@ -78,6 +85,13 @@ class ConvSTDPLayer(nn.Module):
 
         # Reset de membrana apenas nos neurônios que dispararam
         mem = mem * (1 - spikes_out) + self.cfg.lif.v_reset * spikes_out
+
+        # Atualiza theta: incremento proporcional aos spikes próprios + decay
+        spike_per_filter = spikes_out.sum(dim=(0, 2, 3))  # (C_out,)
+        self.theta.add_(self.cfg.stdp.theta_plus * spike_per_filter)
+        decay_theta = torch.exp(torch.tensor(-dt / self.cfg.stdp.tau_theta_ms, device=spikes_t.device))
+        self.theta.mul_(decay_theta)
+
         return spikes_out, mem
 
     @torch.no_grad()

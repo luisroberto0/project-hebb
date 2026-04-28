@@ -242,6 +242,12 @@ def main() -> None:
     elapsed = time.time() - t0
     print(f"Pretreino concluído em {elapsed:.1f}s ({seen/elapsed:.1f} imgs/s)")
 
+    # ----- Diagnóstico homeostasis -----
+    theta = net.layer.theta.detach().cpu()
+    print(f"Theta final: mean={theta.mean():.4f} std={theta.std():.4f} "
+          f"min={theta.min():.4f} max={theta.max():.4f} "
+          f"frac_zero={(theta < 1e-6).float().mean():.2%}")
+
     # ----- Label assignment -----
     print("\nAtribuindo labels aos filtros (Diehl & Cook §2.5)...")
     filter_labels = assign_labels(net, assign_loader, device)

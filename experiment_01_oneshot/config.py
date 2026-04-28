@@ -55,6 +55,14 @@ class STDPConfig:
     w_init_low: float = 0.0
     w_init_high: float = 0.3
     lateral_inhibition: float = 0.5  # força da inibição entre filtros (winner-take-all soft)
+    # --- Homeostasis (adaptive threshold) — Diehl & Cook 2015 §2.3 ---
+    # Cada filtro tem theta_i adicional ao threshold base. Theta cresce com
+    # cada spike próprio (theta_plus) e decai lentamente com tempo (tau_theta).
+    # Função: forçar todos os filtros a disparar aproximadamente igualmente,
+    # quebrando rich-get-richer do k-WTA + STDP. Sessão #3 isolou este como
+    # causa raiz do colapso de filtros.
+    theta_plus: float = 0.05
+    tau_theta_ms: float = 1e7      # 10.000s — propositalmente lento (paper)
 
 
 @dataclass
