@@ -211,3 +211,37 @@ A framing "amplificar sinal arquitetural via STDP" assumia continuidade entre os
 
 - Sessões consecutivas sem sinal>chance: **2** (#12, #13). #14 é administrativa (não conta). Se a decisão da próxima sessão for caminho A e a sessão seguinte continuar em chance, contador chega a 3 → revisão obrigatória de STRATEGY.md (já estamos fazendo agora preventivamente).
 - Recomendação implícita ao Luis: independente do caminho A/B/C escolhido, **definir antes do experimento qual sinal seria suficiente pra continuar** vs. qual sinal motivaria pivot. Critérios numéricos a priori, igual sessões #9/#10/#12/#13.
+
+---
+
+## Decisão Sessão #15 (2026-04-28): Caminho C escolhido, sub-opção C1 primeiro
+
+**Decisão tomada:** Caminho **C — pivot pra abordagem adjacente**. Não é "pivot envergonhado" — é reposicionamento alinhado com a missão do CONTEXT.md §1 ("capacidades que LLMs não têm: one-shot, continual learning, eficiência radical, raciocínio temporal"). Reproduzir Diehl & Cook 2015 fielmente em PyTorch puro **não é a missão** — é uma rota possível pra um pilar (one-shot via plasticidade local). Após 13 sessões com barreira estrutural identificada, custo-benefício de continuar nessa rota específica é baixo.
+
+**Sub-opção C1 escolhida primeiro:** Modern Hopfield Memory baseline puro (Ramsauer 2020) em Omniglot, alimentado por features triviais (pixels, PCA, random projection). Por quê C1 antes de C2 (meta-learning bio) ou C3 (ProtoNet esparso):
+
+1. **Reaproveita código pronto.** `model.py:HopfieldMemory` já existe, validado e em uso pelo pipeline. Zero custo de implementação extra.
+2. **Dá número rápido em 1 sessão.** 60 min são suficientes pra rodar 3 variações × 2 settings = 6 evaluations e ter resposta empírica.
+3. **Forma o piso de comparação.** C2 e C3 só fazem sentido se agregarem acima de C1 — sem C1 medido, decisões futuras viram especulação.
+4. **Valida ou refuta a tese central de Hopfield.** Ramsauer 2020 prova que Modern Hopfield Memory tem capacidade exponencial e é equivalente à atenção do Transformer. Se mesmo com features triviais Hopfield não atinge ~50%+ em Omniglot, isso é informação importante: o motor "Hopfield + few-shot" precisa ser suplementado, não pode carregar sozinho.
+
+### Critério de decisão pós-C1
+
+| Resultado C1 (5w1s) | Implicação |
+|---|---|
+| **≥70%** | C1 é vitória, baseline alta. C2/C3 precisam bater C1. Próximas sessões focam C2 (meta-learning bio) que precisa adicionar mecanismo cognitivo defensável (não só acurácia). |
+| **50-70%** | Piso real estabelecido. C2/C3 podem agregar 10-20 p.p. → resultado defensável. |
+| **35-50%** | Hopfield sozinho não é mágico. C2 (meta-learning) vira mais necessário. |
+| **≤35%** | Falha. Não bate Pixel kNN (45.76%). Bug na implementação OU Hopfield não é o motor esperado. Investigar antes de C2/C3. |
+
+### Restrições da sessão #15
+
+- **Não modificar `model.py`** (HopfieldMemory já validado)
+- **Não tocar em `config.py`** (estado revertido pós-#13 deve ser preservado)
+- **Não rodar STDP** (foco é baseline puro)
+- Se algo travar, restaura estado e documenta como "C1 inconclusivo, próxima sessão revisita".
+
+### Status do Caminho A e Caminho B
+
+- **A não foi descartado**: H_no_clamp e H_mult ficam como hipóteses dormentes. Se C1 falhar (≤35%), Caminho A volta ao topo da fila como diagnóstico (clamp era único gargalo? OU é estrutural?).
+- **B não foi descartado**: Brian2 e H_filter_diversity ficam como rotas se C1 entregar 50-70% mas C2/C3 não fecharem o gap até 90%.

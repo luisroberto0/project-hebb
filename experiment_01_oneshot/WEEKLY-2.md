@@ -656,3 +656,88 @@ O sinal arquitetural depende de uma das condições:
 (b) Pesos *uniformemente distribuídos sem clamp* (random U(0, 1.0))
 
 Não há um "sweet spot intermediário" como esperávamos pré-sweep. Isso é um achado mecanístico não-trivial.
+
+---
+
+## Sessão #15 — Caminho C1: baseline puro de Modern Hopfield Memory
+
+**Pré-condição:** sessão #14 (administrativa) documentou 3 caminhos A/B/C em STRATEGY.md "Pós-Sessão #13: Reavaliação". Caminho C (pivot pra abordagem adjacente) escolhido. C1 (Hopfield baseline) primeiro pra estabelecer piso de comparação.
+
+**Pergunta:** dado que Modern Hopfield Memory (Ramsauer 2020) tem capacidade exponencial e é equivalente à atenção do Transformer, qual é a performance em few-shot quando alimentada com features triviais (sem feature learning bio-inspirado)?
+
+**Setup:** novo script `experiment_01_oneshot/c1_hopfield_baselines.py`. Reusa `HopfieldMemory` de `model.py` (config: β=8, distance=cosine, normalize_keys=True) e `EpisodeSampler` de `data.py`. Sem alterações em `model.py` ou `config.py`. 1000 eps × seed=42 × 5w1s e 20w1s pra 3 variações de encoding.
+
+### Resultados
+
+| Encoder | 5w1s acc | IC95% 5w1s | z 5w1s | 20w1s acc | IC95% 20w1s | z 20w1s | cos cent (5w) |
+|---|---|---|---|---|---|---|---|
+| **C1a — Pixels+L2 (784D)** | 50.17% | [49.34, 50.96] | 2.4 | 30.30% | [29.95, 30.68] | 4.5 | -0.25 |
+| **C1b — PCA-32** | **56.28%** | [55.50, 57.11] | **2.8** | **35.37%** | [34.99, 35.76] | **5.0** | -0.25 |
+| **C1c — RandomProj-32** | 41.23% | [40.51, 41.95] | 1.8 | 20.05% | [19.75, 20.34] | 3.2 | -0.25 |
+
+PCA-32 fitada em 5000 imagens do background set (explained variance ratio ≈ 0.81); aplicada com torch matmul no eval (sem CPU-GPU pingue-pongue). Random projection ortogonal 784→32 com seed=42.
+
+### Comparação com baselines existentes e Iter 1 STDP
+
+| Modelo | 5w1s | 20w1s | Origem |
+|---|---|---|---|
+| Pixel kNN (sessão #7) | 45.76% | — | `baselines.py`, kNN duro com cosine |
+| Iter 1 STDP saturado (sessão #9) | 35.98% | 9.80% | melhor de 13 sessões de tuning STDP |
+| **C1a Hopfield+Pixels** | **50.17%** | 30.30% | Hopfield apenas, sem treino |
+| **C1b Hopfield+PCA-32** | **56.28%** | 35.37% | Hopfield + PCA fittada uma vez |
+| C1c Hopfield+RandomProj-32 | 41.23% | 20.05% | Hopfield + projeção random |
+| ProtoNet (sessão #7) | 85.88% | — | deep metric learning treinado |
+
+**Achados centrais:**
+
+1. **Hopfield + Pixels (50.17%) bate Pixel kNN (45.76%) por +4.4 p.p.** com input idêntico. Vantagem é puramente do mecanismo softmax + cosine pesado vs argmax duro do kNN. Confirma a tese de Ramsauer 2020 que Hopfield Moderno é o "atenção como recuperador associativo" — efeito mensurável em features baixas.
+
+2. **Hopfield + PCA-32 (56.28%) bate Iter 1 STDP (35.98%) por +20.30 p.p.** — sem treino algum, sem feature learning. PCA-32 captura ~81% da variância e remove dimensões ruidosas, gerando representação mais discriminativa que pixels brutos. **Isso é evidência forte de que Caminho C foi a decisão correta:** STDP da forma como estava implementado **regredia o sinal** comparado a uma redução de dimensionalidade trivial.
+
+3. **Random projection-32 (41.23%) é PIOR que pixels brutos (50.17%).** Confirma que reduzir 784→32 aleatoriamente perde informação útil. PCA preserva o que importa porque otimiza variância; random não.
+
+4. **20w1s segue o mesmo padrão.** PCA (35.37%) > Pixels (30.30%) > RandomProj (20.05% = chance). z-scores 4-5 mostram sinal robusto.
+
+5. **Centered cosine entre support embeddings -0.25 (5w) e -0.05 (20w):** supports são naturalmente "diversos" porque vêm de classes diferentes. Negativo significa que após zero-mean, embeddings se distribuem em direções opostas (cone uniforme). Mesma diversidade nas 3 variações — não é a diferença que explica acc.
+
+### Critério de decisão pelo STRATEGY.md "Pós-#13"
+
+| Critério | Resultado |
+|---|---|
+| Sucesso forte (≥70% 5w1s) | NÃO (melhor 56.28%) |
+| **Sucesso médio (50-70%)** | **SIM (C1b 56.28%, C1a 50.17%)** |
+| Sucesso fraco (35-50%) | C1c estaria aqui (41.23%) |
+| Falha (≤35%) | NÃO |
+
+**Decisão pós-C1: piso real estabelecido em ~56% 5w1s / 35% 20w1s.** C2 (meta-learning bio) e C3 (ProtoNet com features esparsas) podem agregar 10-20 p.p. e virar resultado defensável (alvo: 65-75% 5w1s, ainda longe de ProtoNet 85.88% mas com mecanismo bio-inspirado defensável vs deep metric learning).
+
+### Insight mecanístico cumulativo
+
+Comparando todos os experimentos do projeto até agora (5w1s):
+
+| Setup | Acc | Custo (sessões) |
+|---|---|---|
+| Random U(0, 0.3) sem treino (sessão #7) | 20.92% (chance) | 0 |
+| **Iter 1 STDP saturado (sessão #9, melhor de 13 sessões)** | **35.98%** | 13 |
+| Random U(0, 1.0) sem treino (sessão #10) | 32.89% | 0 |
+| **C1a Hopfield + Pixels (sessão #15)** | **50.17%** | 0 |
+| **C1b Hopfield + PCA-32 (sessão #15)** | **56.28%** | 0 |
+
+Em **uma única sessão**, com features triviais e sem nenhum mecanismo bio-inspirado de feature learning, **C1b bate o melhor produzido em 13 sessões de tuning STDP por +20 p.p.** Isso reforça o diagnóstico estrutural pós-#13: STDP+k-WTA+clamp da forma implementada **não é o motor** que carrega sinal — é Hopfield + redução de dim sensata.
+
+### Estado final pós-#15
+
+- **Código novo:** `experiment_01_oneshot/c1_hopfield_baselines.py` (script standalone, reutiliza componentes existentes).
+- **`model.py`, `config.py` inalterados** (conforme restrição da sessão).
+- **Sem checkpoints novos** (este experimento não treina nada — features são fixas).
+- **Sinal medido sem treino:** 50.17%/30.30% (Pixels), 56.28%/35.37% (PCA-32), 41.23%/20.05% (RandomProj-32).
+- Sessões consecutivas sem sinal>chance: **0** (resetado — C1 entregou sinal forte com z≈2.8 a 5.0).
+
+### Hipóteses pra próximas sessões (Caminho C)
+
+| Hipótese | Custo | Justificativa pós-#15 |
+|---|---|---|
+| **C2 — Meta-learning bio** (penalidade de plasticidade local em vez de SGD) | ~2-3h | Adiciona mecanismo cognitivo defensável ao C1b (PCA-32). Alvo: +10-20 p.p. sobre 56% → ~70%. |
+| **C3 — ProtoNet+features esparsas** (k-WTA na entrada do encoder, não em camadas treinadas) | ~2h | ProtoNet treinado dá 85.88%. Adicionar k-WTA esparso pode preservar capacidade com mecanismo neuro-inspirado. |
+| **C1d — Hopfield + autoencoder simples** | ~1h | Encoder 784→32 treinado *uma vez* (autoencoder reconstrutivo simples) pode bater PCA-32 sem ser "feature learning bio". Compromisso entre C1 e C2. |
+| **Caminho A revisitado: H_no_clamp** | ~30min | Diagnóstico, não solução. Se H_no_clamp + STDP bate 56% (=C1b), dá ~30 p.p. sobre Iter 1 → confirma que clamp era único gargalo do A. |
