@@ -54,14 +54,21 @@ class ConvSTDPLayer(nn.Module):
 
     def forward(self, spikes_t: torch.Tensor, mem: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """
-        Um único timestep.
+        Um único timestep SEM lateral inhibition (baseline para diagnóstico).
         spikes_t: (B, C_in, H, W)
         mem:      (B, C_out, H', W')
+
+        TEMPORÁRIO: desativando k-WTA para verificar se o problema é a inibição
+        ou se há bug na regra STDP/LIF.
         """
         I = self.conv(spikes_t)
         decay = torch.exp(torch.tensor(-self.cfg.spike.dt_ms / self.cfg.lif.tau_mem_ms, device=spikes_t.device))
         mem = decay * mem + I
+
+        # Spikes sem inibição lateral
         spikes_out = (mem >= self.cfg.lif.v_thresh).float()
+
+        # Reset de membrana apenas nos neurônios que dispararam
         mem = mem * (1 - spikes_out) + self.cfg.lif.v_reset * spikes_out
         return spikes_out, mem
 
@@ -113,16 +120,7 @@ class ConvSTDPLayer(nn.Module):
         delta_LTD = delta_LTD.view(C_out, self.in_channels, kH, kW)
 
         self.conv.weight.data += cfg.A_pre * delta_LTP + cfg.A_post * delta_LTD
-        # Inibição lateral soft (winner-take-all entre filtros): cada filtro
-        # que disparou inibe os outros pela ativação total no batch.
-        if cfg.lateral_inhibition > 0:
-            spike_per_filter = post_spikes.sum(dim=(0, 2, 3))   # (C_out,)
-            if spike_per_filter.sum() > 0:
-                inhibition = cfg.lateral_inhibition * spike_per_filter.mean() * torch.ones_like(spike_per_filter)
-                # Tira da média global de cada filtro pra desencorajar dominância
-                inh = inhibition.view(C_out, 1, 1, 1)
-                self.conv.weight.data -= 1e-4 * inh * (spike_per_filter > spike_per_filter.median()).float().view(C_out, 1, 1, 1)
-        # Clip pra manter pesos no intervalo definido
+        # Clip pra manter pesos no intervalo definido (inibição lateral agora é via k-WTA no forward)
         self.conv.weight.data.clamp_(cfg.w_min, cfg.w_max)
 
     def clip_weights(self) -> None:

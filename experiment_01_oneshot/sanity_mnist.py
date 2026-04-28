@@ -24,6 +24,7 @@ Uso:
 from __future__ import annotations
 
 import argparse
+import sys
 import time
 from pathlib import Path
 
@@ -157,6 +158,10 @@ def evaluate(net: SanityNet, loader: DataLoader, filter_labels: torch.Tensor,
 # Main
 # ---------------------------------------------------------------------------
 def main() -> None:
+    # Fix Windows cp1252 encoding issue
+    if sys.platform == "win32":
+        sys.stdout.reconfigure(encoding='utf-8')
+
     args = parse_args()
     cfg = default_config()
     cfg.spike.timesteps = args.timesteps
@@ -177,7 +182,18 @@ def main() -> None:
     if args.n_images < len(train_ds):
         idx = torch.randperm(len(train_ds), generator=torch.Generator().manual_seed(args.seed))[:args.n_images].tolist()
         train_ds = Subset(train_ds, idx)
+
+    # Hipótese 2: verificar distribuição de classes no subset
+    full_ds = datasets.MNIST(root=args.data_root, train=True, download=False, transform=transform)
+    labels_count = [0] * 10
+    for i in range(len(train_ds)):
+        if isinstance(train_ds, Subset):
+            _, label = full_ds[train_ds.indices[i]]
+        else:
+            _, label = train_ds[i]
+        labels_count[label] += 1
     print(f"Imagens de treino: {len(train_ds)}, teste: {len(test_ds)}")
+    print(f"Distribuição de classes no subset: {labels_count}")
 
     # Loaders pequenos pra STDP que é online (batch=1 idealmente, mas vetorizamos batch)
     train_loader = DataLoader(train_ds, batch_size=16, shuffle=True, num_workers=2, pin_memory=True)

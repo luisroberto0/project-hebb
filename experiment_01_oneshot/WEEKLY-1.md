@@ -142,16 +142,97 @@ Aumentar `A_pre` de 0.01 para 0.05 (5× mais LTP), manter `A_post = -0.0105`. Re
 
 ---
 
-## Decisão
+## Iterações de correção (2026-04-27 sessão 2)
 
-**Não mudar código ainda.** Próximos passos:
+### Hipótese 2 testada e descartada
 
-1. ✅ **Documentar diagnóstico** (este arquivo)
-2. ⏭️ **Testar Hipótese 2 primeiro** (verificar distribuição de classes - mais barato)
-3. ⏭️ **Testar Hipótese 1** (consertar inibição lateral - mais impacto esperado)
-4. ⏭️ **Visualizar filtros** do checkpoint atual (`checkpoints/sanity_mnist.pt`) pra confirmar colapso visual
+Adicionado print da distribuição de classes no subset:
+```
+Distribuição de classes no subset: [499, 554, 517, 521, 464, 475, 469, 510, 531, 460]
+```
 
-Aguardando OK para prosseguir.
+**Conclusão:** Distribuição balanceada (~500/classe). Hipótese 2 DESCARTADA.
+
+---
+
+### Iteração 1: k=1 WTA na dinâmica LIF
+
+**Modificação:** Implementado k-WTA (k=1) em `model.py:ConvSTDPLayer.forward`:
+```python
+max_filter_idx = mem.argmax(dim=1, keepdim=True)
+wta_mask = torch.zeros_like(mem).scatter_(1, max_filter_idx, 1.0)
+spikes_out = spikes_raw * wta_mask
+```
+
+Removido decay de pesos pós-STDP em `stdp_update`.
+
+**Resultado:**
+- Distribuição: `[24, 23, 11, 9, 3, 5, 7, 13, 1, 4]` ← **TODAS classes representadas!**
+- Acurácia: **17.76%** (> chance 10%, < meta 70%)
+- Pesos: 0.149→0.115 (decrescendo vs 0.278→0.382 antes)
+- Tempo: 63.2s (79.1 imgs/s)
+
+**Análise:** k=1 WTA funciona para distribuir filtros, mas gera esparsidade excessiva → poucos spikes → STDP insuficiente.
+
+---
+
+### Iteração 2: k=5 WTA
+
+**Modificação:** Aumentado k de 1 para 5 (top-5 winners por posição espacial).
+
+**Resultado:**
+- Distribuição: `[27, 23, 4, 7, 18, 2, 3, 14, 0, 2]` ← classe 8 tem 0 filtros
+- Acurácia: **10.89%** (pior que k=1)
+- Tempo: 63.5s
+
+**Análise:** k=5 permitiu mais spikes mas filtros colapsaram MAIS. Não é apenas problema de esparsidade.
+
+---
+
+### Iteração 3 (baseline): SEM WTA
+
+**Modificação:** Removido completamente k-WTA para baseline.
+
+**Resultado:**
+- Distribuição: `[100, 0, 0, 0, 0, 0, 0, 0, 0, 0]` ← colapso total (igual original)
+- Acurácia: **9.80%**
+- Pesos: 0.281→0.384 (crescendo, igual original)
+
+**Análise:** Sem inibição lateral = colapso completo. **k-WTA é NECESSÁRIO.**
+
+---
+
+## Conclusão das iterações
+
+### Melhor configuração testada: k=1 WTA
+
+| Métrica | Valor |
+|---------|-------|
+| Distribuição | [24, 23, 11, 9, 3, 5, 7, 13, 1, 4] |
+| Acurácia | 17.76% |
+| Status | ❌ < 70% (meta mínima) |
+
+### Problema identificado
+
+k=1 WTA resolve o colapso de filtros mas não atinge acurácia mínima. **Possíveis causas:**
+
+1. **Número de filtros insuficiente.** Diehl & Cook 2015 usaram 400-6400 filtros, não 100.
+2. **Epochs insuficientes.** Paper usa 60k imagens × 3 epochs, testamos 5k × 1 epoch.
+3. **Implementação de WTA diverge do paper.** Diehl & Cook usam inibição via condutância sináptica, não masking de spikes.
+4. **Codificação Poisson inadequada.** Max rate 100Hz pode ser baixo.
+
+### Decisão: BLOQUEADO para revisão humana
+
+**Limite de iterações atingido (3 rodadas).** Melhor resultado: 17.76% com k=1 WTA.
+
+**Próximos experimentos recomendados:**
+
+1. **Escalar filtros:** 100 → 400, re-rodar k=1 WTA
+2. **Escalar dados:** 5k → 10k imgs, 1 → 3 epochs
+3. **Implementar soft WTA:** subtração de membrana (condutância inibitória) em vez de masking
+4. **Tunar Poisson:** max_rate 100Hz → 200Hz
+
+**Aguardando aprovação humana para prosseguir.**
 
 ---
 

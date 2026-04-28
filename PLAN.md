@@ -48,6 +48,7 @@ A ordem reflete maturidade teórica decrescente: 01 tem décadas de fundamentaç
 
 - **2026-04-27 — Sandbox do agente sem ambiente Python executável.** Cowork sandbox Linux remoto não tem PyTorch nem rede pra instalar; sem GPU; sem datasets. Causa: limitação intencional de segurança da plataforma (allowlist de rede, sem GPU passthrough). Decisão: pivot pra Opção B — agente entrega scaffold completo em uma rodada, execução migra pro Claude Code CLI no Windows host (acesso direto ao shell e à RTX 4070). Ciclo iterativo (Opção A) descartado por inviabilidade prática.
 - **2026-04-27 — Filesystem montado entre Cowork e sandbox tem write-back não-determinístico.** Edits via tool persistem só "do lado Cowork"; bash via mount Linux vê arquivos truncados. Causa: provavelmente buffer write-back não-flushed do mount. Decisão: usar `cat > <file> <<'EOF'` via bash pra forçar persistência atômica em arquivos críticos (model.py, data.py, etc).
+- **2026-04-27 — Sanity check MNIST bloqueado após 3 iterações de k-WTA.** Melhor resultado: 17.76% acurácia (k=1 WTA) com distribuição balanceada de labels, vs meta 85%. Causa hipotética: combinação de (1) número de filtros insuficiente (100 vs 400-6400 do paper), (2) pretreino curto (5k imgs × 1 epoch vs 60k × 3), (3) implementação de WTA diverge do paper (masking vs condutância). Decisão: bloqueio temporário, documentado em `BLOCKED.md`. Aguarda input humano para escolher entre: escalar filtros+dados, aumentar max_rate Poisson, ou reimplementar inibição via condutância.
 
 ---
 
@@ -86,3 +87,30 @@ A ordem reflete maturidade teórica decrescente: 01 tem décadas de fundamentaç
 **Custo de reverter:** ~3-4 semanas pra port completo da Fase 1 quando ela estiver consolidada.
 
 **Marca de teste:** Fase 2 (meses 3-6) decide port baseado em sinais de tração. Se o experimento 01 falhar ou for inconclusivo, port pra Julia provavelmente não acontece — o tempo vai pra outro pilar.
+
+### 2026-04-27 — Inibição lateral em ConvSTDPLayer via k-WTA na dinâmica LIF (não decay de pesos)
+
+**Decisão:** implementar inibição lateral como k-winner-take-all (k=1) durante a dinâmica LIF em `experiment_01_oneshot/model.py:ConvSTDPLayer.forward`, aplicado por patch espacial. Remover completamente o decay de pesos pós-STDP que estava em `stdp_update`.
+
+**Alternativa rejeitada:** manter decay de pesos (`self.conv.weight.data -= 1e-4 * ...`) e apenas aumentar fator de 1e-4 para 1e-2.
+
+**Raciocínio:**
+
+1. **Fidelidade ao paper base.** Diehl & Cook 2015 §Methods descreve inibição lateral como "conexões inibitórias entre neurônios excitadores", implementada via spikes que suprimem membrana de competidores durante a integração LIF — **não** como ajuste de pesos após STDP.
+2. **Diagnóstico do colapso.** Semana 1 mostrou que decay de pesos com fator 1e-4 é ineficaz: todos os 100 filtros colapsaram para classe 0 (distribuição [100,0,0,0,0,0,0,0,0,0]). Aumentar o fator seria band-aid sem justificativa teórica.
+3. **k-WTA é computacionalmente eficiente.** Por patch espacial (H×W), calcular `argmax` ao longo da dimensão de filtros (C_out) e mascarar spikes tem custo O(C_out × H × W), compatível com GPU.
+4. **Generalização para arquiteturas convolucionais.** k-WTA por patch permite que diferentes regiões da imagem ativem filtros diferentes, capturando features locais — essencial para Omniglot onde caracteres têm múltiplas sub-estruturas.
+
+**Implementação:**
+```python
+# Em ConvSTDPLayer.forward, após calcular mem e antes de gerar spikes:
+spikes_raw = (mem >= self.cfg.lif.v_thresh).float()
+# k-WTA: só o filtro com maior membrana por posição espacial dispara
+max_filter_idx = mem.argmax(dim=1, keepdim=True)  # (B, 1, H, W)
+wta_mask = torch.zeros_like(mem).scatter_(1, max_filter_idx, 1.0)
+spikes_out = spikes_raw * wta_mask
+```
+
+**Custo de reverter:** ~2-3 horas (reverter para decay de pesos e re-tunar fator).
+
+**Marca de teste:** se o sanity check MNIST atingir ≥ 70% com distribuição de labels razoavelmente balanceada (nenhuma classe com 0 filtros, nenhuma com > 40), a decisão se consolida. Se falhar novamente, próxima hipótese é STDP puro sem inibição.
