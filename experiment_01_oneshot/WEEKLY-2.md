@@ -825,3 +825,116 @@ Ambos têm gradiente que diz "esses dois embeddings devem estar separados", o qu
 - Sem checkpoints persistidos (modelo AE descartado pós-eval, treino é determinístico via seed).
 - Sessões consecutivas sem sinal>chance: 0 (mantido — C1d entregou 50%+ com z 2.4-4.7).
 - **Caminho C confirmado mas com fronteira clara:** PCA-32 é o teto sem meta-objetivo. Próxima sessão escolhe entre C2 (bio-inspirado, mais ambicioso) e C3 (ProtoNet+esparso, mais provável de fechar gap até 70%+).
+
+---
+
+## Sessão #17 — C2: meta-learning bio-inspirado, primeira iteração conservadora
+
+**Pré-condição:** sessão #16 fechou família C1 com PCA-32+Hopfield = 56.28% como fronteira sem meta-objetivo. C2 testa se plasticidade Hebbian local com objetivo meta-aprendido de classificação one-shot ultrapassa esse piso.
+
+**Diferença arquitetural relevante (documentada explicitamente):** C2 **NÃO usa Hopfield**. Substitui memória Hopfield por **classificador prototípico direto** — após inner loop adaptar pesos, embeddings de support viram prototypes (média per classe), classifica query por cosine similarity (β=8). É uma mudança de regime: C1 era "encoder sem treino + Hopfield"; C2 é "encoder com plasticidade meta-aprendida + ProtoNet-like classifier".
+
+### Setup arquitetural (não modificado mid-sessão, conforme protocolo)
+
+- **Encoder MLP:** 784 → 128 → 32 (tanh em cada layer)
+- **Pesos iniciais (W1, W2):** random Gaussian std=0.1, **fixos** (não meta-aprendidos)
+- **Plasticidade Hebbian local por peso:** `ΔW_ij = η × (A_ij·pre_i·post_j + B_ij·pre_i + C_ij·post_j + D_ij)`
+  - A, B, C, D são parâmetros **meta-aprendidos** (1 valor por peso)
+  - Total: 4 × (128×784 + 32×128) = **417 408 params** (treináveis)
+  - Pesos iniciais: 128×784 + 32×128 = 104 448 params (fixos)
+- **Inner loop:** n_inner=5 passos sobre o support, atualiza W1 e W2 sequencialmente
+- **Outer loop:** Adam lr=1e-3, gradiente flui pelo inner loop até A,B,C,D
+- **Loss:** cross-entropy do query set (5 queries × 5 classes)
+- **Estabilidade:** clip_grad_norm=1.0
+- **Meta-train:** 5000 episodes 5w1s + 5q no background set, seed=42
+- **Eval:** 1000 episodes 5w1s e 20w1s no evaluation set
+
+### Resultados
+
+**Meta-train concluído em 132s** (5000 eps). Curva de acurácia:
+
+| Bloco (250 eps) | Loss média | Acc média (%) |
+|---|---|---|
+| ep 250 | 1.30 (estimado pelo padrão de subida) | ~30 |
+| ep 1000 | — | ~50 |
+| ep 4000 | 0.86 | 68.74 |
+| ep 4750 | 0.86 | 67.57 |
+| **ep 5000 (final)** | **0.82** | **69.62** |
+
+Convergência saudável; loss desce, acc sobe, sem oscilação grande nos últimos 1000 eps.
+
+**Eval principal (com inner loop):**
+
+| Setting | Acurácia | IC95% | z |
+|---|---|---|---|
+| **C2 5w1s** | **63.22%** | [62.41, 64.06] | 3.3 |
+| C2 20w1s | 37.30% | [36.91, 37.69] | 5.1 |
+
+**Validação obrigatória — eval SEM inner loop (pesos iniciais random):**
+
+| Setting | Acurácia | IC95% | z |
+|---|---|---|---|
+| C2-no-inner 5w1s | 38.02% | [37.28, 38.73] | 1.6 |
+| C2-no-inner 20w1s | 17.63% | [17.36, 17.91] | 2.8 |
+
+### Tabela consolidada (família C completa)
+
+| Encoder | 5w1s | 20w1s | cos cent (5w) | Treino |
+|---|---|---|---|---|
+| C1a Pixels+L2 (#15) | 50.17% | 30.30% | -0.2485 | nenhum |
+| C1b PCA-32 (#15) | 56.28% | 35.37% | -0.2476 | PCA fit (estatístico) |
+| C1c RandomProj-32 (#15) | 41.23% | 20.05% | -0.2462 | nenhum |
+| C1d AE-32 (#16) | 50.57% | 30.59% | -0.2438 | MSE 30 epochs |
+| C1d AE-64 (#16) | 52.64% | 32.54% | -0.2463 | MSE 30 epochs |
+| **C2 com inner loop** | **63.22%** | **37.30%** | -0.2411 | **meta-CE 5000 eps** |
+| C2 sem inner loop | 38.02% | 17.63% | -0.2446 | (validação) |
+| Pixel kNN (sessão #7) | 45.76% | — | — | nenhum |
+| ProtoNet (sessão #7) | 85.88% | — | — | full SGD |
+| Iter 1 STDP (sessão #9) | 35.98% | 9.80% | — | 13 sessões |
+
+### Critério literal pelo protocolo da sessão
+
+| Critério | Threshold | Resultado |
+|---|---|---|
+| Forte | ≥70% | NÃO |
+| **Médio** | **60-70%** | **SIM (63.22%)** |
+| Empate | 54-58% | NÃO |
+| Pior | <54% | NÃO |
+
+**C2 atinge MÉDIO.** Agrega +6.94 p.p. sobre C1b PCA-32 (56.28%), confirmando que meta-objetivo de classificação supera reconstrução pixel-wise (#16) e features estatísticas (#15). Mas ainda **22.66 p.p. abaixo de ProtoNet (85.88%)**.
+
+### Diagnóstico via validação sem inner loop
+
+| Métrica | C2 com inner | C2 sem inner | Delta |
+|---|---|---|---|
+| 5w1s | 63.22% | 38.02% | **+25.21 p.p.** |
+| 20w1s | 37.30% | 17.63% | **+19.67 p.p.** |
+
+**Validação PASSOU.** Plasticidade meta-aprendida carrega 25 p.p. de informação real em 5w1s e ~20 p.p. em 20w1s. Encoder random sozinho (sem inner loop) está no patamar de C1c RandomProj-32 (~38-41%, similar). O ganho de 63% vem da adaptação via plasticidade durante o inner loop, não dos pesos iniciais nem do classificador prototype.
+
+### Observações mecanísticas
+
+1. **20w1s tem transfer parcial:** C2 ganha apenas +1.93 p.p. sobre C1b em 20w1s (37.30% vs 35.37%) — meta-train rodou em 5w1s, então transfer pra 20w1s não é perfeito. Provável melhoria com meta-train multi-N.
+
+2. **Centered cosine dos supports é estável** entre C1 e C2 (-0.24 em 5w1s, -0.05 em 20w1s) — esse não é o sinal que diferencia. Os ganhos vêm da geometria dos embeddings em relação às prototypes, não da diversidade dos supports per se.
+
+3. **Convergência do meta-train rápida:** 5000 eps em 132s, com loss caindo de ~1.3 → 0.82 e acc subindo até ~70% (treino). Sugere que mais episodes ou capacidade poderiam empurrar mais.
+
+4. **Custo de 4 params por peso é viável.** 417K params + backprop através de 5 inner steps × 2 layers rodou em GPU sem gargalo.
+
+### Estado final pós-#17
+
+- **Código novo:** `experiment_01_oneshot/c2_meta_hebbian.py` (script standalone, não usa HopfieldMemory).
+- `model.py`, `config.py` inalterados (conforme restrição).
+- Sem checkpoints persistidos (treino determinístico via seed=42, regenerável em 132s).
+- Sessões consecutivas sem sinal>chance: 0 (resetado — C2 entregou sinal forte com z≈3.3 / 5.1).
+
+### Hipóteses pra próximas sessões (Caminho C continua)
+
+| Hipótese | Custo | Justificativa pós-#17 |
+|---|---|---|
+| **C2-refine: encoder maior + mais meta-train** (ex 256 hidden, latent 64, 10000 eps) | ~30-60 min | Convergência ainda aparenta espaço. Custo barato pra subir 5-10 p.p. |
+| **C2-multi-N: meta-train com mistura 5w/20w** | ~30 min | 20w1s só ganhou +1.93 p.p. sobre C1b — transfer parcial. Treinar com tasks variados pode fechar. |
+| **C2-with-Hopfield: usar HopfieldMemory após adapt em vez de prototypes** | ~30 min | Mantém o spirit "Hopfield carrega memória" + plasticidade meta-aprendida pré-Hopfield. Pode bater 65-70%. |
+| **C3 — ProtoNet+features esparsas** | ~2h | Pivot pra outra rota. ProtoNet baseline 85.88% → adicionar k-WTA esparso pode preservar capacidade. |
+| **A/B dormentes** | — | Não descartados, mas Caminho C agora tem ROI medido e positivo (+27 p.p. acima do melhor STDP). |
