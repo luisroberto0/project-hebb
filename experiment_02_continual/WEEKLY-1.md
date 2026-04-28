@@ -123,3 +123,78 @@ Mudanças concretas pra Opção 2 (a discutir):
 **Antes de #24 (EWC baseline), decidir entre Opção 1/2/3 acima.** Preferencialmente em sessão administrativa curta (30 min) — não emendar com implementação sob critério ainda incerto.
 
 Se Luis escolher Opção 2 e quiser confirmar empiricamente que adversarializar funciona, pode rodar variação de `baseline_naive.py` com `--warmup-episodes 0 --finetune-episodes 300` em ~15-20 min antes de #24. Isto valida que setup adversarial produz o forgetting esperado, antes de investir em EWC.
+
+---
+
+## Sessão #25 — Implementação Opção D (alphabets + skip warmup) — INSUFICIENTE
+
+**Pré-condição:** sessão #24 escolheu Opção D em STRATEGY.md "Reformulação Pós-Sessão #23". Esperado naive cair pra 40-55% ACC.
+
+### Implementação
+
+`baseline_naive.py` refatorado:
+
+- Novo `CombinedOmniglot` wrapper: concatena background (964 chars / 30 alfabetos) + evaluation (659 chars / 20 alfabetos) = 1623 chars / **50 alfabetos totais**. Renumera labels da evaluation com offset.
+- Nova `build_tasks_by_alphabet`: parse de `dataset._characters[i]` pra extrair alfabeto via path split. Subsample n_chars_per_task=14 chars/alfabeto (todos os 50 têm ≥14, nenhum droppado). Ordem das tasks aleatorizada por seed.
+- Flag `--task-mode {alphabet,random}` (default alphabet). Modo random preserva setup #23 pra reprodução.
+- Defaults pós-#24: `--warmup-episodes 0`, `--n-warmup-tasks 0` (skip warmup).
+- Guard em phase warmup: skipped se `n_warmup_tasks=0` ou `warmup_episodes=0`.
+
+Refatoração dentro do orçamento (~25 min). Sanity 1 seed (finetune=30, eval=15) confirmou loop fechado: ACC 78.66%, BWT -5.88.
+
+### Resultado 5 seeds (defaults: finetune=100, eval=50)
+
+| Métrica | Setup #23 (random splits + warmup) | **Setup #25 (alphabets + skip warmup)** | Δ |
+|---|---|---|---|
+| ACC final | 82.58% IC [80.47, 84.63] | **80.65%** IC [79.23, 82.06] | **-1.93 p.p.** |
+| BWT | -12.46 IC [-14.64, -10.50] | **-9.26** IC [-10.72, -7.88] | **+3.20 p.p.** |
+| Tempo | 9.8 min | 11.3 min | — |
+
+ACC final por seed (alphabet mode): 79.16%, 80.48%, 83.06%, 81.86%, 78.68%.
+BWT por seed: -10.94, -9.71, -7.10, -7.53, -11.00.
+
+### Critério da sessão (definido na #25)
+
+| Range | Decisão | Resultado |
+|---|---|---|
+| ACC 40-55% | **VALIDADO** → próximo é EWC | NÃO |
+| ACC <35% | Adversarial demais | NÃO |
+| **ACC >60%** | **Insuficiente, re-considerar** | **SIM (80.65%)** |
+
+**Opção D FALHA pelo critério.** Naive cai apenas ~2pp em relação ao setup #23. BWT até MELHORA (menos forgetting), o oposto do esperado.
+
+### Por que Opção D não funcionou?
+
+Hipótese: alfabetos não são suficientemente "ortogonais" pra ProtoNet. Encoder ProtoNet aprende uma métrica genérica de Omniglot — "como mapear caracteres similares perto" — que **transfere bem entre alfabetos também**. Não é só random splits que compartilham features genéricas; alfabetos compartilham as mesmas features básicas (linhas, curvas, simetrias).
+
+Adicionalmente, **subsample 14 chars/task em alphabet mode (vs 5 em random mode) aumenta diversidade DENTRO da task** — encoder tem mais variação pra aprender, fica menos especializado, menos sujeito a esquecer.
+
+**O fundamental ProtoNet sem classifier head é robusto a forgetting em Omniglot. Não há setup trivial dentro de Omniglot que faça naive cair pra 40-55%.**
+
+### Caminhos pra próximas sessões (decisão é do Luis, não me comprometo)
+
+3 opções pra fazer naive realmente cair:
+
+**Opção D' (intensificar fine-tune):** rodar com `--finetune-episodes 500` ou 1000. Encoder overfit massivamente a task atual → drift muito maior. Custo: ~30-45 min de experimento. Risco: se ainda não cair, esgota essa rota.
+
+**Opção C revisitada (cross-domain):** Omniglot → MNIST → FashionMNIST → KMNIST → CIFAR-10 (em escala 28×28 grayscale). Forgetting cross-domain é dramático. Custo: implementação ~2-3 sessões. Viola decisão (b) Pós-#21 ("Split-Omniglot 50-tasks") mas é defensável dado #25 mostrar que Split-Omniglot é insuficiente.
+
+**Opção E (mudar paradigma de eval):** trocar ProtoNet eval por **classifier head sequential learning**. Encoder + camada linear N-way (N = número total de classes). Treino sequencial atualiza head → forgetting clássico aparece. Custo: ~1 sessão de re-arquitetura. Resolve a causa raiz (prototypes fresh são o que protege ProtoNet).
+
+**Recomendação minha (provisional):** **Opção E** — mudar paradigma de eval. Razões:
+- Setup mais alinhado com literatura mainstream de continual learning (EWC/SI/GEM são todos sobre classifier-based methods)
+- Resolve a causa raiz identificada (sem classifier head treinado, ProtoNet é robusto)
+- Custo moderado (~1 sessão)
+- Não viola a decisão (b) Pós-#21 — ainda usamos Split-Omniglot, só mudamos como avaliamos
+
+**Risco da Opção E:** muda significativamente o que estamos medindo. Pergunta científica precisa re-formular novamente: "plasticidade meta-aprendida em encoder + classifier head bate EWC por 3pp?". Mais sessões administrativas.
+
+**Decisão pendente do Luis** antes de #26. Idealmente sessão administrativa curta de 30 min.
+
+### Estado final pós-#25
+
+- `baseline_naive.py` agora suporta dois modos (alphabet | random) — código robusto pra ambos.
+- Setup Opção D mensurado e documentado como insuficiente.
+- Pergunta científica oficial **broken pela segunda vez** (sessão #23 brokei a primeira; setup adversarial proposto na #24 não consertou).
+- Sessões consecutivas sem sinal>chance: 0 (resultado é informativo, não null).
+- **Marco 1 está em risco** se naive não cair pra range adversarial. Próxima sessão precisa decidir caminho ou aceitar que Marco 1 vai ter margem científica pequena.
