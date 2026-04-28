@@ -1110,3 +1110,126 @@ Mais honesto que "Hebbian bio-inspired" — é uma rede linear meta-adaptativa.
 | C2-with-Hopfield | ~30 min | Adormecida — útil se C3 falhar e quisermos voltar pra C2 |
 | C2-bigger-encoder (256 hidden) | ~30 min | Adormecida — última cartada de C2 antes de pivotar |
 | A/B dormentes | — | Não descartados |
+
+---
+
+## Sessão #20 — Caminho C3: ProtoNet com k-WTA esparso (SUCESSO FORTE)
+
+**Pré-condição:** família C2 saturou em ~64% após sessões #17-#19. STRATEGY.md previu pivot pra C3 (ProtoNet + features esparsas) como rota convencional com mecanismo neuro-inspirado defensável.
+
+### Reprodução do baseline ProtoNet
+
+Antes de C3, reproduzido o baseline ProtoNet com 5000 train eps:
+
+| Setup | 5w1s |
+|---|---|
+| ProtoNet smoke test (sessão #7, 500 train eps) | 85.88% |
+| **ProtoNet completo (sessão #20, 5000 train eps, seed=42)** | **94.55%** |
+
+**Discrepância do número histórico:** o 85.88% registrado em sessões anteriores era smoke test com apenas 500 train episodes; o baseline real com 5000 eps é **94.55%**. Este é o número de referência apropriado pra C3.
+
+### Setup C3
+
+- **Encoder:** ProtoEncoder (CNN-4) idêntico ao baselines.py — 4 blocos Conv-BN-ReLU-MaxPool com 64 filtros, output 64D após 4 maxpools.
+- **k-WTA:** aplicado no embedding final (64D). Mantém top-k ativações por exemplo, zera o resto. Aplicado em training E eval (mesma transformação consistente).
+- **Treino:** Adam lr=1e-3, 5000 train episodes 5w1s, mesma loss prototypical (cross-entropy sobre `-cdist²` de queries vs prototypes). Episódios sampled do background set.
+- **Eval:** 1000 episodes 5w1s e 20w1s, seed eval = seed+1 = 43 (matching baselines.py).
+
+3 níveis de esparsidade: C3a k=32 (50% esparso), C3b k=16 (75%), C3c k=8 (87.5%).
+
+### Resultados
+
+| Modelo | 5w1s | IC95% 5w1s | z 5w | 20w1s | IC95% 20w1s | z 20w | sparsity |
+|---|---|---|---|---|---|---|---|
+| ProtoNet baseline (#20) | **94.55%** ± 6.40% | — | — | — | — | — | 0% |
+| **C3a (k=32, 50%)** | **93.35%** | [92.89, 93.77] | 10.0 | 81.87% | [81.52, 82.20] | 13.8 | 50% |
+| **C3b (k=16, 75%)** | **93.10%** | [92.67, 93.55] | 9.9 | 80.72% | [80.36, 81.09] | 12.9 | 75% |
+| **C3c (k=8, 87.5%)** | **90.77%** | [90.20, 91.34] | 7.8 | 75.44% | [75.00, 75.87] | 10.7 | 87.5% |
+
+**Curva sparsity × accuracy (5w1s) é dramaticamente plana até 75% sparsity:**
+- 0% → 94.55%
+- 50% → 93.35% (Δ = -1.20 p.p.)
+- 75% → 93.10% (Δ = -1.45 p.p.)
+- 87.5% → 90.77% (Δ = -3.78 p.p.)
+
+Tempo total: 385.7s (6.4 min) — três trains de ~67-74s cada + evals.
+
+### Validação obrigatória passou
+
+| Setup | 5w1s | 20w1s |
+|---|---|---|
+| Random encoder + k-WTA k=16 (sem treino) | **37.60%** [36.89, 38.34] z≈1.5 | 16.73% [16.45, 17.02] z≈2.6 |
+
+Random encoder com k-WTA fica no patamar de C1c RandomProj-32 (41.23%) e C2-no-inner (38%). Critério "35-45%" passou — **ganho de C3 vem do treino, não da estrutura k-WTA estática**. k-WTA sozinho sem encoder treinado não carrega sinal acima do baseline arquitetural conhecido.
+
+### Tabela cumulativa do projeto inteiro (5w1s)
+
+| Marco | Acurácia | Sessões investidas | Mecanismo |
+|---|---|---|---|
+| Iter 1 STDP saturado (melhor #1-#13) | 35.98% | 13 | STDP + Hopfield (saturado) |
+| C1b PCA-32 sem treino (#15) | 56.28% | 1 | PCA + Hopfield Memory |
+| C2 baseline meta-Hebbian (#17) | 63.22% | 1 | encoder random + plasticidade meta + protótipo |
+| C2-simplified (#19) | 64.08% | 1 | linear + W=0 + plasticidade meta + protótipo |
+| **C3b (esta sessão)** | **93.10%** | **1** | **CNN-4 ProtoNet + k-WTA 75%** |
+| ProtoNet baseline | 94.55% | — | CNN-4 ProtoNet (referência alta) |
+
+### Critério literal pelo protocolo da sessão
+
+| Critério | Threshold | Resultado |
+|---|---|---|
+| **Sucesso forte** | **≥80% no melhor C3** | **SIM (C3a 93.35%, C3b 93.10%, C3c 90.77%)** |
+| Trade-off mensurável | 60-80% | NÃO necessário (todos ≥90%) |
+| Colapso forte | <60% | NÃO |
+
+**Critério SUCESSO FORTE atingido.** k-WTA esparso até 87.5% preserva ≥90% da performance ProtoNet baseline. Sparsity neuro-inspirada é **compatível com high-performance metric learning**.
+
+### Por que k-WTA não derruba ProtoNet? (interpretação mecanística)
+
+1. **Esparsidade já existe naturalmente em CNN-4 + ReLU + MaxPool.** ReLU zera ativações negativas, MaxPool seleciona top-1 espacial — embeddings finais já têm ativações concentradas em poucas dimensões "vencedoras".
+
+2. **Treino redistribui informação pras top-k dimensões.** Como k-WTA é aplicado em training e eval, o gradiente flui via top-k channels — encoder aprende a colocar informação útil exatamente nas dimensões mais ativas.
+
+3. **Distância euclidiana entre vetores esparsos preserva informação discriminativa.** `cdist²` entre dois vetores k-esparsos é dominada pelas dimensões não-zero — comparação fica focada nas direções que realmente carregam sinal.
+
+4. **20w1s mantém sinal forte (75-82%)** — generalização pra mais classes não quebra com sparsity, sugere que features são **localmente discriminativas** (cada k-WTA-active dimension distingue características relevantes), não dependentes de coordenação global de todas as 64 dimensões.
+
+### Re-framing acadêmico defensável
+
+> **"k-WTA esparso (75% das ativações zeradas) preserva 93.10% acurácia em Omniglot 5w1s contra 94.55% baseline ProtoNet — esparsidade neural-inspirada é compatível com high-performance prototype-based metric learning sem perda significativa, validando a hipótese de que codificação esparsa biológica não impede deep representation learning."**
+
+Honestamente, **C3 é incrementalismo** sobre ProtoNet — não há mudança fundamental de paradigma. Mas:
+- Resultado de 93% com 75% de sparsity **é defensável academicamente** como demonstração mecanística.
+- Custo de 1 sessão pra produzir resultado próximo do estado da arte com restrição neural-inspirada.
+- Permite continuar investigando sparsity em escala — ex.: e se aplicarmos k-WTA também em camadas intermediárias?
+
+### Estado final pós-#20
+
+- **Código novo:** `experiment_01_oneshot/c3_protonet_sparse.py` (script standalone, duplica ProtoEncoder de baselines.py por isolamento).
+- `model.py`, `config.py` inalterados desde #13.
+- Sem checkpoints persistidos (treino determinístico via seed=42).
+- **C3a (93.35%) e C3b (93.10%) viram os melhores resultados do projeto inteiro**, +29 p.p. acima de C2-simplified (#19) e +57 p.p. acima do melhor STDP (Iter 1, sessões #1-#13).
+- Sessões consecutivas sem sinal>chance: **0** (mantido — z 7.8 a 13.8).
+
+### Comparação com missão original (CONTEXT.md §4)
+
+Meta CONTEXT.md: ≥90% 5w1s, ≥70% 20w1s sem backprop end-to-end, com plasticidade local.
+
+| Critério | Meta | C3b atinge? |
+|---|---|---|
+| ≥90% 5w1s | 90% | **✅ 93.10%** |
+| ≥70% 20w1s | 70% | **✅ 80.72%** |
+| Sem backprop end-to-end | sim | ❌ **C3 USA backprop** (ProtoNet treinado via SGD) |
+| Plasticidade local | sim | ❌ **C3 não usa** plasticidade local |
+
+**Atinge as metas numéricas, MAS não atinge as restrições mecanísticas originais.** C3 é metric learning convencional + sparsity, não uma demonstração de "STDP funciona pra few-shot". É honestamente um resultado adjacente, não direto à missão.
+
+### Próximas sessões (decisão fora dessa, não me comprometo)
+
+| Hipótese | Custo | Justificativa pós-#20 |
+|---|---|---|
+| **Consolidar C3** com sweep mais fino (k ∈ {4, 6, 12, 24, 48}) | ~30 min | Caracteriza fronteira de sparsity tolerada. k=4 ainda preserva? |
+| **C3-deeper-sparse** | ~1h | Aplicar k-WTA em camadas intermediárias, não só no embedding final. Mais "biológico". |
+| **C3-vs-C2-hybrid** | ~1-2h | Combinar plasticidade meta-aprendida (#17) sobre encoder ProtoNet pré-treinado com k-WTA. Volta pra spirit "plasticidade local + esparsidade". |
+| **Voltar pra C2-with-Hopfield** | ~30 min | Adormecida pós-#19; talvez agora vale com confiança no Caminho C. |
+| **Caminho A revisitado: H_no_clamp** | ~30 min | Diagnóstico pendente desde #13. ROI baixo, mas fecha capítulo. |
+| **Aceitar C3 como resultado e mover pra Fase 2** | — | C3b atinge metas numéricas; talvez é hora de "parar e escrever". |
