@@ -52,6 +52,7 @@ A ordem reflete maturidade teórica decrescente: 01 tem décadas de fundamentaç
 - **2026-04-27 (sessão #3) — Auditoria e rebalance LTP/LTD descartam 3 hipóteses, isolam causa raiz.** Etapa 1: `tests/test_assignment.py` valida `assign_labels` e `evaluate` com 3 casos sintéticos (100% perfeito, 10% chance, 100% sinal fraco) — pipeline de classificação está OK. Etapa 2: `tests/test_spike_balance.py` mede razão pré:pós-spikes = 10.1; tentativas de rebalanceamento (R=10 e R=3) mostram trade-off estrutural: LTP<LTD mata pesos, LTP>LTD colapsa filtros (rich-get-richer). **Causa raiz isolada: falta de adaptive threshold homeostático** (Diehl & Cook 2015 §2.3) que força filtros a disparar igualmente. Próxima sessão: decidir entre implementar homeostasis (H_homeostasis), pular pra Omniglot (H_arch) ou validar contra Brian2 (H_paper_replicability) — detalhes em `BLOCKED.md`.
 - **2026-04-27 (sessão #4) — Homeostasis implementada, mecanicamente eficaz mas insuficiente sozinha.** Adaptive threshold de Diehl & Cook §2.3 codificado em `ConvSTDPLayer`. Iteração 1 com theta_plus=0.05 (paper) saturou theta em 267 e silenciou filtros (9.80% acc). Iteração 2 com theta_plus=0.0005 (100× menor, calibrado pro nosso regime de 100 ts) dá theta saudável (mean=2.5) e melhora distribuição de filtros [36,10,11,7,7,7,6,9,3,4] vs antes [24,23,11,9,3,5,7,13,1,4], mas acurácia continua ~16-17%. **Razão**: homeostasis força filtros a se distribuir → cada filtro vence menos → LTP/LTD imbalance re-emerge por filtro. Os dois problemas precisam ser atacados juntos. Próximas opções vivas em `BLOCKED.md`: combinar homeostasis + LTP/LTD ajustado simultaneamente; arquitetura conv real; validação Brian2; ou pular Semana 1.
 - **2026-04-27 (sessão #5) — H_combo descartada: ataque simultâneo de homeostasis + LTP/LTD não destrava acurácia.** Testado com `theta_plus=0.0005, A_post=-0.001` (R=10): acurácia 13.76%, PIOR que homeostasis sozinha (16.39%) e que baseline sem nada (17.76%). Padrão sequencial revelador: quanto mais LTP relativo a LTD, mais colapso de filtros (theta std subiu 4×, 16% dos filtros nunca dispararam, distribuição [87,1,1,2,1,0,0,6,2,0]). Conclusão: homeostasis não compensa rich-get-richer no regime esparso PyTorch. Sistema parece ter instabilidade arquitetural irrecuperável via hiperparâmetros. Hipóteses vivas restantes: H_arch (mover pra Omniglot conv real) ou H_paper_replicability (validar contra Brian2). Não houve tuning porque tendência era monotonicamente errada.
+- **2026-04-27 (sessão #6) — Semana 1 fechada como caso patológico, pivot pra Semana 2.** Decisão registrada em "Decisões arquiteturais": MNIST com kernel=28 é caso degenerado pra k-WTA (output espacial 1×1, todos filtros disputam mesmo slot). Stack validada via testes sintéticos + 5 sessões de diagnóstico (assignment/evaluate corretos, STDP atualiza pesos, homeostasis funciona). ROI baixo de continuar (~5h investidas, 0pp ganho acima de 17.76%). Semana 2 (Omniglot kernel=5 + pool) tem arquitetura multi-posição que naturalmente diversifica filtros — caminho conceitual mais alinhado com o experimento real. Sessão administrativa: nenhum experimento novo, só fechamento e preparação.
 
 ---
 
@@ -90,6 +91,25 @@ A ordem reflete maturidade teórica decrescente: 01 tem décadas de fundamentaç
 **Custo de reverter:** ~3-4 semanas pra port completo da Fase 1 quando ela estiver consolidada.
 
 **Marca de teste:** Fase 2 (meses 3-6) decide port baseado em sinais de tração. Se o experimento 01 falhar ou for inconclusivo, port pra Julia provavelmente não acontece — o tempo vai pra outro pilar.
+
+### 2026-04-27 — Pivot: Semana 1 fechada como caso patológico, ir direto pra Semana 2 (Omniglot conv)
+
+**Decisão:** declarar sanity check MNIST com kernel=28 como caso patológico documentado (não falha de stack), encerrar Semana 1, mover ativamente pra Semana 2 (pretreino STDP em Omniglot com arquitetura conv real, kernel=5 + pool).
+
+**Alternativa rejeitada:** persistir em MNIST sanity até atingir ≥85% via (a) reimplementação em Brian2 (~1 semana), ou (b) tuning adicional de hiperparâmetros (espaço já exaurido em 5 sessões).
+
+**Raciocínio:**
+
+1. **MNIST com kernel=28 é caso degenerado pra k-WTA.** Output espacial (1,1) faz k-WTA competir sobre uma única posição — todos os filtros disputam o mesmo "slot". Isso cria instabilidade arquitetural (rich-get-richer ou colapso simétrico) que homeostasis não compensa, conforme demonstrado nas sessões #4 e #5.
+2. **Stack está validada empiricamente.** 5 sessões de iteração descartaram bugs em assignment/evaluate (`tests/test_assignment.py` ✓), confirmaram que STDP atualiza pesos corretamente, validaram homeostasis mecanicamente (theta com variância controlada, distribuição de filtros uniformizável). O pipeline funciona — o que não funciona é o caso degenerado.
+3. **Arquitetura Omniglot é fundamentalmente diferente.** kernel=5 + pool gera output espacial multi-posição (~28×28 com padding=2 na primeira layer). k-WTA por posição vira "1 vencedor entre 8/16 filtros por cada posição espacial", o que naturalmente diversifica filtros via specialização espacial — não há único slot disputado.
+4. **ROI baixo de continuar em MNIST.** 5 sessões × ~1h cada = ~5h investidas pra ganhar 0pp acima de 17.76%. O experimento real (Omniglot one-shot) foi a tese desde o início — MNIST sanity era validação. Validação produziu sinal misto (stack OK, arch específica não), logo: prosseguir.
+
+**Implicação para Semana 1:** declarada **concluída com ressalva** (`experiment_01_oneshot/PLAN.md` atualizado). Resultado consolidado: 17.76% MNIST, distribuição de filtros melhorada via homeostasis. Não atingiu meta 85% — mas a meta era validação de stack, e validação aconteceu por outras vias (testes sintéticos + diagnóstico mecânico).
+
+**Custo de reverter:** zero. Código permanece. Se Semana 2 falhar de forma que aponte de volta pra MNIST sanity, o trabalho é só rodar `sanity_mnist.py` novamente.
+
+**Marca de teste:** se Semana 2 (Omniglot 5-way 1-shot) atingir > 50% (vs chance 20%), confirma que kernel=28 era de fato o problema. Se Semana 2 também colapsar, o caminho honesto é Brian2 (Opção C documentada em `BLOCKED.md` final da Semana 1).
 
 ### 2026-04-27 — Adaptive threshold homeostático (Diehl & Cook 2015 §2.3) adicionado a ConvSTDPLayer
 

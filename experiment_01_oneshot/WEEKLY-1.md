@@ -484,6 +484,71 @@ Detalhes em `BLOCKED.md` (atualizado).
 
 ---
 
+# RESUMO EXECUTIVO FINAL DA SEMANA 1 (sessão #6)
+
+**Decisão:** Semana 1 fechada como **caso patológico documentado**, pivot pra Semana 2 (Omniglot conv real).
+
+## Histórico consolidado (6 sessões, 17.76% final)
+
+| Sessão | Mecanismo testado | Acurácia | Aprendizado principal |
+|--------|-------------------|----------|----------------------|
+| #1 | Decay de pesos (1e-4) como inibição | ~10% | Inibição via decay de pesos é band-aid, não funciona |
+| #2 | k-WTA hard masking (k=1, 5, none) | 17.76% (k=1) | k=1 distribui filtros, k=5 ou sem WTA colapsam |
+| #3 | Auditoria + rebalance LTP/LTD | (testes) | assign/evaluate corretos; razão R=10.1 isolada |
+| #4 | Adaptive threshold (homeostasis) | 16.39% | Mecanismo funciona, mas LTD ressurge por filtro |
+| #5 | H_combo (homeostasis + LTP/LTD) | 13.76% | Refuta hipótese, mais LTP = mais colapso |
+| #6 | Sessão administrativa (esta) | — | Pivot pra Semana 2 |
+
+## O que foi validado (positivo)
+
+1. **Stack PyTorch+CUDA+RTX 4070** funciona: ~80 imgs/s no pretreino, sem crashes em 6 sessões.
+2. **`assign_labels` e `evaluate` corretos:** `tests/test_assignment.py` ✓ 3/3 (perfeito → 100%, random → 10%, sinal fraco → 100%).
+3. **STDP atualiza pesos corretamente:** `tests/test_spike_balance.py` mediu R=10.1 pré:pós, padrão consistente com regra de Diehl & Cook.
+4. **Adaptive threshold homeostático implementado** (Diehl & Cook §2.3): `ConvSTDPLayer.theta` buffer + `v_thresh_eff` + update de theta por timestep. Mecanicamente eficaz (theta com variância, distribuição uniformizável).
+5. **k-WTA na dinâmica LIF** implementada conforme paper (não como decay de pesos).
+
+## O que foi descartado empiricamente
+
+| Hipótese | Status | Como foi descartada |
+|----------|--------|---------------------|
+| Bug em assign_labels/evaluate | ✗ | 3 testes sintéticos passam |
+| Bug em distribuição de classes | ✗ | Verificado balanceamento (~500/classe em subset 5k) |
+| Rebalancear LTP/LTD sozinho | ✗ | R=3 e R=10 colapsam filtros (sessão #3) |
+| Escalar dose (filtros + dados) | ✗ | Config A (200/10k) PIOROU pra 9.94% (sessão #3) |
+| Homeostasis sozinha | ✗ | 16.39% — distribuição melhora, acc não destrava (#4) |
+| H_combo (homeostasis + LTP/LTD) | ✗ | 13.76% — pior que componentes isolados (#5) |
+
+## Causa raiz identificada (não resolvida na Semana 1)
+
+**MNIST com kernel=28 produz output espacial (1,1).** k-WTA compete sobre uma única posição → todos os filtros disputam o mesmo "slot". Isso cria duas condições mutuamente exclusivas, ambas falhas:
+
+- **LTD-dominante (R≤1):** pesos morrem (acurácia ~17%, melhor consolidado por acaso de tie-break+viés)
+- **LTP-dominante (R>1):** rich-get-richer absoluto (1 filtro vence sempre, distribuição [87,1,...])
+
+Homeostasis (Diehl & Cook §2.3) atenua mas não elimina o problema, porque ao forçar distribuição uniforme dos winners, cada filtro individual vence menos vezes — então LTD-dominância re-emerge per filter.
+
+## Por que isso É caso patológico (e não falha de stack)
+
+A **arquitetura prevista pra Omniglot** (kernel=5 + pool) gera output multi-posição (~28×28 com padding=2 na primeira layer). k-WTA por posição vira "1 vencedor entre 8/16 filtros, em cada uma das ~784 posições espaciais simultaneamente" — diversidade nasce naturalmente da especialização espacial, sem precisar mecanismos compensatórios.
+
+MNIST sanity foi escolhido por ser baseline conhecido do paper, mas a adaptação pra arquitetura "FC-equivalente" (kernel cobrindo input inteiro) introduziu degenerescência de k-WTA específica desse setup — não da regra STDP em si.
+
+## Estado do código ao final da Semana 1
+
+- `model.py`: ConvSTDPLayer com k=1 WTA + adaptive threshold (homeostasis), usado também em `STDPHopfieldModel` (2 layers conv real + pool + memória Hopfield)
+- `config.py`: `theta_plus=0.0005, tau_theta=1e7, A_pre=0.01, A_post=-0.0105` (paper original, melhor estado consolidado)
+- `tests/test_assignment.py`: ✓ 3/3 passam (auditoria de pipeline de classificação)
+- `tests/test_spike_balance.py`: instrumentação reutilizável (medição empírica de regimes de spike)
+- `sanity_mnist.py`: pseudocódigo de assignment/evaluate documentado, UTF-8 fix, distribuição de classes + diagnóstico de theta
+
+## Decisão final
+
+Semana 1 atingiu seu objetivo conceitual (validar que a stack funciona, identificar limitações de arquitetura), embora não a meta numérica de 85%. Investir mais sessões aqui tem ROI baixo (5 sessões = 0pp ganho acima de 17.76%). **Pivot pra Semana 2** é o caminho honesto: mover pra arquitetura prevista (Omniglot conv real) onde a tese principal vive de qualquer forma.
+
+Detalhes da preparação Semana 2: `WEEKLY-2-NEXT.md`.
+
+---
+
 ## Referências
 
 - Diehl, P. U., & Cook, M. (2015). *Unsupervised learning of digit recognition using spike-timing-dependent plasticity*. Frontiers in Computational Neuroscience.

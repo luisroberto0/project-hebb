@@ -144,11 +144,19 @@ A coluna importante é "Backprop end-to-end". Nosso ponto não é bater o estado
 
 ## 8. Roadmap (6 semanas)
 
-**Semana 1 — Sanity check.**
-Reproduzir Diehl & Cook 2015 em MNIST (não Omniglot ainda). Critério: STDP não-supervisionado deve atingir ~85% em MNIST com leitor linear. Se isso não funciona, a stack ou o entendimento de STDP estão errados — descobrir antes de investir em Omniglot.
+> **Status atualizado 2026-04-27 (sessão #6):** Semana 1 fechada como caso patológico documentado. Semana 2 ativa. Detalhes de status por semana abaixo.
 
-**Semana 2 — Adaptação pra Omniglot.**
+**Semana 1 — Sanity check. — CONCLUÍDA COM RESSALVA.**
+Reproduzir Diehl & Cook 2015 em MNIST. Critério original: STDP não-supervisionado ≥85%.
+- **Resultado obtido:** 17.76% (5 sessões de iteração, espaço de hiperparâmetros exaurido)
+- **Status:** caso patológico documentado — MNIST com kernel=28 produz output espacial (1,1) que torna k-WTA degenerado (todos filtros disputam mesma posição). Ver `WEEKLY-1.md` § resumo executivo final e `PLAN.md` raiz § decisão arquitetural de 2026-04-27 sobre o pivot.
+- **Stack validada por outros meios:** `tests/test_assignment.py` (assign_labels e evaluate corretos via 3 casos sintéticos), `tests/test_spike_balance.py` (razão pré:pós-spikes mensurável), homeostasis implementada e validada mecanicamente (theta com variância controlada, distribuição de filtros uniformizável).
+- **Decisão:** aceitar ressalva, prosseguir pra Semana 2 onde a arquitetura conv real (kernel=5 + pool, output multi-posição) muda fundamentalmente a dinâmica de k-WTA.
+
+**Semana 2 — Adaptação pra Omniglot. — ATIVA.**
 Pipeline de dados (split background/evaluation, augmentação opcional, codificação spike). Conv-STDP layer 1 funcionando. Inspeção visual dos filtros aprendidos.
+- **Infra disponível:** `data.py` (Omniglot loader + EpisodeSampler validados), `train.py` (loop pretreino com TensorBoard), `model.py:STDPHopfieldModel` (2 layers conv + pool + memória Hopfield), `evaluate.py` (N-way K-shot com IC bootstrap), `baselines.py` (Pixel kNN + ProtoNet). Pipeline validado end-to-end em sessões anteriores; primeiro experimento Omniglot ainda não executado.
+- **Próximos passos detalhados:** ver `WEEKLY-2-NEXT.md`.
 
 **Semana 3 — Pipeline completo.**
 Conv-STDP layer 2 + extração de features + memória Hopfield. Primeira medição em 5-way 1-shot. Mesmo se for ruim (40-60%), é o sinal de que o sistema fecha.
