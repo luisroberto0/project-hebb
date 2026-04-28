@@ -59,3 +59,120 @@ Pré-spikes da entrada Omniglot (após inversão, fundo preto/traços brancos): 
 Com `A_pre=0.01, A_post=-0.0105` (paper original) e essa razão invertida, intuição diz que LTD deveria ficar fraco, mas o produto `apost · pre_patches` no STDP rule depende não-linearmente das densidades. Análise teórica não basta, precisa medir.
 
 **Próximo passo (Etapa 1):** adaptar `tests/test_spike_balance.py` pra `STDPHopfieldModel.layer1`, medir empiricamente, decidir calibração.
+
+---
+
+### Etapa 1 — Calibração do regime de spikes ⚠️ (parcial)
+
+**Objetivo:** medir empiricamente a razão R = pré:pós-spikes nas duas layers, ajustar `A_pre/A_post/theta_plus` pra estabilizar pretreino.
+
+**Implementação:** criado `tests/test_spike_balance_omniglot.py` (análogo ao da Semana 1, mas pra `STDPHopfieldModel` em Omniglot, mede ambas layers separadamente).
+
+#### 1.1 — Medição inicial (config Semana 1)
+
+```
+Config: A_pre=0.01, A_post=-0.0105, theta_plus=0.0005
+```
+
+| Layer | Pré-spikes/img | Pós-spikes/img | Razão R |
+|-------|---------------|---------------|---------|
+| Layer 1 (1×28×28 → 8×28×28) | 575.8 | 382.4 | **1.51** |
+| Layer 2 (8×14×14 → 16×14×14) | 280.4 | 403.7 | **0.69** |
+
+Comparações:
+- Estimativa teórica prévia: R≈0.06 (errado: assumi muito pré-spike e ignorei threshold dinâmica)
+- MNIST kernel=28 (Semana 1): R=10.1
+- Paper Diehl & Cook: R≈1
+
+Conclusão: regime conv real está MAIS PERTO do paper (R≈1) do que do MNIST sanity. Não é o problema dominante.
+
+#### 1.2 — Trace step-by-step de layer 1 (100 timesteps em 1 batch)
+
+| t | pre | post | w1 mean | w1 max | theta max |
+|---|-----|------|---------|--------|-----------|
+| 0 | 40 | 1 | 0.137 | 0.298 | 0.001 |
+| 5 | 39 | 387 | 0.270 | 0.892 | 0.133 |
+| 10 | 39 | 1034 | 0.624 | **1.000** | 0.819 |
+| 20 | 35 | 995 | 0.654 | 1.000 | 1.747 |
+| 30 | 37 | 722 | 0.415 | 1.000 | 2.203 |
+| 50 | 31 | 295 | 0.233 | 1.000 | 2.916 |
+| 70 | 42 | **0** | **0.000** | 0.000 | 2.927 |
+| 99 | 38 | 0 | 0.000 | 0.000 | 2.927 |
+
+**Mecanismo identificado:** oscilação instável.
+1. Inicialização baixa, primeiros spikes esparsos
+2. LTP cresce rápido (post denso × apre crescente)
+3. Pesos saturam em 10 timesteps → todos os filtros ficam super-responsivos
+4. Theta sobe junto, mas atrasada
+5. LTD ataca (apost alto × pre denso) + theta alta inibe disparos
+6. Pesos colapsam pra 0
+7. Theta locked-out em ~2.9 (não decai com tau_theta=1e7), sistema "morto"
+
+**Calculo de magnitude:** A_pre × delta_LTP por timestep ≈ 0.01 × ~85 = ~0.86 por param. Pesos cruzam 1.0 em 5-10 timesteps. Não há tempo pra homeostasis ter efeito.
+
+#### 1.3 — Calibração: A_pre 100× menor
+
+Diagnóstico aponta que A_pre é grande demais pra esse regime denso de spikes. Reduzido `A_pre = 0.0001`, `A_post = -0.000105` (mantém razão R original).
+
+**Trace step-by-step com nova config (mesma imagem, 100 ts):**
+
+| t | post | w1 mean | w1 max | theta max |
+|---|------|---------|--------|-----------|
+| 0 | 1 | 0.137 | 0.298 | 0.001 |
+| 10 | 390 | 0.141 | 0.305 | 0.227 |
+| 30 | 249 | 0.145 | 0.311 | 0.750 |
+| 50 | 209 | 0.138 | 0.310 | 1.108 |
+| 70 | 119 | 0.129 | 0.303 | 1.306 |
+| 99 | 91 | 0.121 | 0.301 | 1.505 |
+
+**Comportamento gentle:** pesos oscilam levemente (0.12-0.14), theta cresce gradualmente (até 1.5), spikes ativos (~100-400/ts).
+
+#### 1.4 — Re-rodando smoke do pretreino com nova config
+
+| Config | n_imgs | w1 final | w2 final | Acurácia 5w1s |
+|--------|--------|----------|----------|---------------|
+| Sem checkpoint (random) | — | — | — | 20.92% (z=0.2) |
+| A_pre=0.01 (paper, Etapa 0) | 500 | μ0.000 | μ0.609 | 20.00% (constante) |
+| **A_pre=0.0001 (calibrado)** | 500 | **μ0.114** | **μ0.200** | **23.08% (z=0.4)** |
+| A_pre=0.0001 (calibrado) | 5000 | **μ0.999/σ0.011 (saturado)** | μ0.725 | 20.52% (chance de novo) |
+
+**Observação crítica:** a calibração estende a vida útil dos pesos (500 imgs OK), MAS em treino mais longo (5000 imgs) a saturação volta. step 100 já atingiu w1=0.806; step 200 → 0.959; step 600 → 0.999. Layer 1 converge pra estado homogêneo (todos pesos = 1) → filtros indistinguíveis → sem sinal discriminativo.
+
+**Acurácia 5000-img (20.52%) ≈ chance** confirma que features colapsadas.
+
+---
+
+## Síntese da Sessão #7
+
+### O que ficou validado
+
+- ✅ Pipeline Omniglot integra end-to-end (ProtoNet 85.88%, Pixel kNN 45.76%, evaluate fecha)
+- ✅ Bug de pickling em `data.py` corrigido (lambda → função module-level)
+- ✅ Razão pré:pós empírica medida (R1=1.51, R2=0.69 — perto do regime do paper)
+- ✅ A_pre 100× menor que paper resolve o **transitório** (500 imgs OK, pesos vivos)
+
+### O que ficou exposto (bloqueio novo)
+
+**LTP saturação em escala média/longa** mesmo com A_pre calibrado. Em 600+ steps de treino, w1 atinge 0.999 com std 0.011 — todos os pesos colapsam para 1.0. Filtros viram homogêneos, perdem sinal discriminativo, eval volta pra chance (20.52%).
+
+A homeostasis (theta) não consegue acompanhar a velocidade da saturação em regime denso. theta_plus=0.0005 calibrado pra MNIST sanity é insuficiente pra Omniglot (que tem ~400× mais pós-spikes/timestep).
+
+### Hipóteses pra próxima sessão
+
+| Hipótese | Custo | Justificativa |
+|----------|-------|---------------|
+| H_norm: normalizar Σw por filtro após cada update (Σw=1) | ~30 min | Impede saturação por construção. Diehl & Cook usam isso implicitamente via inibição de condutância. |
+| H_mult: STDP multiplicativo (Δw ∝ w·delta em vez de delta) | ~1h | Naturalmente decai perto de w_max. Suportado pela teoria SOFT-bounded STDP. |
+| H_theta_omn: theta_plus calibrado pra Omniglot (talvez 5e-6 ou menor) | ~10 min | Atual deixa theta crescer rápido demais e satura; menor pode forçar feedback contínuo. |
+| H_omniglot_inhib: inibição lateral via subtração de membrana (D&C original) | ~2h | Tira do k-WTA hard masking, vai pra soft inhibition. Mais fiel ao paper. |
+
+### Estado final do código
+
+- `config.py`: **A_pre=0.0001, A_post=-0.000105** (calibrado pra arquitetura conv, mantém pesos vivos em pretreino curto). theta_plus=0.0005 inalterado. Comentário no código explica histórico.
+- `data.py`: bug pickling corrigido (`_invert_intensity` substitui lambda).
+- `tests/test_spike_balance_omniglot.py`: novo, pode ser reutilizado pra recalibrar quando arquitetura mudar.
+- Checkpoint atual em `checkpoints/stdp_model.pt`: 5000 imgs, **saturado** (w1≈1.0). Não é o melhor — checkpoint anterior de 500 imgs era melhor (não saturado), mas foi sobrescrito.
+
+### Decisão pra próxima sessão
+
+**Não rodar pretreino completo (24k imgs) sem resolver saturação** — vai dar acurácia próxima de chance, desperdiçando ~1h de GPU. Recomendado começar pela H_norm ou H_mult que atacam saturação por construção (custo curto, alto ROI). H_theta_omn é teste rápido que pode dar pista (custo ínfimo).
