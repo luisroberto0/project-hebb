@@ -290,3 +290,19 @@ Importante: ainda longe das metas finais (≥90% 5w1s, ≥70% 20w1s do CONTEXT.m
 | **A1 — sem `_proj` (flat 784D)** | **36.12%** | [35.37, 36.90] | 1.3 |
 
 **Interpretação:** sinal é **invariante à projeção**. Apesar de `_proj` reduzir 784→64 (descartando 720 direções), Hopfield+cosseno em 784D extrai praticamente a mesma informação que em 64D projetado. _proj **não é o canal** — sinal vive em estrutura mais grosseira do espaço pós-pool. A ablação não explica o sinal e portanto não invalida tau_theta=1e4 (no critério literal: 36.12% **não conta como passar de 36% sem o componente** — mas é exatamente 36%, então a leitura é "componente é irrelevante", não "componente carrega o sinal").
+
+### A2 — Zerar conv weights (mantém theta treinada)
+
+**Setup:** `tests/ablate_zero_conv.py` carrega checkpoint Iter 1, zera `layer1.conv.weight` e `layer2.conv.weight`, **preserva `theta1` e `theta2`** treinadas (μ=20.6 e 30.8). Salva como `stdp_model_zeroed.pt`. `evaluate.py` 5w1s 1000 eps seed=42.
+
+**Predição rigorosa:** w=0 ⇒ I=conv(spk)=0 ⇒ membrana só recebe leakage (decay) ⇒ nunca atinge `v_thresh+theta ≈ 21` ⇒ zero spikes pós ⇒ embedding zero pra todas as imagens ⇒ predição constante ⇒ chance.
+
+**Resultado:**
+
+| Setup | Acurácia 5w1s | IC95% |
+|---|---|---|
+| **A2 — conv zerada + theta_iter1** | **20.00%** | [20.00, 20.00] (IC zero) |
+
+**Interpretação:** chance exata, predição constante (IC zero). **Conv é necessária** — não há bypass não-óbvio (ex: theta sozinha modulando algo, ou Poisson chegando direto no Hopfield). Resultado é exatamente a predição rigorosa, **valida o pipeline conceitualmente** (o caminho de informação realmente passa por conv→spikes→embedding).
+
+**Implicação:** theta sozinha (sem pesos não-zero) **não carrega sinal**. Logo, qualquer mecanismo que produz 35.98% precisa envolver os pesos da conv — mesmo saturados em 0.999 com σ=0.001.
