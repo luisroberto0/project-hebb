@@ -1031,3 +1031,82 @@ A parametrização "Hebbian" (com 4 coeficientes A, B, C, D por peso) dá **expr
 | **C2-with-Hopfield** | ~30 min | Original ainda válido. Após ablações, fica mais claro que Hopfield poderia substituir o classificador prototípico atual. |
 | **C3 — ProtoNet+esparso** | ~2h | Pivot consolidado se decidir não refinar mais C2. |
 | **A/B dormentes** | — | Não descartados. |
+
+---
+
+## Sessão #19 — C2-simplified: combinação dos achados das ablações
+
+**Pré-condição:** ablações da #18 mostraram que (a) pesos iniciais são irrelevantes, (b) tanh é irrelevante, (c) profundidade do inner loop importa (~+10 p.p. entre 1 e 5 steps), (d) termo Hebbian "puro" A·pre·post não carrega o sinal.
+
+**Objetivo:** combinar os 3 simplificadores (linear + W=0 + n_inner=10) e validar via no-A.
+
+### Setup
+
+- **C2-simplified:** encoder linear (sem tanh) + W1, W2 iniciais = 0 + n_inner=10. Plasticidade A,B,C,D todos treináveis (4 × 128×784 + 4 × 32×128 = 417 792 params).
+- **C2-simplified-no-A:** mesmo, mas A fixado em zero (treinável só B, C, D). Reduz pra 313 344 params (-25%).
+
+Mesma metodologia do #17/#18: 5000 eps meta-train no background + eval 1000 eps 5w1s seed=42, Adam lr=1e-3, eta=0.01, beta=8.
+
+### Resultados
+
+| Variação | 5w1s | IC95% | z | train acc final | tempo | params treináveis |
+|---|---|---|---|---|---|---|
+| C2 baseline (#17, ref) | 63.22% | [62.41, 64.06] | 3.3 | 69.62% | 132s | 417 792 |
+| A2 W=0 (#18) | 63.97% | [63.13, 64.80] | 3.3 | 70.88% | 96s | 417 792 |
+| A3 inner=1 (#18) | 53.05% | [52.25, 53.86] | 2.5 | 55.73% | 73s | 417 792 |
+| A4 linear (#18) | 64.07% | [63.27, 64.86] | 3.4 | 69.32% | 93s | 417 792 |
+| **C2-simplified** | **64.08%** | [63.24, 64.92] | 3.3 | 71.02% | 122s | 417 792 |
+| **C2-simplified-no-A** | **64.07%** | [63.23, 64.90] | 3.3 | 70.99% | 112s | **313 344** |
+
+Tempo total da sessão: 4.4 min de experimentos.
+
+### Interpretação
+
+**C2-simplified atinge 64.08%** — virtualmente idêntico aos resultados isolados de A2 (63.97%) e A4 (64.07%) da sessão #18. Combinar os simplificadores **não composta** o ganho marginal — eles convergem pro mesmo teto efetivo.
+
+**n_inner=10 vs 5 agrega só +0.86 p.p.** — saturação clara. A curva era inner=1→5 = +10 p.p. (#18); inner=5→10 = +0.86 p.p. (esta sessão). Mais profundidade não destrava ganho — a capacidade da arquitetura linear simples já está saturada.
+
+**C2-simplified-no-A = 64.07%** — diferença de -0.01 p.p. entre com/sem termo Hebbian A é **literalmente ruído**. Confirma definitivamente o achado da A1-invertida: o termo `A·pre·post` é completamente dispensável. Removê-lo elimina **104 448 params (25%)** sem nenhum custo de performance.
+
+### Critério literal pelo protocolo da sessão
+
+| Critério | Threshold | Resultado |
+|---|---|---|
+| Forte | ≥65% | NÃO |
+| **Médio (saturação aparente)** | **60-65%** | **SIM (64.08%)** |
+| Falha | <60% | NÃO |
+
+**Decisão:** saturação aparente. **Próxima sessão pivota pra C3** (ProtoNet+features esparsas).
+
+### Insight cumulativo C2 (sessões #17-#19)
+
+A família C2 (encoder + plasticidade meta-aprendida + classificador prototípico) **satura em ~64% 5w1s** com a arquitetura testada (MLP 784→128→32). Pra subir significativamente precisa mudança maior:
+
+- Capacidade do encoder (256/512 hidden, latent maior)
+- Trocar classificador prototype por Hopfield (C2-with-Hopfield)
+- Pivotar pra paradigma diferente (C3: ProtoNet treinado convencional + sparsity)
+
+A simplificação radical é defensável academicamente:
+
+> "Differentiable plasticity rule learning com encoder LINEAR e pesos iniciais ZERO — termo Hebbian explícito (A·pre·post) é dispensável; o sinal vem dos termos modulatórios B (pre-only), C (post-only), D (bias) treinados via meta-objetivo de classificação one-shot. 313K parâmetros, 64% acc Omniglot 5w1s."
+
+Mais honesto que "Hebbian bio-inspired" — é uma rede linear meta-adaptativa.
+
+### Estado final pós-#19
+
+- **Código novo:** `experiment_01_oneshot/c2_simplified.py` (combinação dos achados + validação no-A).
+- `model.py`, `config.py`, `c2_meta_hebbian.py`, `c2_ablations.py` inalterados.
+- Sem checkpoints persistidos (treino determinístico via seed=42).
+- C2 baseline (63.22%) e C2-simplified (64.08%) **continuam empatando como melhor resultado do projeto**.
+- Sessões consecutivas sem sinal>chance: **0** (mantido — ambas variações com z≈3.3).
+
+### Próxima sessão (decisão fora dessa)
+
+**Pelo critério, pivot pra C3.** Mas as variações C2 ainda vivas (C2-with-Hopfield, capacidade maior) podem ser revisitadas se C3 não destravar gap até ProtoNet (85.88%).
+
+| Hipótese | Custo | Status |
+|---|---|---|
+| **C3 — ProtoNet+esparso** | ~2h | **Próxima** (pelo critério literal da #19) |
+| C2-with-Hopfield | ~30 min | Adormecida — útil se C3 falhar e quisermos voltar pra C2 |
+| C2-bigger-encoder (256 hidden) | ~30 min | Adormecida — última cartada de C2 antes de pivotar |
+| A/B dormentes | — | Não descartados |
