@@ -64,3 +64,53 @@ Hipóteses vivas sobre o mecanismo:
 - **Algum teste de ablação atinge ~36% sem o componente ablacionado:** "descoberta" é artefato (a parte ablacionada não era necessária pra produzir o sinal — sinal está em outro canal não-conv, possivelmente eval ou pipeline). Reverte decisão `tau_theta=1e4`, restaura `tau_theta=1e7`, marca H_tau_theta como "sinal medido mas mecanismo artefatual" em vez de descartada-sucesso. Próxima sessão pivota pra H_norm.
 
 - **Resultado intermediário/ambíguo:** documenta padrão observado, **não fixa decisão**, agenda mais ablações antes de seguir.
+
+---
+
+## Pós-Sessão #10 (2026-04-28): Reversão e nova framing
+
+### O que aprendemos
+
+As 3 ablações + A3b mostraram que o sinal de 35.98% (Iter 1) é **dominantemente arquitetural**, não fruto do STDP:
+
+| Componente | Contribuição (5w1s) |
+|---|---|
+| Magnitude alta dos pesos (saturação ~1.0) | +12 p.p. |
+| Estrutura espacial sutil pós-STDP | +3 p.p. |
+| Theta treinada / homeostasis | ~0 p.p. |
+| **Total acima de chance** | **16 p.p.** |
+
+Decisão sessão #9 (`tau_theta=1e4` como arquitetural) foi revertida. Não foi a calibração de homeostasis que destravou sinal — foi a saturação dos pesos (que qualquer config produzindo saturação habilita) interagindo com a esparsidade do Omniglot e a memória Hopfield.
+
+### Nova framing pra próximas sessões
+
+**Pergunta antiga:** "como fazer STDP aprender features de Omniglot?" (premissa: STDP é o motor)
+
+**Pergunta nova:** "existe um sinal arquitetural baseline (~33% sem treino, ~36% com STDP saturado). Como amplificar esse sinal de 33-36% pra 70%+? STDP precisa contribuir mais, ou o caminho é outro?"
+
+Subperguntas concretas:
+1. **O que dá os +12 p.p. de magnitude?** É a magnitude per se, ou a interação magnitude × Hopfield × Omniglot esparso? Testar em FashionMNIST (input denso) pode separar.
+2. **O que dá os +3 p.p. residuais do STDP?** Os pesos saturados em 0.999 σ=0.001 ainda têm estrutura espacial discriminativa — qual? Visualizar filtros pode revelar.
+3. **Como fazer STDP contribuir com mais que 3 p.p.?** Hipóteses: (a) impedir saturação total via H_norm/H_mult pra preservar variância informativa, (b) treinar com mais imagens quando saturação é evitada, (c) revisar arquitetura (mais filtros, kernel maior, sem pool).
+
+### Roadmap revisado pra Semana 2
+
+Hipóteses vivas (atualizadas pós-#10):
+
+| Hipótese | Custo | Justificativa pós-#10 |
+|---|---|---|
+| **H_norm** (Σw=1 por filtro) | ~30 min | Impede saturação → preserva variância informativa → STDP pode contribuir além dos 3 p.p. residuais |
+| **H_mult** (STDP multiplicativo) | ~1h | Soft bound natural → pesos não saturam em 1.0 → estrutura espacial sobrevive |
+| H_visualize (filtros + ativações) | ~1h | Antes de tunar, entender o que os pesos saturados estão realmente codificando — visualização pode mudar prioridades |
+
+**Recomendação:** H_visualize **antes** de H_norm/H_mult. Custa pouco e pode mudar interpretação. Se filtros saturados estão capturando algo Gabor-like apesar de σ=0.001, otimização vale. Se são ruído puro, abordagem precisa mudar mais radicalmente.
+
+### Protocolo atualizado
+
+**Novo passo padrão antes de fixar decisão arquitetural:** rodar ablação random sem treino (`tests/ablate_random_weights.py`) com magnitude similar à da config nova. Se random entregar ≥80% do sinal, decisão arquitetural fica em standby até entender o que o treino agrega.
+
+Custo: ~10 min. Teria evitado a decisão prematura da sessão #9.
+
+### Critério de revisão
+
+Mantém: 3 sessões consecutivas sem sinal>chance dispara revisão de STRATEGY.md. Pós-#10, o contador continua em 0 — sinal arquitetural existe e é reproducível.

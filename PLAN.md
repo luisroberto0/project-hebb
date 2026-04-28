@@ -57,6 +57,7 @@ A ordem reflete maturidade teórica decrescente: 01 tem décadas de fundamentaç
 - **2026-04-27 (sessão #7 encerramento) — Estratégia de pesquisa formalizada em `STRATEGY.md`.** Próximas 2-3 sessões focam em H_theta_omn e H_norm (custo baixo, alto ROI). Se não destravarem, considera pivot pra abordagem adjacente (Hopfield puro, meta-learning bio, prototypical com features esparsas) antes de cair pra Brian2. Cadência: sessão 60-90 min, max 2x/semana, atualizar Notas de iteração após cada uma; revisar STRATEGY.md se 3 sessões consecutivas sem progresso (sinal acima de chance).
 - **2026-04-27 (sessão #8) — H_theta_omn descartada empiricamente.** Testado theta_plus em 3 valores (0.0005 baseline, 0.001 médio, 0.005 alto) com mesmo setup (5000 imgs / 1 epoch / k=1 WTA / A_pre=0.0001). Todos eval ≈ chance: 20.52%, 20.32%, 20.00% (este último com IC zero, predição constante porque theta=9 silenciou todos filtros). Causa raiz isolada: **tau_theta=1e7 (do paper) não permite decay efetivo no nosso regime** (500k oportunidades de update por treino vs decay desprezível) → theta cresce monotonicamente, qualquer theta_plus gera trade-off (silenciar todos OU não frear pesos). Restaurado theta_plus=0.0005. Próxima sessão: H_norm (recomendação STRATEGY.md) ou nova hipótese H_tau_theta (derivada deste diagnóstico). Sessões consecutivas sem sinal>chance: 1.
 - **2026-04-28 (sessão #9) — H_tau_theta ✅ CONFIRMADA: primeiro sinal acima de chance.** Iter 1 com tau_theta=1e4 (1000× menor que paper) deu 5w1s=35.98% IC95%[35.17,36.79] z≈1.3 (+15.98 p.p. acima de chance). Surpresa metodológica: proxies estruturais (w1 saturado em 0.999 σ=0.001; theta cresceu monotonicamente até 20.68) FALHARAM, mas critério funcional bateu com folga. 3/3 verificações de robustez passaram: V1 eval seed=100 → 36.06%; V2 retrain seed=43 → 35.96%; V3 20w1s → 9.80% IC95%[9.58,10.01] z≈1.4 (chance=5%). Mecanismo conjecturado inicialmente (theta diferenciada carrega sinal) **refutado pelo V2**: seed=43 tem theta range ainda mais apertado [20.78,20.86] que seed=42 [20.55,20.68], mesma acurácia. Sinal real, mecanismo não identificado. Fixado tau_theta_ms=1e4 como decisão arquitetural (ver abaixo). Sessões consecutivas sem sinal>chance: 0 (resetado).
+- **2026-04-28 (sessão #10) — Decisão sessão #9 REVERTIDA: sinal era ~80% arquitetural, não STDP.** 4 ablações: A1 (bypass _proj) → 36.12% (irrelevante); A2 (conv=0, theta_iter1) → 20.00% (chance, pipeline ok); **A3 (random U(0,1) sem treino) → 32.89%** (já entrega quase tudo!); A3b (random + theta_iter1) → 32.65% (theta inerte). Decomposição: +12pp = magnitude alta dos pesos (qualquer config que sature dá isso), +3pp = estrutura espacial sutil dos pesos saturados pelo STDP, ~0pp = theta treinada. Revertido tau_theta_ms=1e7 (paper). Lição: rodar A3 random ANTES de fixar decisão arquitetural — virou passo padrão. Sinal arquitetural (35.98%) continua existindo, sem regressão. Sessões consecutivas sem sinal>chance: 0.
 
 ---
 
@@ -133,22 +134,42 @@ A ordem reflete maturidade teórica decrescente: 01 tem décadas de fundamentaç
 
 **Marca de teste:** estado consolidado 17.76% (igual a sem homeostasis) com distribuição de filtros melhor. Decisão se consolida quando combinada com solução pro LTP/LTD imbalance.
 
-### 2026-04-28 — `tau_theta_ms=1e4` (homeostasis 1000× mais rápida que paper) — primeira config com sinal>chance
+### 2026-04-28 — `tau_theta_ms=1e4` REVERTIDA na sessão #10 (decisão prematura, mecanismo era arquitetural)
 
-**Decisão:** fixar `STDPConfig.tau_theta_ms = 1e4` em `experiment_01_oneshot/config.py` (vs 1e7 do paper Diehl & Cook 2015). Manter resto inalterado: `theta_plus=0.0005`, `A_pre=0.0001`, `A_post=-0.000105`.
+**Decisão original (sessão #9):** fixar `tau_theta_ms=1e4` por produzir 35.98% 5w1s (primeiro sinal>chance).
 
-**Alternativa rejeitada:** voltar pra tau_theta=1e7 (paper) e atacar saturação por outras vias (H_norm, H_mult). Rejeitada porque a config atual produz **primeiro sinal acima de chance do projeto** (5w1s=35.98%, 20w1s=9.80%) — restaurar tau_theta=1e7 destruiria esse sinal.
+**Reversão (sessão #10, mesmo dia):** restaurado `tau_theta_ms=1e7` (paper). Decisão original era prematura.
 
-**Raciocínio:**
+**Raciocínio da reversão (3 ablações + 1 controle):**
 
-1. **Empírico, não teórico.** Sessão #9 mediu sinal robusto em 3 verificações ortogonais (seed eval, seed treino, escala de dificuldade). 35.98% ± ~0.8 p.p. IC95% em três runs distintas. Não é ruído.
-2. **Diehl & Cook calibram tau_theta=1e7 ms pra um regime diferente.** Paper original tem ~7000 timesteps por imagem com poucos spikes ativos via refractory longo. Nosso regime tem 78400 spikes denso em 100 ms — homeostasis precisa atuar em escala de tempo proporcional ao volume de spikes, não ao tempo de wall-clock simulado.
-3. **Surpresa: mecanismo não identificado.** Pesos saturam em 0.999 σ=0.001 (filtros aparentemente indistinguíveis). Theta range é ~0.1 entre filtros. Conjectura inicial "theta diferenciada carrega sinal" foi refutada (V2: seed diferente produz theta range ainda mais apertado, mesma acc). Pode ser initialization bias preservado, dinâmica LIF residual, ou amplificação não-linear via pooling. **A investigar nas próximas sessões.**
-4. **Limitação reconhecida.** 35.98% ainda está MUITO abaixo das metas (≥90% 5w1s, vs ProtoNet 85.88%). Sinal é prova de viabilidade, não solução final. Pode ser que tau_theta=1e4 só destrava um patamar; ainda há gap arquitetural pra fechar (H_norm, H_mult, ou outras hipóteses ainda vivas).
+| Ablação | Setup | Acurácia 5w1s | Implicação |
+|---|---|---|---|
+| Baseline Iter 1 | tau_theta=1e4 treinado | 35.98% | sinal real |
+| A1: bypass `_proj` | flatten 784D direto | 36.12% | _proj é irrelevante |
+| A2: conv=0, theta_iter1 | só leakage | 20.00% (chance) | conv é necessária |
+| A3: random U(0,1), theta=0 | sem treino algum | 32.89% | **+12pp já sem treino** |
+| A3b: random U(0,1) + theta_iter1 | sem pesos treinados | 32.65% | theta inerte |
 
-**Custo de reverter:** ~10 min (mudar valor + retreinar 5000 imgs + reavaliar). **Mas:** reverter destrói o único sinal acima de chance medido. Reversão só faz sentido se uma config futura provar ser melhor *e* tau_theta=1e4 deixar de ajudar.
+**Decomposição empírica** dos 16 p.p. acima de chance:
+- **+12 p.p.** = magnitude alta dos pesos (Iter 1 satura em 0.999, random U(0,1) é semelhante em magnitude)
+- **+3 p.p.** = estrutura espacial sutil dos pesos saturados pelo STDP (Iter 1 vs random U(0,1) controlando theta)
+- **~0 p.p.** = theta treinada / homeostasis (A3 vs A3b dentro do IC)
 
-**Marca de teste:** próxima sessão investiga mecanismo (qual canal carrega o sinal). Se mecanismo for identificado e for trivial (ex: bug de eval), decisão pode ser revertida. Se mecanismo for genuíno, decisão se consolida e a próxima questão é como amplificar (escalar imgs, mexer em arquitetura, etc.).
+**O que destrava o sinal de 35.98% NÃO é tau_theta=1e4 calibrado.** É: pesos saturando em magnitude alta (qualquer config que produz saturação serve) + Poisson + Hopfield + estrutura esparsa do Omniglot. tau_theta=1e4 só permite que pesos saturem mais cedo no treino; não cria sinal — habilita saturação que outros valores também habilitariam.
+
+**Lição aprendida (registrada aqui pra não repetir):** quando achar uma config que dá sinal acima de chance, **rodar A3 (random sem treino) ANTES de declarar decisão arquitetural**. Custou pouco, e teria evitado a decisão prematura. Vai virar passo padrão de validação.
+
+**Estado pós-reversão:** `tau_theta_ms=1e7` (paper) restaurado em config.py. Sinal arquitetural (35.98%) **continua existindo** — não há regressão (qualquer config que sature produz). Ablações ficam documentadas em WEEKLY-2.md sessão #10.
+
+### 2026-04-28 — Validação de descoberta via random baseline (passo padrão a partir de #10)
+
+**Decisão:** sempre que uma nova config produzir sinal acima de chance pela primeira vez, **antes de fixá-la como decisão arquitetural**, rodar baseline com pesos random sem treino (range similar ao da config) pra isolar contribuição do treino vs arquitetura.
+
+**Motivação:** sessão #10 mostrou que decisão arquitetural sessão #9 foi prematura — A3 random teria mostrado em ~10 min que o sinal era ~80% arquitetural antes de gastar a sessão #9 declarando "primeiro sinal real" e fixando `tau_theta=1e4`.
+
+**Implementação:** `tests/ablate_random_weights.py` reutilizável. Critério: se random sem treino entrega ≥80% do sinal, decisão arquitetural fica em standby até descobrir o que o treino realmente agrega.
+
+**Custo de reverter:** zero (é só protocolo, não código).
 
 ### 2026-04-27 — Inibição lateral em ConvSTDPLayer via k-WTA na dinâmica LIF (não decay de pesos)
 

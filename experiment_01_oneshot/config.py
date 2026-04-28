@@ -70,10 +70,13 @@ class STDPConfig:
                                    # Causa raiz isolada: tau_theta=1e7 não permite decay
                                    # efetivo no nosso regime → theta cresce monotonicamente,
                                    # qualquer theta_plus gera trade-off (silenciar OU saturar).
-    tau_theta_ms: float = 1e4      # Sessão #9: 1000× menor que paper (1e7). Primeira config
-                                   # com sinal acima de chance (5w1s=35.98%, 20w1s=9.80%, z≈1.3).
-                                   # 3/3 verificações de robustez passaram. Decisão arquitetural
-                                   # registrada em PLAN.md (2026-04-28). Mecanismo a investigar.
+    tau_theta_ms: float = 1e7      # Revertido sessão #10 — A3 mostrou que sinal de 35.98%
+                                   # era ~80% arquitetural (magnitude alta + Poisson + Hopfield),
+                                   # não STDP. Decisão arquitetural sessão #9 foi prematura: o
+                                   # que destravou sinal foi a saturação dos pesos (qualquer
+                                   # config que satura produz isso), não a calibração de
+                                   # tau_theta. Theta treinada é inerte (A3b). Estado conhecido
+                                   # do paper restaurado.
 
 
 @dataclass
