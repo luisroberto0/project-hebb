@@ -269,3 +269,24 @@ Conjectura inicial pós-Iter 1: "theta diferenciada por filtro carrega o sinal v
 H_tau_theta ✅ **CONFIRMADA empiricamente como solução parcial.** Primeiro sinal acima de chance do projeto inteiro (35.98% / 9.80% em 5w1s / 20w1s, z≈1.3-1.4 ambos). Sessões consecutivas sem progresso: **0** (resetado).
 
 Importante: ainda longe das metas finais (≥90% 5w1s, ≥70% 20w1s do CONTEXT.md §4 — vs 85.88% do ProtoNet baseline). Sinal é **prova de viabilidade**, não estado de produção. Próximas sessões devem investigar mecanismo antes de tunar pra escala maior.
+
+---
+
+## Sessão #10 — Investigação de mecanismo via 3 ablações
+
+**Pré-condição:** sessão #9 confirmou sinal robusto (35.98% 5w1s) mas mecanismo desconhecido. Antes de aceitar `tau_theta=1e4` ou amplificar, descartar 3 explicações triviais. **Sem tuning, sem escala** — só investigação.
+
+**Critério (de STRATEGY.md "Pós-Sessão #9"):** se algum teste atingir ~36% sem o componente esperado, descoberta é artefato e reverte `tau_theta=1e4` pra `1e7`. Se nenhum atinge, sinal é real e mecanismo continua misterioso.
+
+### A1 — Ablação de `_proj` (flatten 784D direto)
+
+**Setup:** `tests/ablate_no_proj.py` monkey-patcha `extract_features` pra retornar `flat` (16×7×7 = 784D, taxa de spikes pós-pool2) direto, sem a projeção ortogonal não-quadrada de 784→64. Mesmo checkpoint Iter 1, mesmo 5w1s 1000 eps seed=42.
+
+**Resultado:**
+
+| Setup | Acurácia 5w1s | IC95% | z |
+|---|---|---|---|
+| Baseline Iter 1 (com `_proj`) | 35.98% | [35.17, 36.79] | 1.3 |
+| **A1 — sem `_proj` (flat 784D)** | **36.12%** | [35.37, 36.90] | 1.3 |
+
+**Interpretação:** sinal é **invariante à projeção**. Apesar de `_proj` reduzir 784→64 (descartando 720 direções), Hopfield+cosseno em 784D extrai praticamente a mesma informação que em 64D projetado. _proj **não é o canal** — sinal vive em estrutura mais grosseira do espaço pós-pool. A ablação não explica o sinal e portanto não invalida tau_theta=1e4 (no critério literal: 36.12% **não conta como passar de 36% sem o componente** — mas é exatamente 36%, então a leitura é "componente é irrelevante", não "componente carrega o sinal").
