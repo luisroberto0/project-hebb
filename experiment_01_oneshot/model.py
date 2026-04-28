@@ -54,19 +54,27 @@ class ConvSTDPLayer(nn.Module):
 
     def forward(self, spikes_t: torch.Tensor, mem: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """
-        Um único timestep SEM lateral inhibition (baseline para diagnóstico).
+        Um único timestep com k-WTA (k=1) lateral inhibition.
         spikes_t: (B, C_in, H, W)
         mem:      (B, C_out, H', W')
 
-        TEMPORÁRIO: desativando k-WTA para verificar se o problema é a inibição
-        ou se há bug na regra STDP/LIF.
+        Inibição lateral implementada como winner-take-all por posição espacial:
+        apenas o filtro com maior membrana em cada (B, H, W) pode disparar.
+
+        MELHOR RESULTADO EM TESTES: distribui filtros entre todas as classes,
+        acurácia 17.76% (vs 9.80% sem WTA, 10.89% com k=5).
         """
         I = self.conv(spikes_t)
         decay = torch.exp(torch.tensor(-self.cfg.spike.dt_ms / self.cfg.lif.tau_mem_ms, device=spikes_t.device))
         mem = decay * mem + I
 
-        # Spikes sem inibição lateral
-        spikes_out = (mem >= self.cfg.lif.v_thresh).float()
+        # Spikes brutos (sem inibição lateral)
+        spikes_raw = (mem >= self.cfg.lif.v_thresh).float()
+
+        # k-WTA (k=1): só o filtro com maior membrana por posição espacial dispara
+        max_filter_idx = mem.argmax(dim=1, keepdim=True)  # (B, 1, H', W')
+        wta_mask = torch.zeros_like(mem).scatter_(1, max_filter_idx, 1.0)
+        spikes_out = spikes_raw * wta_mask
 
         # Reset de membrana apenas nos neurônios que dispararam
         mem = mem * (1 - spikes_out) + self.cfg.lif.v_reset * spikes_out
