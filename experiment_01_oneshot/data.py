@@ -67,11 +67,17 @@ def encode(image: torch.Tensor, cfg: Config) -> torch.Tensor:
 # ---------------------------------------------------------------------------
 # Datasets
 # ---------------------------------------------------------------------------
+def _invert_intensity(x: torch.Tensor) -> torch.Tensor:
+    """Omniglot é fundo branco; invertemos pra fundo preto.
+    Função module-level (não lambda) pra ser picklável em Windows multiprocessing (spawn)."""
+    return 1.0 - x
+
+
 def build_transforms(cfg: Config) -> transforms.Compose:
     return transforms.Compose([
         transforms.Resize((cfg.data.image_size, cfg.data.image_size)),
         transforms.ToTensor(),  # já normaliza pra [0,1]
-        transforms.Lambda(lambda x: 1.0 - x),  # Omniglot é fundo branco; invertemos pra fundo preto
+        transforms.Lambda(_invert_intensity),
     ])
 
 
