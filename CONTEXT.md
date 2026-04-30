@@ -16,6 +16,13 @@ Construir uma arquitetura de IA fundamentalmente nova, inspirada em neurociênci
 Não é incrementalismo de LLM. É outra premissa: em vez de predição estatística de tokens em redes densas treinadas com backpropagation, usamos **plasticidade local diferenciável** — regras de update que operam só com sinais locais (pré, pós, modulação) e podem rodar online, sem backprop end-to-end.
 
 > "Não tente construir a mente. Construa um neurônio que funcione diferente."
+> — Luis Roberto Pinho da Silva Junior, Project Hebb (2026)
+
+### Author
+
+**Luis Roberto Pinho da Silva Junior** — Independent research
+[LinkedIn: luisroberto0](https://www.linkedin.com/in/luisroberto0/)
+Project Hebb (2026)
 
 ### 1.1 Refino #21 (2026-04-28, pós-sessão #20)
 

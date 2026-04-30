@@ -1,8 +1,15 @@
 # Section 1: Introduction
 
-> Status: draft sessão #31. Revisar na sessão #33.
+> Status: draft sessão #31. Revisar na sessão #35.
 > Word count target: 500-700 palavras.
 > Tom: honesto, sem overclaim. Workshop paper, não conference.
+
+---
+
+**Author:** Luis Roberto Pinho da Silva Junior (Independent research)
+
+> *"Não tente construir a mente. Construa um neurônio que funcione diferente."*
+> — Luis Roberto Pinho da Silva Junior, Project Hebb (2026)
 
 ---
 

@@ -19,7 +19,8 @@ Backups se workshop específico não existir em 2026:
 
 ## Author
 
-Luis Roberto — [LinkedIn](https://www.linkedin.com/in/luisroberto0/)
+**Luis Roberto Pinho da Silva Junior** — Independent research
+[LinkedIn: luisroberto0](https://www.linkedin.com/in/luisroberto0/)
 
 ## Status
 

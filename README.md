@@ -3,6 +3,7 @@
 Pesquisa em arquiteturas neurais bio-inspiradas: plasticidade local diferenciável, codificação esparsa, e few-shot learning. Estudo empírico em direção a arquiteturas cognitivas pós-LLM, usando Omniglot como benchmark. Workshop paper em preparação.
 
 > *"Não tente construir a mente. Construa um neurônio que funcione diferente."*
+> — Luis Roberto Pinho da Silva Junior, Project Hebb (2026)
 
 ---
 
@@ -270,10 +271,22 @@ Esse projeto é pesquisa, não produto. Métrica de progresso é **insight verif
 
 90% do tempo é leitura, hipótese, refinamento conceitual. 10% é experimento. Não otimizar código antes de validar ideia. Disciplina > entusiasmo.
 
-## Autor
+## Author
 
-Luis Roberto — [LinkedIn](https://www.linkedin.com/in/luisroberto0/)
+**Luis Roberto Pinho da Silva Junior** — Independent research
+[LinkedIn](https://www.linkedin.com/in/luisroberto0/)
+
+**Project:** Project Hebb (2026)
+**Affiliation:** Independent research
 
 ## Licença
 
-MIT. Ver `LICENSE`.
+MIT. Copyright (c) 2026 Luis Roberto Pinho da Silva Junior. Ver `LICENSE`.
+
+## How to cite
+
+Ver `CITATION.cff` na raiz do repositório (formato GitHub padrão). Citação rápida:
+
+```
+Pinho da Silva Junior, L. R. (2026). Project Hebb: Bio-inspired Neural Architectures Research. https://github.com/luisroberto0/project-hebb
+```

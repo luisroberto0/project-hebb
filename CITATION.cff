@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use this work, please cite it as below."
+authors:
+  - family-names: "Pinho da Silva Junior"
+    given-names: "Luis Roberto"
+title: "Project Hebb: Bio-inspired Neural Architectures Research"
+version: 0.1.0
+date-released: 2026
+url: "https://github.com/luisroberto0/project-hebb"
+license: MIT
