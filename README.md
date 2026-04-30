@@ -1,6 +1,6 @@
 # Project Hebb
 
-Pesquisa de longo prazo em arquiteturas de IA biologicamente inspiradas. Foco: spiking neural networks (SNNs) com plasticidade local sináptica (STDP), com objetivo de oferecer capacidades que LLMs não têm — aprendizado contínuo sem catastrophic forgetting, one-shot real, eficiência radical em hardware consumer (CPU / GPU laptop), raciocínio temporal via timing de spikes.
+Pesquisa em arquiteturas neurais bio-inspiradas: plasticidade local diferenciável, codificação esparsa, e few-shot learning. Estudo empírico em direção a arquiteturas cognitivas pós-LLM, usando Omniglot como benchmark. Workshop paper em preparação.
 
 > *"Não tente construir a mente. Construa um neurônio que funcione diferente."*
 
@@ -12,18 +12,34 @@ Pesquisa de longo prazo em arquiteturas de IA biologicamente inspiradas. Foco: s
 - **Experimento 01 (one-shot Omniglot):** ✅ atingiu metas numéricas via Caminho C (ProtoNet + k-WTA esparso). Vira paper de workshop.
 - **Experimento 02 (continual learning sem replay):** ❌ Marco 1 encerrado pelo critério literal (sessão #29). 4 abordagens testadas, todas ≤ baseline naive. Achado mecanístico documentado.
 
-### Resultados principais (Omniglot 5-way 1-shot)
+### Headline result (Omniglot, 1-shot)
 
-| Modelo | ACC 5w1s | ACC 20w1s | Sessão | Status |
-|---|---|---|---|---|
-| Pixel kNN | 45.76% | — | #7 | baseline trivial |
-| Iter 1 STDP saturado (melhor de 13 sessões) | 35.98% | 9.80% | #9 | barreira estrutural identificada (#1-#13) |
-| C1b PCA-32 + Hopfield (sem treino) | 56.28% | 35.37% | #15 | baseline arquitetural |
-| C2-simplified (plasticidade meta-aprendida) | 64.08% | — | #19 | melhor pré-CNN |
-| **C3b ProtoNet + k-WTA k=16 (75% sparsity)** | **93.10%** | **80.72%** | #20 | **target paper** |
-| ProtoNet baseline | 94.55% | — | #20 | upper bound |
+Resultado central do paper em preparação:
 
-C3b atinge as duas metas numéricas do `CONTEXT.md` §4 (≥90% 5w1s, ≥70% 20w1s) com mecanismo neural-inspirado defensável (esparsidade biológica). Não cumpre restrição mecanística "sem backprop end-to-end" — registrado honestamente em CONTEXT.md §1.2.
+| Modelo | 5-way 1-shot | 20-way 1-shot | Sparsity |
+|---|---|---|---|
+| ProtoNet baseline (Snell 2017, replicado) | **94.55%** | — | 0% (denso) |
+| **C3a — ProtoNet + k-WTA k=32** | **93.35%** | **81.87%** | 50% |
+| **C3b — ProtoNet + k-WTA k=16** | **93.10%** | **80.72%** | **75%** |
+| **C3c — ProtoNet + k-WTA k=8** | **90.77%** | **75.44%** | 87.5% |
+| Random encoder + k-WTA (validação) | 37.60% | 16.73% | 75% (sem treino) |
+
+Sparsity de 75% custa apenas −1.45 p.p. vs baseline ProtoNet completo. Validação random+kWTA confirma que o ganho vem do treino sob restrição, não da estrutura k-WTA estática.
+
+### Contexto experimental completo (Omniglot 5-way 1-shot)
+
+Trajetória de 30 sessões pra chegar ao C3b:
+
+| Modelo | ACC 5w1s | Sessão | Notas |
+|---|---|---|---|
+| Pixel kNN (baseline trivial) | 45.76% | #7 | nearest-neighbor sobre pixels |
+| Iter 1 STDP saturado (melhor de 13 sessões) | 35.98% | #9 | barreira estrutural documentada (#1-#13) |
+| C1b — PCA-32 + Hopfield Memory (sem treino) | 56.28% | #15 | baseline arquitetural surpreendente |
+| C2-simplified — plasticidade meta-aprendida | 64.08% | #19 | melhor pré-CNN |
+| **C3b — ProtoNet + k-WTA 75% sparsity** | **93.10%** | **#20** | **target paper** |
+| ProtoNet baseline (denso) | 94.55% | #20 | upper bound |
+
+C3b atinge as duas metas numéricas do `CONTEXT.md` §4 (≥90% 5w1s, ≥70% 20w1s) com mecanismo neural-inspirado defensável (esparsidade biológica). Não cumpre a restrição mecanística "sem backprop end-to-end" — registrado honestamente em `CONTEXT.md` §1.2 e na discussão do paper.
 
 ### Próximo passo
 
@@ -53,58 +69,60 @@ python validate_environment.py
 # Esperado: PyTorch 2.6+, CUDA disponível, RTX 4070 detectada
 ```
 
-### Primeiro comando útil — smoke test do pipeline Omniglot
+### Demonstração — replica o resultado central em ~6 min
 
 ```powershell
 # No Windows, setar PYTHONIOENCODING=utf-8 evita UnicodeEncodeError no console cp1252
 $env:PYTHONIOENCODING = "utf-8"
 cd experiment_01_oneshot
 
-# Baseline random (sem checkpoint) — confirma que pipeline fecha (~chance)
-python evaluate.py --device cuda --ways 5 --shots 1 --episodes 100
+# C3 — 3 níveis de sparsity, 5w1s + 20w1s, 1000 episódios eval, IC95% bootstrap
+python c3_protonet_sparse.py --device cuda --train-episodes 5000 --eval-eps 1000 --seed 42
+# Esperado: C3a k=32 → 93.35% / C3b k=16 → 93.10% / C3c k=8 → 90.77% (5w1s)
+#           Random+kWTA validation → 37.60%
+```
 
-# Baselines clássicos
-python baselines.py --baseline pixel_knn --ways 5 --shots 1 --episodes 100
-python baselines.py --baseline proto_net --ways 5 --shots 1 --episodes 100 --train-episodes 500
+Para baselines de referência:
 
-# Pretreino STDP curto (smoke, ~30s) + eval — atualmente não passa de chance,
-# bloqueio ativo documentado em WEEKLY-2.md
-python train.py --device cuda --n-images 500 --epochs 1
-python evaluate.py --device cuda --checkpoint checkpoints/stdp_model.pt --ways 5 --shots 1 --episodes 100
+```powershell
+python baselines.py --baseline pixel_knn --ways 5 --shots 1 --episodes 1000
+# Esperado: 45.76%
+
+python baselines.py --baseline proto_net --ways 5 --shots 1 --episodes 1000 --train-episodes 5000
+# Esperado: 94.55% (com 500 train_episodes vai pra ~85.88%, smoke)
 ```
 
 ---
 
-## Arquitetura
+## Arquitetura — Pipeline C3 (target paper)
 
-Pipeline completo (em `experiment_01_oneshot/model.py:STDPHopfieldModel`):
+Pipeline publicável (`experiment_01_oneshot/c3_protonet_sparse.py`):
 
 ```
 Imagem 28×28 (Omniglot, downsample de 105×105, fundo invertido)
     ↓
-Codificação Poisson (T=100 timesteps, max_rate=100Hz)
+ProtoEncoder CNN-4 (Snell et al. 2017)
+  4 blocos × Conv-BN-ReLU-MaxPool, 64 filtros, kernel 3
     ↓
-Conv-STDP layer 1 (1 → 8 filtros, kernel 5, padding 2)
-    + LIF integrator + k-WTA (k=1) por posição espacial
-    + adaptive threshold homeostático (Diehl & Cook §2.3)
+Embedding 64D (após 4 maxpools 2×2)
     ↓
-MaxPool 2×2
+k-WTA top-k (k=16 → 75% sparsity; treino e eval consistentes)
     ↓
-Conv-STDP layer 2 (8 → 16 filtros, kernel 5, mesma dinâmica)
+Prototype-based classifier
+  Centróide por classe sobre support set
+  cdist² → softmax → cross-entropy
     ↓
-MaxPool 2×2 → flatten → projeção ortogonal (embedding_dim=64)
-    ↓
-Modern Hopfield Memory (Ramsauer et al. 2020)
-    armazena protótipos do support, recupera via β-softmax
-    ↓
-argmin distância → predição N-way K-shot
+Predição N-way K-shot
 ```
 
 **Características:**
-- Pesos STDP têm `requires_grad=False` — atualizados via regra local de spike timing, **não backprop**.
-- STDP convolucional vetorizado em PyTorch puro (`F.unfold` + `einsum`). Decisão arquitetural permanente registrada em `PLAN.md`.
-- Inibição lateral via k-WTA hard masking na membrana LIF (não decay de pesos pós-STDP).
-- Memória episódica Hopfield Moderna armazena suporte do episódio, NÃO é treinada.
+- Encoder treinado end-to-end via SGD (Adam lr=1e-3, 5000 episodes).
+- k-WTA aplicado em training E eval — gradient flui pelos top-k channels, encoder aprende a colocar info nos k dimensões dominantes.
+- Validação com encoder random + k-WTA sem treino (37.60%) confirma contribuição do treino sob restrição de sparsity.
+
+### Família STDP (exploração documentada, sessões #1-#13)
+
+Pipeline original baseado em STDP biofísico convolucional (`experiment_01_oneshot/model.py:STDPHopfieldModel`) atingiu teto em 35.98% (one-shot), com barreira estrutural caracterizada (matched filter trivial). Mantido no repo como referência. Detalhes em `experiment_01_oneshot/WEEKLY-1.md` e `WEEKLY-2.md`. Caminho C (#15-#20) substituiu STDP biofísico por CNN-4 + plasticidade meta-aprendida + k-WTA esparso.
 
 ---
 
@@ -130,15 +148,16 @@ project-hebb/
 ├── CONTEXT.md                # Briefing conceitual (mission, princípios, stack)
 ├── PLAN.md                   # Plano operacional vivo (notas de iteração, decisões)
 ├── STRATEGY.md               # Estratégia de pesquisa (decisões pós-#10/#13/#15/#20/#25/#27/#30)
-├── BLOCKED.md                # Histórico de bloqueios (Semana 1, fechado)
 ├── CLAUDE.md                 # Guia para Claude Code CLI
 ├── README.md                 # Este arquivo
 ├── LICENSE                   # MIT
 ├── requirements.txt
 ├── environment.yml
+├── setup_neuromorfa.md       # Notas de setup inicial (hardware, ambiente)
 ├── validate_environment.py
 ├── validate_snn_minimal.py
 ├── validate_brian2_stdp.py
+├── archive/                  # Histórico fechado (BLOCKED.md, SESSION_SUMMARY)
 ├── experiment_01_oneshot/    # One-shot Omniglot. C3b é resultado publicável (93.10%)
 │   ├── PLAN.md, WEEKLY-1.md, WEEKLY-2.md
 │   ├── config.py, data.py, model.py
@@ -226,14 +245,21 @@ python baseline_naive.py --device cuda --seeds 5
 
 ## Refs essenciais
 
-- **Diehl & Cook (2015)** — *Unsupervised learning of digit recognition using spike-timing-dependent plasticity.* Frontiers in Computational Neuroscience.
-- **Ramsauer et al. (2020)** — *Hopfield Networks Is All You Need.* ICLR 2021.
-- **Lake et al. (2015)** — *Human-level concept learning through probabilistic program induction.* Science. (Omniglot)
+Centrais para o paper C3:
+
 - **Snell et al. (2017)** — *Prototypical Networks for Few-shot Learning.* NeurIPS.
-- **Maass (1997)** — *Networks of Spiking Neurons: The Third Generation of Neural Network Models.*
+- **Lake et al. (2015)** — *Human-level concept learning through probabilistic program induction.* Science. (Omniglot)
+- **Maass (2000)** — *On the computational power of winner-take-all.* Neural Computation. (k-WTA)
+- **Olshausen & Field (1996)** — *Emergence of simple-cell receptive field properties by learning a sparse code for natural images.* Nature.
+- **Ahmad & Scheinkman (2019)** — *How Can We Be So Dense? The Benefits of Using Highly Sparse Representations.* arXiv:1903.11257.
+- **Ramsauer et al. (2020)** — *Hopfield Networks Is All You Need.* ICLR 2021.
+
+Centrais para a família STDP (exploração documentada):
+
+- **Diehl & Cook (2015)** — *Unsupervised learning of digit recognition using spike-timing-dependent plasticity.* Frontiers in Computational Neuroscience.
 - **Kheradpisheh et al. (2018)** — *STDP-based spiking deep convolutional neural networks for object recognition.* Neural Networks.
 
-Lista completa em `CONTEXT.md` §6 e `experiment_01_oneshot/PLAN.md` §12.
+Bibliography completa do paper em `paper_c3/refs.bib` (BibTeX, ~14 entradas). Lista expandida em `CONTEXT.md` §6.
 
 ---
 
