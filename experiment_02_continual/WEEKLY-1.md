@@ -380,3 +380,111 @@ Cancelable em qualquer ponto. Critério explícito (de STRATEGY.md "Decisão Pó
 - Não tentou debug freestyle (não foi necessário — sanity passou)
 
 Próxima sessão idealmente é #29 (sanity 5 seeds completos com defaults) pra confirmar magnitude do sinal antes de investir em ablações.
+
+---
+
+## Sessão #29 — Caminho 5e 5 seeds completos: PIOR QUE NAIVE pelo critério
+
+**Pré-condição:** sessão #28 sanity 50 tasks reduzido deu 75.34% / -5.78 — promissor. Esta sessão valida com defaults completos.
+
+### Setup
+
+`c5e_combined.py --seeds 5 --n-inner 10 --finetune-episodes 100 --eval-episodes 50 --device cuda`. 19.2 min total em RTX 4070.
+
+### Resultado 5 seeds
+
+| Seed | ACC | BWT | decay aprendido |
+|---|---|---|---|
+| 42 | 72.48% | -18.71 p.p. | 0.634 |
+| 43 | 75.05% | -16.21 p.p. | 0.635 |
+| 44 | 74.61% | -17.34 p.p. | 0.629 |
+| 45 | 75.86% | -15.35 p.p. | 0.636 |
+| 46 | 75.89% | -16.40 p.p. | 0.629 |
+| **Média** | **74.78%** | **-16.80 p.p.** | 0.633 |
+| **IC95% bootstrap** | [73.59, 75.71] | [-17.89, -15.90] | — |
+
+### Comparação consolidada
+
+| Modelo | ACC | BWT |
+|---|---|---|
+| ProtoNet vanilla one-shot (#20) | 94.55% | (sem CL) |
+| Naive ProtoNet em CL (#25) | **80.65%** | **-9.26** |
+| 5e sanity reduzido (#28) | 75.34% | -5.78 |
+| **5e completo defaults (#29, esta)** | **74.78%** | **-16.80** |
+| Possibilidade B linear (#27) | 47.89% | -2.05 |
+
+**Δ vs naive:** ACC **-5.87 p.p. ABAIXO**, BWT **-7.54 p.p. PIOR** (mais forgetting).
+
+### Critério literal pelo protocolo da sessão
+
+| Range ACC | Decisão |
+|---|---|
+| ≥85% E BWT ≥-7 | Sucesso forte |
+| 81-85% | Mediano |
+| 78.65-82.65% (naive ± 2 p.p.) | Sem ganho |
+| **<78%** | **PIOR QUE NAIVE — encerrar com C3 (Caminho 4)** |
+
+**Resultado 74.78% cai em "<78%".** BWT -16.80 também viola "≥-7" do critério de sucesso por margem grande.
+
+### O que mudou de sanity #28 pra completo #29
+
+| Hyperparam | Sanity #28 | Completo #29 | Δ |
+|---|---|---|---|
+| n_inner | 5 | 10 | 2x |
+| finetune-episodes | 30 | 100 | 3.3x |
+| eval-episodes | 15 | 50 | 3.3x |
+| ACC final | 75.34% | 74.78% | similar |
+| **BWT** | **-5.78** | **-16.80** | **3x pior** |
+
+**Insight crítico:** ACC ficou similar mas BWT piorou drasticamente (-5.78 → -16.80). Just-after acc continua alto (80-99%) — encoder aprende cada task. Mas CNN persiste cross-task com drift muito maior: ~5000 backprop steps cumulativos no CNN durante treino completo.
+
+**Plasticidade + k-WTA + trace NÃO PROTEGEM o CNN de drift cross-task.**
+
+### Por que 5e falha (interpretação mecanística)
+
+**Arquitetura híbrida (Opção 2) tem plasticidade na camada errada.**
+
+1. **CNN é a fonte de capacity** (motivo de combinar com C3 na #28). Mas CNN treinado via SGD sequencial sem defesa esquece tasks antigas — exatamente o que naive ProtoNet mostrou (#25 BWT -9.26).
+2. **Plasticidade meta-aprendida** está aplicada APÓS CNN (camada linear 64→64), com W resetando per-episode. Adapta features pra task atual, **mas não influencia como CNN é atualizado entre tasks**.
+3. **Trace e k-WTA** afetam apenas o embedding pós-CNN. Não criam regularização sobre CNN weights.
+
+5e adicionou **complexidade sem mecanismo defensivo onde realmente importava** (no CNN). Plasticidade na camada errada → mais episodes/task piora forgetting.
+
+### Sinais qualitativos
+
+- decay aprendeu ~0.63 consistentemente → trace ATIVO, termo `A·pre·post·trace` está sendo usado
+- just-after acc 80-99% → adaptação per-task funciona bem
+- BWT -16 a -19 → CNN drift dominante
+- Resultado **NÃO é bug** — é consequência arquitetural do design Opção 2
+
+### Decisão pelo critério literal
+
+**Caminho 5e FALHA empírica.** ACC 74.78% < 78% pelo critério **→ Caminho 4 ativado** (encerrar Marco 1, publicar só C3).
+
+### Recap Project Hebb (29 sessões)
+
+- 13 sessões STDP (Iter 1, melhor 35.98% one-shot)
+- 7 sessões família C (C3 melhor: 93.10% one-shot com 75% sparsity)
+- 9 sessões Marco 1 (#21-#29: 4 abordagens — naive, alphabets, B linear, 5e kitchen sink — TODAS abaixo do baseline naive ProtoNet em CL)
+
+**Padrão Marco 1:** ProtoNet sequential é robusto a forgetting (#23, #25 = 80-82% ACC mesmo sem defesa). Mecanismos bio-inspirados (#27 B linear, #29 5e) não conseguem bater. **Continual learning sem replay com mecanismos bio-inspirados é difícil em Omniglot via ProtoNet** — qualquer complexidade adicional introduz mais forgetting que ganha.
+
+### Implicação Caminho 4
+
+C3 (sessão #20): 93.10% 5w1s com 75% sparsity. **Defensável academicamente como "k-WTA esparso preserva ProtoNet metric learning under high sparsity"**. Workshop paper NeurIPS Bio-Plausible Learning viável (~setembro 2026).
+
+Marco 1 não produziu paper independente. Achados de #23-#29 podem virar apêndice de C3 paper ("CL é robusto naturally em ProtoNet — bio-inspired methods don't help") se Luis quiser, mas pelo critério literal explícito, **Marco 1 encerra**.
+
+### Próxima sessão idealmente
+
+Sessão admin curta (30 min) decidindo:
+- (a) Aceitar resultado #29 e ativar Caminho 4 (encerrar Marco 1, C3 paper writing)
+- (b) Questionar critério literal antes de encerrar (ex: rodar ablações de algo abaixo do baseline tem ROI baixo, mas pode revelar mecanismo)
+
+**Status sinal>chance:** mantido (74.78% > chance 20%). **Sessões consecutivas sem bater baseline naive: 1** (esta).
+
+### Estado final pós-#29
+
+- `c5e_combined.py` rodou 5 seeds completos (19.2 min, sem erros).
+- Resultado documentado, **5e fica como FALHA empírica documentada do Caminho 5e**.
+- Decisão pendente: Caminho 4 ativado pelo critério literal, ou questionamento.
