@@ -6,19 +6,28 @@ Pesquisa de longo prazo em arquiteturas de IA biologicamente inspiradas. Foco: s
 
 ---
 
-## Status
+## Status (atualizado em 2026-04-29, pós-sessão #30)
 
-**Fase 1 — Fundação** (meses 1–3). Experimento ativo: one-shot learning em **Omniglot** com pipeline `STDP convolucional → memória Hopfield Moderna`, sem backpropagação end-to-end.
+**Fase 1 — Fundação concluída** (30 sessões). Project Hebb teve 2 experimentos:
+- **Experimento 01 (one-shot Omniglot):** ✅ atingiu metas numéricas via Caminho C (ProtoNet + k-WTA esparso). Vira paper de workshop.
+- **Experimento 02 (continual learning sem replay):** ❌ Marco 1 encerrado pelo critério literal (sessão #29). 4 abordagens testadas, todas ≤ baseline naive. Achado mecanístico documentado.
 
-| Marco | Estado |
-|-------|--------|
-| Stack PyTorch + CUDA + RTX 4070 | Validada |
-| Pipeline Omniglot (data + train + eval + baselines) | Funciona end-to-end |
-| Sanity check Diehl & Cook 2015 (MNIST) | Concluída com ressalva (caso patológico documentado, 17.76% vs meta 85%) |
-| Pretreino STDP em Omniglot | Bloqueio ativo: saturação de pesos em escala média/longa |
-| Avaliação 5w1s / 20w1s vs MAML / ProtoNet | Não atingida ainda |
+### Resultados principais (Omniglot 5-way 1-shot)
 
-**Baselines internos medidos** (Omniglot 5-way 1-shot, 100 episódios): Pixel kNN 45.76%, ProtoNet 85.88% (com 500 train episodes). Modelo STDP+Hopfield principal ainda não bate baselines — é o que o trabalho atual ataca. Ver `experiment_01_oneshot/WEEKLY-2.md` pra diagnóstico do bloqueio atual e `STRATEGY.md` pra próximas hipóteses.
+| Modelo | ACC 5w1s | ACC 20w1s | Sessão | Status |
+|---|---|---|---|---|
+| Pixel kNN | 45.76% | — | #7 | baseline trivial |
+| Iter 1 STDP saturado (melhor de 13 sessões) | 35.98% | 9.80% | #9 | barreira estrutural identificada (#1-#13) |
+| C1b PCA-32 + Hopfield (sem treino) | 56.28% | 35.37% | #15 | baseline arquitetural |
+| C2-simplified (plasticidade meta-aprendida) | 64.08% | — | #19 | melhor pré-CNN |
+| **C3b ProtoNet + k-WTA k=16 (75% sparsity)** | **93.10%** | **80.72%** | #20 | **target paper** |
+| ProtoNet baseline | 94.55% | — | #20 | upper bound |
+
+C3b atinge as duas metas numéricas do `CONTEXT.md` §4 (≥90% 5w1s, ≥70% 20w1s) com mecanismo neural-inspirado defensável (esparsidade biológica). Não cumpre restrição mecanística "sem backprop end-to-end" — registrado honestamente em CONTEXT.md §1.2.
+
+### Próximo passo
+
+**Paper C3:** "k-WTA Sparsity Preserves Prototypical Network Performance in Few-Shot Learning". Submissão alvo NeurIPS Bio-Plausible Learning Workshop ~setembro 2026. Cronograma: 5 sessões de paper writing (~10-15h reais). Ver `STRATEGY.md` "Plano paper C3".
 
 ---
 
@@ -103,14 +112,11 @@ Ordem de leitura para entender o estado em <10 minutos:
 
 | Doc | O que tem |
 |-----|-----------|
-| [`CONTEXT.md`](CONTEXT.md) | Mission, princípios operacionais, stack, baselines, papers. **Sempre primeiro.** |
-| [`PLAN.md`](PLAN.md) | Plano operacional vivo. Notas de iteração (1 linha por sessão), Decisões arquiteturais permanentes. |
-| [`STRATEGY.md`](STRATEGY.md) | Estratégia de pesquisa: próximas 2-3 sessões, critérios de pivot, fallback Brian2. |
-| [`experiment_01_oneshot/PLAN.md`](experiment_01_oneshot/PLAN.md) | Pergunta de pesquisa, hipótese, arquitetura detalhada, roadmap 6 semanas com status. |
-| [`experiment_01_oneshot/WEEKLY-1.md`](experiment_01_oneshot/WEEKLY-1.md) | Sanity MNIST (concluída com ressalva, 6 sessões de iteração). |
-| [`experiment_01_oneshot/WEEKLY-2.md`](experiment_01_oneshot/WEEKLY-2.md) | Adaptação Omniglot (ativa, bloqueada em saturação). |
-| [`experiment_01_oneshot/WEEKLY-2-NEXT.md`](experiment_01_oneshot/WEEKLY-2-NEXT.md) | Auditoria da infra Omniglot e ordem sugerida pra Semana 2. |
-| [`BLOCKED.md`](BLOCKED.md) | Histórico do bloqueio Semana 1 (FECHADO desde sessão #6, mantido como artefato). |
+| [`CONTEXT.md`](CONTEXT.md) | Mission, princípios operacionais, stack, baselines, papers. §1.1 Refino #21 (plasticidade local diferenciável), §1.2 Refino #30 (Marco 1 encerrado). **Sempre primeiro.** |
+| [`PLAN.md`](PLAN.md) | Plano operacional vivo. Notas de iteração (30+ sessões), Decisões arquiteturais permanentes. |
+| [`STRATEGY.md`](STRATEGY.md) | Estratégia de pesquisa: decisões pós-#10, #13, #15, #20, #25, #27, **#30 (Fechamento Marco 1 + Plano paper C3)**. |
+| [`experiment_01_oneshot/`](experiment_01_oneshot/) | Experimento 01 (one-shot). PLAN.md + WEEKLY-1.md (sanity MNIST), WEEKLY-2.md (família C, sessões #15-#20). C3b é o resultado publicável. |
+| [`experiment_02_continual/`](experiment_02_continual/) | Experimento 02 (continual learning). PLAN.md marcado ENCERRADO. WEEKLY-1.md (sessões #22-#29). PAPERS.md (lit review CL). |
 | [`CLAUDE.md`](CLAUDE.md) | Guia operacional pra futuras sessões Claude Code. |
 
 ---
@@ -121,50 +127,59 @@ Ordem de leitura para entender o estado em <10 minutos:
 project-hebb/
 ├── CONTEXT.md                # Briefing conceitual (mission, princípios, stack)
 ├── PLAN.md                   # Plano operacional vivo (notas de iteração, decisões)
-├── STRATEGY.md               # Estratégia de pesquisa formalizada
-├── BLOCKED.md                # Estado de bloqueios (histórico Semana 1)
+├── STRATEGY.md               # Estratégia de pesquisa (decisões pós-#10/#13/#15/#20/#25/#27/#30)
+├── BLOCKED.md                # Histórico de bloqueios (Semana 1, fechado)
 ├── CLAUDE.md                 # Guia para Claude Code CLI
 ├── README.md                 # Este arquivo
 ├── LICENSE                   # MIT
-├── requirements.txt          # Dependências Python
-├── environment.yml           # Conda (alternativa)
-├── validate_environment.py   # Sanity check do setup
-├── validate_snn_minimal.py   # SNN mínima end-to-end (snntorch)
-├── validate_brian2_stdp.py   # Brian2 + STDP (referência)
-└── experiment_01_oneshot/
-    ├── PLAN.md               # Roadmap 6 semanas, hipótese, protocolo
-    ├── WEEKLY-{0..6}.md      # Progresso por semana
-    ├── WEEKLY-2-NEXT.md      # Preparação Semana 2
-    ├── config.py             # Hiperparâmetros centrais (editar AQUI)
-    ├── data.py               # Omniglot loader + EpisodeSampler + spike encoding
-    ├── model.py              # ConvSTDPLayer + HopfieldMemory + STDPHopfieldModel
-    ├── train.py              # Loop de pretreino STDP
-    ├── evaluate.py           # N-way K-shot com IC bootstrap
-    ├── baselines.py          # Pixel kNN + Prototypical Networks
-    ├── sanity_mnist.py       # Reprodução Diehl & Cook 2015 (Semana 1)
-    ├── analysis.py           # Geração de RESULTS.md a partir de logs
-    ├── run_all.ps1           # Pipeline automatizado das 6 semanas (pwsh 7+)
-    ├── tests/
-    │   ├── test_assignment.py            # Auditoria de assign_labels e evaluate
-    │   ├── test_spike_balance.py         # Razão pré:pós em MNIST kernel=28
-    │   └── test_spike_balance_omniglot.py # Razão pré:pós em arquitetura conv real
-    └── utils/
-        └── visualize.py      # Visualização de filtros aprendidos
+├── requirements.txt
+├── environment.yml
+├── validate_environment.py
+├── validate_snn_minimal.py
+├── validate_brian2_stdp.py
+├── experiment_01_oneshot/    # One-shot Omniglot. C3b é resultado publicável (93.10%)
+│   ├── PLAN.md, WEEKLY-1.md, WEEKLY-2.md
+│   ├── config.py, data.py, model.py
+│   ├── train.py, evaluate.py
+│   ├── baselines.py                  # Pixel kNN + Prototypical Networks
+│   ├── sanity_mnist.py               # Reprodução Diehl & Cook 2015
+│   ├── c1_hopfield_baselines.py      # C1: Hopfield + features triviais (#15)
+│   ├── c1d_autoencoder_baseline.py   # C1d: Hopfield + AE (#16, descartado)
+│   ├── c2_meta_hebbian.py            # C2: plasticidade meta-aprendida (#17)
+│   ├── c2_ablations.py               # C2 ablações (#18)
+│   ├── c2_simplified.py              # C2 simplificado (#19)
+│   ├── c3_protonet_sparse.py         # C3: ProtoNet + k-WTA (#20) ← TARGET PAPER
+│   ├── tests/, utils/, figs/sessao_11/
+│   └── run_all.ps1
+└── experiment_02_continual/  # Continual learning (Marco 1 ENCERRADO em #30)
+    ├── PLAN.md (marcado ENCERRADO no topo)
+    ├── PAPERS.md (lit review EWC/SI/GEM/A-GEM/Hadsell)
+    ├── WEEKLY-1.md (sessões #22-#29)
+    ├── baseline_naive.py             # Naive sequential ProtoNet (#23, #25)
+    ├── c2_continual_arch_a.py        # Scaffold (não implementado)
+    ├── c2_continual_arch_b.py        # Possibilidade B linear (#27)
+    ├── c2_continual_arch_c.py        # Scaffold (não implementado)
+    └── c5e_combined.py               # Caminho 5e kitchen sink (#28-#29)
 ```
 
-Pastas em `.gitignore`: `data/` (datasets), `checkpoints/` (`.pt` files), `logs/`, `wandb/`, `.venv/`.
+Pastas em `.gitignore`: `data/`, `checkpoints/`, `logs/`, `wandb/`, `.venv/`.
 
 ---
 
-## Decisões arquiteturais já tomadas
+## Decisões arquiteturais (timeline 30 sessões)
 
-Documentadas em `PLAN.md` § Decisões arquiteturais. Resumo:
+Documentadas em `PLAN.md` § Decisões arquiteturais e em `STRATEGY.md` por seção. Resumo das principais:
 
-1. **STDP em PyTorch puro** (não Brian2) — GPU-first via vetorização `F.unfold` + `einsum`. Custo de reverter: ~1 semana. Brian2 fica como referência canônica.
-2. **Stack Python como scaffold inicial** — port pra Julia adiado pra Fase 2 se modelo provar valor. Ecossistema científico maduro pesa mais que performance teórica nesta fase.
-3. **k-WTA na dinâmica LIF** (não decay de pesos pós-STDP) — fiel a Diehl & Cook 2015 §Methods. Hard masking de spikes por posição espacial.
-4. **Adaptive threshold homeostático** (Diehl & Cook 2015 §2.3) — buffer `theta` por filtro, cresce com spikes próprios e decai com tempo.
-5. **Pivot Semana 1 → Semana 2** — MNIST com kernel=28 é caso patológico (k-WTA degenerado sobre output 1×1). Stack validada por outras vias; ROI baixo de continuar em MNIST.
+1. **STDP em PyTorch puro** (sessão #1) — GPU-first via vetorização. Brian2 como referência. Validada após 13 sessões (não revertida).
+2. **Stack Python como scaffold** (sessão #1) — port Julia adiado pra Fase 2.
+3. **k-WTA na dinâmica LIF** (sessão #2) — hard masking de spikes por posição.
+4. **Pivot Semana 1 → Semana 2** (sessão #6) — MNIST kernel=28 caso patológico.
+5. **CONTEXT.md §1.1 Refino #21** (sessão #21) — "STDP biofísico fiel" → "plasticidade local diferenciável" como framing operacional.
+6. **Caminho C escolhido** (sessão #15) — pivot pra ProtoNet + features esparsas após família STDP saturar em ~36%. Produziu C3b (93.10%).
+7. **Marco 1 (continual learning) escolhido** (sessão #21) — Split-Omniglot 50-tasks, sem replay, plasticidade meta-aprendida.
+8. **Reformulação Pós-#23** (sessão #24) — alphabets + skip warmup. Insuficiente conforme #25.
+9. **Caminho 5e** (sessão #28) — kitchen sink CNN+plasticidade+trace+k-WTA. Falhou em #29.
+10. **CONTEXT.md §1.2 Refino #30** (sessão #30) — Marco 1 encerrado formalmente. Caminho 4 ativado: publicar só C3.
 
 ---
 
@@ -175,19 +190,24 @@ $env:PYTHONIOENCODING = "utf-8"
 cd experiment_01_oneshot
 
 # Baselines (rápido, ~3 min total na 4070)
-python baselines.py --baseline pixel_knn --ways 5 --shots 1 --episodes 100
-# Esperado: ~45-50% acc
+python baselines.py --baseline pixel_knn --ways 5 --shots 1 --episodes 1000
+# Esperado: 45.76% (sessão #7)
 
-python baselines.py --baseline proto_net --ways 5 --shots 1 --episodes 100 --train-episodes 500
-# Esperado: ~85% acc (com mais train_episodes vai pra ~98% do paper)
+python baselines.py --baseline proto_net --ways 5 --shots 1 --episodes 1000 --train-episodes 5000
+# Esperado: 94.55% ACC (sessão #20). Com 500 train_episodes (smoke) dá ~85.88%.
 
-# Auditoria do pipeline de classificação (3 testes sintéticos, ~5s)
-python tests/test_assignment.py
-# Esperado: 3/3 passam
+# Resultado publicável C3 (sessão #20) — 3 níveis de sparsity, ~6 min total
+python c3_protonet_sparse.py --device cuda --train-episodes 5000 --eval-eps 1000
+# Esperado: C3a k=32 → 93.35% / C3b k=16 → 93.10% / C3c k=8 → 90.77%
 
-# Diagnóstico de regime de spikes em conv real (~5s)
-python tests/test_spike_balance_omniglot.py
-# Esperado: R1≈1.5, R2≈0.7
+# Família C completa (one-shot, sem treino) — sessão #15
+python c1_hopfield_baselines.py --device cuda --episodes 1000
+# Esperado: C1a Pixels+L2 50.17%, C1b PCA-32 56.28%, C1c RandomProj 41.23%
+
+# Continual learning Marco 1 (encerrado em #30, mantido como referência)
+cd ../experiment_02_continual
+python baseline_naive.py --device cuda --seeds 5
+# Esperado: ACC 80.65%, BWT -9.26 (sessão #25)
 ```
 
 ---

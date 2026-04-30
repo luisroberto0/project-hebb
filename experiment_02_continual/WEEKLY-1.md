@@ -488,3 +488,29 @@ Sessão admin curta (30 min) decidindo:
 - `c5e_combined.py` rodou 5 seeds completos (19.2 min, sem erros).
 - Resultado documentado, **5e fica como FALHA empírica documentada do Caminho 5e**.
 - Decisão pendente: Caminho 4 ativado pelo critério literal, ou questionamento.
+
+---
+
+## Sessão #30 (admin) — Fechamento Marco 1 + scoping paper C3
+
+Sessão administrativa, sem código. Luis aceitou resultado de #29 (74.78% < 78% pelo critério literal).
+
+**Marco 1 ENCERRADO formalmente.** Caminho 4 ativado.
+
+Detalhes completos em `STRATEGY.md`:
+- **"Fechamento Marco 1 — sessão #30"** — resumo das 9 sessões (#21-#29), 4 abordagens testadas, achado mecanístico positivo (ProtoNet inerentemente robusto a forgetting em Omniglot), aprendizados positivos mesmo com resultado negativo.
+- **"Plano paper C3 — Workshop NeurIPS Bio-Plausible Learning"** — título tentativo, contribuição central, estrutura 6-8 pgs, experimentos prontos do repo (sessão #20), cronograma 5 sessões/10-15h, submissão alvo ~setembro 2026.
+
+**CONTEXT.md ganhou §1.2 "Refino #30"** atualizando status das 4 capacidades pós-LLM:
+- ✅ one-shot via C3 (numericamente, sem cumprir restrições mecanísticas)
+- ❌ continual learning (Marco 1 encerrado sem método novo)
+- 🔵 eficiência radical e raciocínio temporal (não atacados)
+
+**Project Hebb status após 30 sessões:**
+- 1 paper publicável em pipeline (C3)
+- Achados mecanísticos documentados em 8 weekly markdown files
+- Marco 1 vira apêndice possível do paper C3
+
+**Pausa de 1+ semana antes de #31 recomendada** — paper writing exige modo cognitivo diferente de pesquisar.
+
+Sessões consecutivas sem sinal>chance: 0 (mantido).
