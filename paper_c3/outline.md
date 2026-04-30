@@ -18,7 +18,7 @@ Alternativas:
 
 ---
 
-## Section 1: Introduction (~1 página, ~500-700 palavras)
+## Section 1: Introduction (~1 página, ~500-700 palavras) ✅ draft sessão #31
 
 **Subsection 1.1: Hook**
 Sparsity neural-inspirada é caracteristica da computação cortical (Olshausen & Field 1996; Ahmad & Hawkins 2019). Deep learning mainstream usa representações densas. Pergunta natural: quanto sparsity métodos modernos toleram?
@@ -38,7 +38,7 @@ Empirical study sobre Omniglot: k-WTA esparso aplicado ao embedding final de Pro
 
 ---
 
-## Section 2: Background (~1 página, ~500-700 palavras)
+## Section 2: Background (~1 página, ~500-700 palavras) ✅ draft sessão #31
 
 **Subsection 2.1: Prototypical Networks**
 Snell 2017. Pipeline: encoder CNN-4 → embedding → centróide por classe → distância euclidiana. Treinado episodically com cross-entropy sobre `-cdist²`. Estado da arte simples e forte em Omniglot.
@@ -59,7 +59,7 @@ Brevemente:
 
 ---
 
-## Section 3: Method (~1 página)  — TODO sessão #32
+## Section 3: Method (~1 página) ✅ draft sessão #33
 
 **Subsection 3.1: Arquitetura C3**
 ProtoEncoder CNN-4 padrão (Snell 2017): 4 blocos Conv-BN-ReLU-MaxPool, 64 filtros, output 64D. k-WTA aplicado no embedding final.
@@ -77,7 +77,7 @@ ProtoEncoder CNN-4 padrão (Snell 2017): 4 blocos Conv-BN-ReLU-MaxPool, 64 filtr
 
 ---
 
-## Section 4: Experiments (~2 páginas) — TODO sessão #32
+## Section 4: Experiments (~2 páginas) ✅ draft sessão #33
 
 **Subsection 4.1: Setup**
 Hardware (RTX 4070 laptop), seed=42, baselines comparados (Pixel kNN 45.76%, ProtoNet vanilla 94.55%).

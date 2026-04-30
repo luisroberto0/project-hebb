@@ -25,24 +25,24 @@ Luis Roberto — [LinkedIn](https://www.linkedin.com/in/luisroberto0/)
 
 | Sessão | Conteúdo | Status |
 |---|---|---|
-| #31 (esta) | Outline + Introduction + Background + refs.bib inicial | em progresso |
-| #32 | Methods + Experiments | TODO |
-| #33 | Discussion + revisão geral | TODO |
-| #34 | Figures refinement + bibliography final + LaTeX conversion | TODO |
-| #35 | Peer review interno + revisão final | TODO |
+| #31 | Outline + Introduction + Background + refs.bib inicial | ✅ done |
+| #33 | Methods + Experiments | ✅ done (sessão #32 do PLAN foi admin de README cleanup) |
+| #34 | Discussion + Conclusion + revisão geral | TODO |
+| #35 | Figures refinement + bibliography final + LaTeX conversion | TODO |
+| #36 | Peer review interno + revisão final | TODO |
 
 ## Files
 
-- `outline.md` — estrutura detalhada de cada seção
-- `intro.md` — Section 1: Introduction
-- `background.md` — Section 2: Background
-- `methods.md` — Section 3: Method (TODO #32)
-- `experiments.md` — Section 4: Experiments (TODO #32)
-- `discussion.md` — Section 5: Discussion (TODO #33)
-- `conclusion.md` — Section 6: Conclusion (TODO #33)
-- `appendix.md` — Apêndice opcional sobre Marco 1 (TODO #33)
-- `refs.bib` — Bibliography (BibTeX)
-- `figs/` — Figuras (TODO #34, gerar do `experiment_01_oneshot/c3_protonet_sparse.py` outputs)
+- `outline.md` — estrutura detalhada de cada seção (✅ atualizada com checkboxes)
+- `intro.md` — Section 1: Introduction (✅ draft)
+- `background.md` — Section 2: Background (✅ draft)
+- `methods.md` — Section 3: Method (✅ draft)
+- `experiments.md` — Section 4: Experiments (✅ draft)
+- `discussion.md` — Section 5: Discussion (TODO #34)
+- `conclusion.md` — Section 6: Conclusion (TODO #34)
+- `appendix.md` — Apêndice opcional sobre Marco 1 (TODO #34, decisão depende de espaço)
+- `refs.bib` — Bibliography (BibTeX, ~14 entradas, expandir conforme texto evolui)
+- `figs/` — Figuras (TODO #35, gerar do `experiment_01_oneshot/c3_protonet_sparse.py` outputs)
 
 ## Honest scoping
 
