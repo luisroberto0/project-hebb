@@ -961,3 +961,48 @@ Não bloqueiam paper. Cada um custaria ~1 sessão extra:
 - **Marco 1 ENCERRADO** formalmente.
 - **C3 paper scoping completo.** Próxima sessão (#31, quando Luis decidir) começa Intro+Background.
 - **Project Hebb status:** 30 sessões investidas, 1 paper publicável em pipeline (C3), achados mecanísticos documentados em 8 weekly markdown files.
+
+---
+
+## Decisão pós-#35: LinkedIn em vez de NeurIPS — sessão #36 (2026-04-30)
+
+**Contexto:** sessão #35 finalizou paper C3 pré-peer-review (3789 palavras, abstract, 2 figuras, main.tex compilável, 14 refs). Estava planejado seguir pra peer review interno (#36) → submissão NeurIPS Bio-Plausible Workshop ~setembro 2026.
+
+**Decisão final do Luis:** **NÃO submeter pra workshop.** Em vez disso, postar no LinkedIn em PT como anúncio + repo público + PDF deep dive anexado.
+
+### Razão da decisão
+
+1. **Founder Rytora sem tempo pra pipeline NeurIPS.** Submissão acadêmica formal envolve: rebuttals (1-2 semanas de turnaround intenso), revisões pós-acceptance (mais 2-4 semanas), camera-ready preparation (logística), registration ($300-1000+), e potencialmente attendance presencial (tempo + custo). Side project 5-7h/semana não absorve esse overhead sem comprometer Rytora.
+2. **LinkedIn alcança parte do que peer review faria.** Rede técnica do Luis (founders, devs, ML researchers) consegue dar feedback substantivo nos comentários — não com rigor de double-blind, mas suficiente pra calibrar interpretações e identificar refs que não conhecemos. Especialmente com o convite explícito a pushback no post.
+3. **Paper draft preservado pra submissão futura.** Decisão é "não submeter agora", não "abandonar o draft". Se em 6-12 meses Luis quiser submeter (a outro workshop, conference, ou venue alternativo), o material está pronto. Nada se perde.
+4. **C3 não é breakthrough.** Workshop paper de incrementalismo defensável é exatamente o tipo de trabalho que beneficia mais de visibilidade (LinkedIn) que de credenciamento institucional (workshop). Honestidade do scope alinha com o canal.
+
+### Trade-off aceito
+
+| O que LinkedIn dá | O que LinkedIn não dá |
+|---|---|
+| Alcance imediato (~rede do Luis + ressonância) | Peer review formal double-blind |
+| Feedback rápido nos comentários | Citação acadêmica formal (BibTeX entry) |
+| Visibilidade pra portfolio/CV | Linha em "publications" no CV |
+| Zero overhead pós-publicação | Validação institucional |
+
+Trade-off explicitamente aceito: o resultado de C3 não exige validação institucional pra ser discutido. Quem quiser citar em paper futuro pode citar via CITATION.cff (criado em sessão de autoria pós-#34).
+
+### Estado de código pra publicação
+
+- `paper_c3/main.tex` — compilável, mas **não compilado localmente** (pdflatex não instalado em Windows)
+- Plano: Luis compila via Overleaf em ~10 min (instruções em `paper_c3/latex_status.md`), gera `Project_Hebb_C3_DeepDive.pdf`, adiciona ao repo
+- LinkedIn pode ser publicado antes ou depois do PDF — post longo menciona "PDF em breve no repo", ajustável
+
+### Drafts produzidos na sessão #36
+
+- `paper_c3/linkedin_post.md` — versão longa (~1900 chars), 6 parágrafos: hook contraintuitivo, contexto Project Hebb side project, resultado central com tabela inline, validação random+kWTA, por que importa pra bio-plausible learning, honestidade explícita sobre limitações, menção ao Marco 1 (achado negativo), CTA com hashtags
+- `paper_c3/linkedin_post_short.md` — versão curta (~750 chars), fallback se a longa parecer demais
+
+Ambos com tom honesto preservado (sem "breakthrough", sem "novel", sem hype). Linguagem natural BR. Anexo recomendado: `figs/fig1_sparsity_curve.png` (visual contraintuitivo do plateau até 75% sparsity).
+
+### Cancelamento implícito do roadmap pós-#30
+
+Roadmap original "submission alvo NeurIPS Bio-Plausible Learning ~setembro 2026" oficialmente cancelado. Sessões #36 (era peer review) e potencial #37 (revisão final pré-submissão) ficam sem propósito — substituídas por compilação Overleaf + post LinkedIn.
+
+**Project Hebb entra em estado de manutenção** após esta decisão. Não há próximas sessões planejadas. Se Luis quiser retomar (Marco 2 em outro critério pós-LLM, ou ablações adicionais do C3), reabrir via nova sessão administrativa primeiro.

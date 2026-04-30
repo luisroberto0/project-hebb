@@ -58,6 +58,19 @@ Pelo critério literal definido em `STRATEGY.md` "Decisão Pós-Sessão #27" (#2
 
 **Próximo passo:** paper C3 (workshop NeurIPS Bio-Plausible Learning ~setembro 2026). Ver `STRATEGY.md` "Plano paper C3 — Workshop NeurIPS Bio-Plausible Learning". Após paper, reavaliação do projeto pra decidir se vale atacar outros critérios pós-LLM ou encerrar Project Hebb como exploração documentada com 1 milestone publicado.
 
+### 1.3 Refino #36 (2026-04-30) — Publicação via LinkedIn em vez de NeurIPS
+
+Após sessão #35 finalizar paper C3 pré-peer-review, decisão estratégica do Luis: **NÃO submeter pra NeurIPS Bio-Plausible Workshop.** Em vez disso, postar no LinkedIn em PT como anúncio + repo público + PDF deep dive anexado.
+
+Razão: founder Rytora não tem espaço pra rebuttals/revisões/registration/attendance que submissão acadêmica formal exige. LinkedIn alcança parte do que peer review faria (feedback técnico nos comentários) sem overhead institucional. Paper draft preservado pra submissão futura se fizer sentido depois.
+
+**Implicação pra status §1.2:**
+- ✅ one-shot via C3 — atingido numericamente, **publicado via LinkedIn** (em vez de workshop)
+- ❌ continual learning — Marco 1 encerrado
+- 🔵 eficiência radical e raciocínio temporal — não atacados
+
+**Project Hebb entra em estado de manutenção pós-#36.** Não há próximas sessões planejadas. Se houver retomada (Marco 2 em outro critério pós-LLM, ablações C3 adicionais), reabrir via sessão administrativa primeiro. Ver `STRATEGY.md` "Decisão pós-#35: LinkedIn em vez de NeurIPS".
+
 ---
 
 ## 2. Princípio Operacional

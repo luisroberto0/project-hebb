@@ -46,7 +46,7 @@ C3b atinge as duas metas numéricas do `CONTEXT.md` §4 (≥90% 5w1s, ≥70% 20w
 
 **Paper C3:** "k-WTA Sparsity Preserves Prototypical Network Performance in Few-Shot Learning". Submissão alvo NeurIPS Bio-Plausible Learning Workshop ~setembro 2026. Cronograma: 5 sessões de paper writing (~10-15h reais). Ver `STRATEGY.md` "Plano paper C3".
 
-**Status paper writing:** sessão #35 (2026-04-30) finalizou pré-peer-review: **abstract + 6 seções (slimmed 3789 palavras dentro do alvo) + 2 figuras (300 DPI) + main.tex compilável + refs.bib (14 entradas)**. Apêndice Marco 1 como supplementary. LaTeX não compilado localmente (pdflatex não instalado, opções em `paper_c3/latex_status.md`). Próxima sessão #36 = peer review interno + compilação LaTeX + revisão final.
+**Status paper writing:** sessão #36 (2026-04-30) — **decisão final: NÃO submeter NeurIPS Workshop, publicar via LinkedIn em PT.** Razão: founder Rytora sem tempo pra rebuttals/revisões/registration; LinkedIn alcança parte do que peer review faria sem overhead institucional. Paper draft completo preservado: abstract + 6 seções (3789 palavras) + 2 figuras 300 DPI + main.tex compilável + refs.bib (14 entradas) + LinkedIn post drafts (longo + curto). PDF gerável via Overleaf em ~10 min. Ver `STRATEGY.md` "Decisão pós-#35: LinkedIn em vez de NeurIPS" e `paper_c3/README.md` "Final state". Project Hebb entra em estado de manutenção pós-#36.
 
 ---
 
@@ -187,15 +187,17 @@ project-hebb/
     ├── outline.md            # Estrutura detalhada de cada seção
     ├── intro.md              # Section 1: Introduction (draft #31)
     ├── background.md         # Section 2: Background (draft #31)
-    ├── abstract.md           # Abstract (draft #35, 158 palavras)
-    ├── methods.md            # Section 3 (slim #35, 503 palavras)
-    ├── experiments.md        # Section 4 (draft #33, 969 palavras)
-    ├── discussion.md         # Section 5 (draft #34, 964 palavras)
-    ├── conclusion.md         # Section 6 (slim #35, 180 palavras)
-    ├── appendix.md           # Marco 1 (supplementary material, 500 palavras)
+    ├── abstract.md           # Abstract (158 palavras)
+    ├── methods.md            # Section 3 (slim, 503 palavras)
+    ├── experiments.md        # Section 4 (969 palavras)
+    ├── discussion.md         # Section 5 (964 palavras)
+    ├── conclusion.md         # Section 6 (slim, 180 palavras)
+    ├── appendix.md           # Marco 1 supplementary (500 palavras)
     ├── refs.bib              # Bibliography (14 entradas)
-    ├── main.tex              # LaTeX consolidado (não compilado localmente)
-    ├── latex_status.md       # Status compilação + opções
+    ├── main.tex              # LaTeX consolidado (compilável via Overleaf)
+    ├── latex_status.md       # Status compilação + plano Overleaf
+    ├── linkedin_post.md      # Post LinkedIn versão longa PT-BR (~1900 chars)
+    ├── linkedin_post_short.md # Post LinkedIn versão curta PT-BR (~750 chars)
     ├── generate_figures.py   # Script reusable das figuras
     └── figs/                 # fig1_sparsity_curve, fig2_validation (PNG+PDF 300 DPI)
 ```

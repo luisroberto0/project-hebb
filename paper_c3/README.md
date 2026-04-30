@@ -30,7 +30,33 @@ Backups se workshop específico não existir em 2026:
 | #33 | Methods + Experiments | ✅ done |
 | #34 | Discussion + Conclusion + decisão sobre apêndice Marco 1 | ✅ done |
 | #35 | Slim revision + Abstract + Figures + LaTeX conversion | ✅ done |
-| #36 | Peer review interno + LaTeX compilation + revisão final | TODO |
+| #36 | LinkedIn post draft + LaTeX compilation status (decisão: NÃO submeter NeurIPS) | ✅ done |
+
+## Final state — pós-#36
+
+**Decisão estratégica final:** **NÃO submeter pra NeurIPS Bio-Plausible Workshop.** Em vez disso, postar no LinkedIn em PT como anúncio + repo + PDF anexado. Razão registrada em `STRATEGY.md` "Decisão pós-#35: LinkedIn em vez de NeurIPS" — founder Rytora não tem tempo pra rebuttals/revisões/registration; LinkedIn alcança parte do que peer-review faria sem overhead institucional.
+
+**Paper draft preservado integralmente.** Conteúdo permanece publicável depois se Luis decidir submeter pra workshop futuro.
+
+**Status dos componentes:**
+
+| Componente | Status |
+|---|---|
+| 6 seções drafted + slim (3789 palavras dentro do alvo) | ✅ |
+| Abstract (158 palavras) | ✅ |
+| Figuras (2x PNG+PDF, 300 DPI) | ✅ |
+| Bibliography (`refs.bib`, 14 entradas) | ✅ |
+| `main.tex` consolidado (~530 linhas, compilável) | ✅ |
+| Apêndice Marco 1 (supplementary, não no main) | ✅ |
+| **PDF compilado** | ⏳ pendente — Luis roda Overleaf (10 min, ver `latex_status.md`) |
+| LinkedIn post (longo + curto) | ✅ drafts em `linkedin_post.md` e `linkedin_post_short.md` |
+| Plano de publicação | ✅ documentado |
+
+**Próximo passo (Luis, sem cadência fixa):**
+1. Compilar `main.tex` via Overleaf (~10 min, instruções em `latex_status.md`)
+2. Renomear PDF pra `Project_Hebb_C3_DeepDive.pdf`, adicionar ao repo
+3. Revisar `linkedin_post.md` (longo) ou `linkedin_post_short.md` (curto), ajustar tom pra rede dele
+4. Postar no LinkedIn anexando `figs/fig1_sparsity_curve.png` + link pro repo
 
 **Decisão pós-#34 sobre apêndice Marco 1:** `appendix.md` criado mas **NÃO incluído no main paper draft**. Razão: Marco 1 explora continual learning sem replay; main paper foca sparsity em few-shot — narrativas distintas. Conteúdo permanece como supplementary material disponível mediante solicitação.
 
@@ -41,6 +67,8 @@ Backups se workshop específico não existir em 2026:
 ## Files
 
 - `outline.md` — estrutura detalhada com checkboxes ✅
+- `linkedin_post.md` — Post LinkedIn versão longa PT-BR (✅ draft, ~1900 chars)
+- `linkedin_post_short.md` — Post LinkedIn versão curta PT-BR (✅ draft, ~750 chars, fallback)
 - `abstract.md` — Abstract (✅ draft, 158 palavras)
 - `intro.md` — Section 1: Introduction (✅ draft, 647 palavras)
 - `background.md` — Section 2: Background (✅ slim, 526 palavras)
