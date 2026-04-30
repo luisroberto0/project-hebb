@@ -101,7 +101,7 @@ Discussão de como sparsity escala em N-way maior — 20w1s mantém 75-82% mesmo
 
 ---
 
-## Section 5: Discussion (~1-2 páginas) — TODO sessão #33
+## Section 5: Discussion (~1-2 páginas) ✅ draft sessão #34
 
 **Subsection 5.1: Por que k-WTA não derruba ProtoNet?**
 Hipóteses mecanísticas:
@@ -129,7 +129,7 @@ Mencionar brevemente que ProtoNet+kWTA foi testado em continual setup mas result
 
 ---
 
-## Section 6: Conclusion (~1 parágrafo) — TODO sessão #33
+## Section 6: Conclusion (~1 parágrafo) ✅ draft sessão #34
 
 Recap em 3-4 frases: pergunta → método → resultado principal → implicação.
 
@@ -137,13 +137,19 @@ Recap em 3-4 frases: pergunta → método → resultado principal → implicaç�
 
 ## Appendix A (opcional) — Marco 1: Caracterização de Robustez de ProtoNet a Catastrophic Forgetting
 
-Conteúdo: 1-2 páginas resumindo achados de `experiment_02_continual/WEEKLY-1.md`:
-- ProtoNet sequencial é naturalmente robusto a forgetting em Omniglot (~80% ACC)
-- Mecanismos bio-inspirados (plasticidade meta-aprendida, trace STDP-like, k-WTA esparso) não conseguem bater
-- Causa: prototypes-fresh-no-eval + encoder métrica genérica
-- Insight pra pesquisa futura: plasticidade na camada errada (após CNN) não previne CNN drift
+**Decisão tomada na sessão #34:** Apêndice CRIADO em `appendix.md` mas marcado como **SUPPLEMENTARY MATERIAL — NÃO incluir no main paper draft**.
 
-Decisão final sobre incluir apêndice: na sessão #33 (depende de espaço e fit narrativo).
+Justificativa:
+- Marco 1 explora continual learning sem replay; main paper foca sparsity em few-shot. Narrativas distintas.
+- Workshop papers têm 6-8 páginas total; apêndice de tema diferente pode parecer filler.
+- Conteúdo permanece útil pra: (a) submissão como supplementary material se workshop permitir; (b) seção de blog post / repositório associado; (c) base pra paper futuro standalone.
+
+Conteúdo do appendix.md (~500 palavras):
+- ✅ Setup Marco 1 (Split-Omniglot por alfabeto, 50 tasks, sem replay)
+- ✅ 4 abordagens testadas com tabela (naive 80.65%, B linear 47.89%, 5e 74.78%)
+- ✅ Achado mecanístico (ProtoNet inerentemente robusto a forgetting)
+- ✅ Implicação pro main paper (Section 5.1 Discussion)
+- ✅ Referência a documentação completa em `experiment_02_continual/`
 
 ---
 
@@ -163,15 +169,15 @@ Figuras gerar via matplotlib a partir dos outputs já cacheados (sessão #20).
 
 ## Word count target (workshop, ~6-8 páginas)
 
-| Seção | Palavras alvo |
-|---|---|
-| Abstract | 150-200 |
-| Introduction | 500-700 |
-| Background | 500-700 |
-| Method | 500-700 |
-| Experiments | 800-1000 |
-| Discussion | 800-1000 |
-| Conclusion | 100-150 |
-| Total (sem refs/apêndice) | ~3500-4500 |
+| Seção | Palavras alvo | Atual (#34) |
+|---|---|---|
+| Abstract | 150-200 | TODO #35 |
+| Introduction | 500-700 | 638 ✓ |
+| Background | 500-700 | 857 (slim −150 em #35) |
+| Method | 500-700 | 916 (slim −200 em #35) |
+| Experiments | 800-1000 | 969 ✓ |
+| Discussion | 800-1000 | 964 ✓ |
+| Conclusion | 100-150 | 288 (próximo do limite alto, OK) |
+| **Total (sem refs/apêndice)** | **~3500-4500** | **4632 (slim ~130 em #35)** |
 
 Conferir contra template oficial do workshop quando NeurIPS 2026 anunciar formato.

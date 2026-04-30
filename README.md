@@ -45,7 +45,7 @@ C3b atinge as duas metas numéricas do `CONTEXT.md` §4 (≥90% 5w1s, ≥70% 20w
 
 **Paper C3:** "k-WTA Sparsity Preserves Prototypical Network Performance in Few-Shot Learning". Submissão alvo NeurIPS Bio-Plausible Learning Workshop ~setembro 2026. Cronograma: 5 sessões de paper writing (~10-15h reais). Ver `STRATEGY.md` "Plano paper C3".
 
-**Status paper writing:** sessão #33 (2026-04-30) tem 4 seções em draft (`paper_c3/intro.md`, `background.md`, `methods.md`, `experiments.md`) + outline + refs.bib. Restam: Discussion + Conclusion → sessão #34; Figures + LaTeX → sessão #35; peer review → sessão #36.
+**Status paper writing:** sessão #34 (2026-04-30) tem **6 seções em draft** (intro, background, methods, experiments, discussion, conclusion) + outline + refs.bib + appendix opcional sobre Marco 1 (não incluído no main paper, fica como supplementary material). Word count atual: 4632 palavras (slim ~130 em #35). Restam: revisão geral + abstract + figures + LaTeX conversion → #35; peer review → #36.
 
 ---
 
@@ -186,10 +186,11 @@ project-hebb/
     ├── outline.md            # Estrutura detalhada de cada seção
     ├── intro.md              # Section 1: Introduction (draft #31)
     ├── background.md         # Section 2: Background (draft #31)
-    ├── methods.md            # Section 3 (draft #33, ~850 palavras)
-    ├── experiments.md        # Section 4 (draft #33, ~1000 palavras)
-    ├── discussion.md         # TODO #34
-    ├── conclusion.md         # TODO #34
+    ├── methods.md            # Section 3 (draft #33, ~916 palavras)
+    ├── experiments.md        # Section 4 (draft #33, ~969 palavras)
+    ├── discussion.md         # Section 5 (draft #34, ~964 palavras)
+    ├── conclusion.md         # Section 6 (draft #34, ~288 palavras)
+    ├── appendix.md           # Marco 1 (supplementary material, ~500 palavras)
     └── refs.bib              # Bibliography (draft #31, ~14 entradas)
 ```
 

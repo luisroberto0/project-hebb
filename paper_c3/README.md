@@ -26,10 +26,14 @@ Luis Roberto — [LinkedIn](https://www.linkedin.com/in/luisroberto0/)
 | Sessão | Conteúdo | Status |
 |---|---|---|
 | #31 | Outline + Introduction + Background + refs.bib inicial | ✅ done |
-| #33 | Methods + Experiments | ✅ done (sessão #32 do PLAN foi admin de README cleanup) |
-| #34 | Discussion + Conclusion + revisão geral | TODO |
-| #35 | Figures refinement + bibliography final + LaTeX conversion | TODO |
+| #33 | Methods + Experiments | ✅ done (#32 do PLAN foi admin de README cleanup) |
+| #34 | Discussion + Conclusion + decisão sobre apêndice Marco 1 | ✅ done |
+| #35 | Slim revision + Abstract + Figures + LaTeX conversion + bib final | TODO |
 | #36 | Peer review interno + revisão final | TODO |
+
+**Decisão pós-#34 sobre apêndice Marco 1:** `appendix.md` criado mas **NÃO incluído no main paper draft**. Razão: Marco 1 explora continual learning sem replay; main paper foca sparsity em few-shot — narrativas distintas, conexão "ambos do mesmo projeto" é justificativa fraca pra apêndice em workshop paper de 6-8 páginas. Conteúdo permanece como supplementary material disponível mediante solicitação.
+
+**Word count global pós-#34:** 4632 palavras (target 3500-4500). Slim de ~130 palavras necessário em #35; foco em background (857 → ~700) e methods (916 → ~750).
 
 ## Files
 
@@ -38,9 +42,9 @@ Luis Roberto — [LinkedIn](https://www.linkedin.com/in/luisroberto0/)
 - `background.md` — Section 2: Background (✅ draft)
 - `methods.md` — Section 3: Method (✅ draft)
 - `experiments.md` — Section 4: Experiments (✅ draft)
-- `discussion.md` — Section 5: Discussion (TODO #34)
-- `conclusion.md` — Section 6: Conclusion (TODO #34)
-- `appendix.md` — Apêndice opcional sobre Marco 1 (TODO #34, decisão depende de espaço)
+- `discussion.md` — Section 5: Discussion (✅ draft, ~964 palavras)
+- `conclusion.md` — Section 6: Conclusion (✅ draft, ~288 palavras)
+- `appendix.md` — Apêndice Marco 1 (✅ draft ~500 palavras, **NÃO incluir no main paper** — supplementary material)
 - `refs.bib` — Bibliography (BibTeX, ~14 entradas, expandir conforme texto evolui)
 - `figs/` — Figuras (TODO #35, gerar do `experiment_01_oneshot/c3_protonet_sparse.py` outputs)
 
