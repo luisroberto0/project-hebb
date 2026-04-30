@@ -44,7 +44,7 @@
 % --- Title and author ---
 \title{k-WTA Sparsity Preserves Prototypical Network\\Performance in Few-Shot Learning}
 \author[1]{Luis Roberto Pinho da Silva Junior}
-\affil[1]{Independent research \\ \texttt{https://github.com/luisroberto0/project-hebb}}
+\affil[1]{Independent research \\ \url{https://github.com/luisroberto0/project-hebb}}
 \date{2026}
 
 % =============================================================================
@@ -199,6 +199,13 @@ Figure~\ref{fig:sparsity_curve} plots accuracy in 5-way 1-shot and 20-way 1-shot
 \subsection{Random encoder + k-WTA validation}
 
 The last row of Table~\ref{tab:main} confirms the central point: \textbf{the gain from C3 comes from training under the constraint, not from the k-WTA structure applied to arbitrary features.} A random encoder with k-WTA $k=16$ reaches only 37.60\% in 5-way 1-shot and 16.73\% in 20-way 1-shot. These values are modestly above respective chance (20\% and 5\%), reflecting residual bias from the untrained CNN-4 architecture, but extremely below the trained C3b (93.10\%) using exactly the same k-WTA structure. The C3b $-$ Random+kWTA gap is $+55.50$ p.p.\ in 5-way 1-shot. This margin isolates the contribution of training: the encoder, when optimized under the constraint that only top-16 dimensions will be used, learns to place discriminative information in those dimensions.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.85\textwidth]{figs/fig2_validation.pdf}
+\caption{C3 trained vs.\ random encoder validation. Bar chart comparing ProtoNet baseline (0\% sparse), C3a/b/c (trained, increasing sparsity), and Random encoder + k-WTA (untrained, 75\% sparsity, hatched bars). The $+55.50$ p.p.\ gap between C3b trained and Random+kWTA isolates the contribution of training under the constraint. Dashed lines show chance levels (20\% in 5-way, 5\% in 20-way).}
+\label{fig:validation}
+\end{figure}
 
 % =============================================================================
 \section{Discussion}

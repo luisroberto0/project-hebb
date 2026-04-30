@@ -31,6 +31,17 @@ Backups se workshop específico não existir em 2026:
 | #34 | Discussion + Conclusion + decisão sobre apêndice Marco 1 | ✅ done |
 | #35 | Slim revision + Abstract + Figures + LaTeX conversion | ✅ done |
 | #36 | LinkedIn post draft + LaTeX compilation status (decisão: NÃO submeter NeurIPS) | ✅ done |
+| #36b | LaTeX fixes pós-revisão Luis: cite Adam, Figure 2, header polish | ✅ done |
+
+## Pós-#36b — Correções LaTeX aplicadas
+
+Luis revisou o PDF compilado da sessão #36 (via Overleaf) e identificou 3 issues. Todos corrigidos nesta sessão:
+
+1. **`refs.bib`** — adicionada entrada `kingma2015adam` (citação de Adam estava renderizando como `(?)` em Section 3.3 por entrada faltante).
+2. **`main.tex`** — Figure 2 (`figs/fig2_validation.pdf`, gerada na #35) inserida em Section 4.4 logo após o parágrafo do gap +55.50 p.p.; estava órfã no diretório.
+3. **`main.tex`** — header `\affil[1]` trocou `\texttt` por `\url` (resolve vírgula órfã na renderização, semanticamente correto pra URLs).
+
+**Conteúdo do paper intocado** (apenas fixes técnicos de LaTeX). PDF requer recompilação manual via Overleaf — passos detalhados em `latex_status.md`.
 
 ## Final state — pós-#36
 

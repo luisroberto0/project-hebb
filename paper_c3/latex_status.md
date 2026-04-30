@@ -1,6 +1,56 @@
 # LaTeX compilation status
 
-> Status pós-sessão #36 (verificação reconfirmada, decisão de publicação alterada).
+> Status pós-sessão #36b (3 fixes aplicados, requer re-compilação).
+
+## Fixes aplicados na sessão #36b (2026-04-30)
+
+Após Luis revisar PDF compilado da sessão #36, identificou 3 issues. Todos corrigidos:
+
+1. **Citação Adam quebrada** (`\citep{kingma2015adam}` renderizava como (?) em Section 3.3): adicionada entrada `kingma2015adam` em `refs.bib` (nova seção "Optimization / training", entre "Few-shot learning core" e "Omniglot benchmark").
+
+2. **Figure 2 ausente:** `figs/fig2_validation.pdf` foi gerada na sessão #35 mas nunca incluída no `main.tex`. Adicionado bloco `\begin{figure}...\end{figure}` em Section 4.4 (Random encoder + k-WTA validation), logo após o parágrafo que termina com "+55.50 p.p. in 5-way 1-shot". Caption descreve as 5 barras, gap de validação, e linhas chance.
+
+3. **Header cosmético:** linha `\affil[1]{Independent research \\ \texttt{https://...}}` produzia vírgula órfã na renderização. Trocado `\texttt` por `\url` (semanticamente mais correto pra URLs, e o `hyperref` package lida melhor com whitespace ao redor).
+
+## Re-compilação necessária
+
+PDF anterior (compilado sessão #36 via Overleaf) está desatualizado. Luis precisa re-fazer Overleaf compilation:
+
+1. Acessar [overleaf.com](https://www.overleaf.com/) e abrir projeto Project Hebb existente
+2. **Re-uploadar arquivos atualizados** (substituir versões antigas):
+   - `paper_c3/main.tex` (com Figure 2 e header fix)
+   - `paper_c3/refs.bib` (com kingma2015adam)
+3. Recompilar (3 passes auto)
+4. Download PDF novo
+5. Renomear pra `Project_Hebb_C3_DeepDive.pdf`
+6. Substituir versão antiga no repo (se houver) e commit
+
+**Verificar no PDF novo:**
+- ✓ Section 3.3: citação Adam aparece como `(Kingma & Ba, 2015)` em vez de `(?)`
+- ✓ Section 4.4: Figure 2 aparece após o parágrafo do gap +55.50 p.p.
+- ✓ Header: "Independent research" + URL aparece sem vírgula órfã
+
+## Compilação local: NÃO disponível em Windows dev machine
+
+`pdflatex` e `bibtex` não instalados (verificado em sessão #35 e #36). Sem mudança nesta sessão. Overleaf permanece o caminho recomendado.
+
+## Plano de compilação Overleaf (~10 min, sem instalação)
+
+[Mantido da sessão #36 — instruções abaixo permanecem válidas]
+
+1. Acessar [overleaf.com](https://www.overleaf.com/) (criar conta gratuita se necessário)
+2. **New Project → Upload Project**
+3. Upload do conteúdo de `paper_c3/`:
+   - `main.tex`
+   - `refs.bib`
+   - Pasta `figs/` com `fig1_sparsity_curve.pdf` e `fig2_validation.pdf`
+4. Definir `main.tex` como Main Document (botão "Menu" → "Settings" → "Main document")
+5. Compile button — Overleaf roda os 3 passes automaticamente (pdflatex → bibtex → pdflatex × 2)
+6. Download PDF
+7. Renomear pra `Project_Hebb_C3_DeepDive.pdf` (nome amigável pra LinkedIn)
+8. Adicionar ao repo manualmente: `git add paper_c3/Project_Hebb_C3_DeepDive.pdf && git commit -m "paper(c3): add compiled PDF"`
+
+## Outras opções (alternativas se Overleaf não funcionar)
 
 ## Compilação local: NÃO disponível em Windows dev machine
 
