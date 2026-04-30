@@ -1,5 +1,12 @@
 # Experiment 02 — Continual Learning sem replay buffer
 
+> **STATUS: ENCERRADO em 2026-04-29 (sessão #30).**
+> Marco 1 não atingiu critério de sucesso após 9 sessões (#21-#29) testando 4
+> abordagens — todas ≤ baseline naive ProtoNet (80.65%). Caminho 4 ativado:
+> publicar só C3 como workshop paper.
+> Ver `STRATEGY.md` "Fechamento Marco 1 — sessão #30" para resumo formal e
+> "Plano paper C3 — Workshop NeurIPS Bio-Plausible Learning" para próximos passos.
+
 > Plano operacional do Marco 1 do Projeto B reformulado.
 > Criado na sessão #22 após confirmação das 5 decisões pós-#21.
 > Para framing estratégico, ver `STRATEGY.md` "Confirmação Pós-Sessão #21".
@@ -90,21 +97,23 @@ Critérios anteriores (pós-#20, baseado em random class splits): ACC ≥75% e B
 
 ---
 
-## Roadmap previsto (sessões #22-#32, atualizado pós-#24)
+## Roadmap previsto (encerrado pós-#29)
 
-| # | Tipo | Objetivo |
+| # | Tipo | Output |
 |---|---|---|
-| 22 | Admin | Confirmação decisões + literatura review (PAPERS.md) — feito |
-| 23 | Code | Baseline naive sequential fine-tuning, random splits — feito (ACC 82.58%, broken) |
-| **24** | **Admin** | **Reformulação benchmark pra Opção D (alphabets + skip warmup) — feito** |
-| **25 (próxima)** | **Code** | **Re-implementar naive em Opção D, validar empiricamente naive cai pra 40-55%** |
-| 26 | Code | Baseline EWC em Opção D |
-| 27-29 | Code | Propostas C2-continual e/ou C3-continual implementação |
-| 30 | Code | Ablações |
-| 31 | Admin | Status check sucesso/pivot/encerramento |
-| 32 | TBD | Refinement ou paper writing conforme #31 |
+| 22 | Admin | Confirmação decisões + lit review (5 papers core) |
+| 23 | Code | Naive #1 (random splits + warmup): ACC 82.58% — broken |
+| 24 | Admin | Reformulação Opção D (alphabets + skip warmup) |
+| 25 | Code | Naive #2 (alphabets + skip warmup): ACC 80.65% — Opção D insuficiente |
+| 26 | Admin | Revisão estratégica (4 caminhos) |
+| 27 | Code | Caminho 5d Possibilidade B (linear): ACC 47.89% — gap de capacity |
+| 28 | Code | Caminho 5e (kitchen sink) sanity: ACC 75.34% (1 seed reduzido) |
+| 29 | Code | Caminho 5e 5 seeds defaults: **ACC 74.78%, BWT -16.80** — pior que naive |
+| **30** | **Admin** | **Fechamento Marco 1 (esta sessão). Marco 1 ENCERRADO. Caminho 4 ativado.** |
 
-Cancelable em qualquer ponto. Sem cadência fixa — Luis decide sessão-a-sessão.
+**Resultado consolidado:** todas as 4 abordagens testadas (naive #1, naive #2, Possibilidade B, Caminho 5e) ficaram ≤ naive ProtoNet (80.65%). ProtoNet sequencial é robusto a forgetting em Omniglot por construção (achado mecanístico documentado).
+
+**Próximas sessões (não Marco 1):** paper C3 — ver `STRATEGY.md` "Plano paper C3 — Workshop NeurIPS Bio-Plausible Learning".
 
 ---
 

@@ -832,3 +832,132 @@ Por que Opção 2 (e não Opção 1 = plasticidade em todas as camadas):
 - **#38-#42:** análise + paper draft + refinement
 
 Cancelable em qualquer ponto. Se #29 (5 seeds) não bater 75% ACC, sessão admin re-avalia se vale continuar 5e ou pivotar pra Caminho 2 (paper de robustez).
+
+---
+
+## Fechamento Marco 1 — sessão #30 (2026-04-29)
+
+**Decisão final:** Marco 1 (continual learning sem replay) **ENCERRADO** pelo critério literal de #29: ACC 74.78% < 78% → Caminho 4 ativado → publicar só C3.
+
+Luis aceitou o resultado. Esta seção formaliza o fechamento e prepara transição pro paper C3.
+
+### Resumo das 9 sessões Marco 1 (#21-#29)
+
+| # | Tipo | Output principal |
+|---|---|---|
+| 21 | Admin | Recomendações Projeto B (6 perguntas) |
+| 22 | Admin | Confirmação 5 decisões + lit review (EWC/SI/GEM/A-GEM/Hadsell) |
+| 23 | Code | Naive baseline #1 (random splits + warmup): **ACC 82.58%** — broken (acima do critério adversarial) |
+| 24 | Admin | Reformulação benchmark pra Opção D (alphabets + skip warmup) |
+| 25 | Code | Naive baseline #2 (alphabets + skip warmup): **ACC 80.65%** — Opção D insuficiente, naive cai só 1.93 p.p. |
+| 26 | Admin | Revisão estratégica (4 caminhos avaliados) |
+| 27 | Code | Caminho 5d Possibilidade B (encoder linear): **ACC 47.89%** — gap de capacity vs CNN-4 |
+| 28 | Code | Caminho 5e (CNN+plast+trace+k-WTA) sanity: **ACC 75.34%** (1 seed reduzido) |
+| 29 | Code | Caminho 5e 5 seeds defaults: **ACC 74.78%, BWT -16.80** — pior que naive em ambas |
+
+### 4 abordagens testadas, todas ≤ naive ProtoNet (80.65%)
+
+| Abordagem | ACC | BWT | Mecanismo |
+|---|---|---|---|
+| Naive ProtoNet random splits (#23) | 82.58% | -12.46 | sem defesa, prototypes-fresh-no-eval |
+| Naive ProtoNet alphabets+no-warmup (#25) | 80.65% | -9.26 | mesma arq, setup mais adversarial |
+| Possibilidade B encoder linear (#27) | 47.89% | -2.05 | sem CNN, plasticidade meta + trace |
+| **Caminho 5e (#29)** | **74.78%** | **-16.80** | CNN+plast+trace+k-WTA combinado |
+
+**Padrão consolidado:** mecanismos bio-inspirados (plasticidade meta-aprendida, trace STDP-like, k-WTA esparso) **não conseguem bater naive ProtoNet em CL setup** quando arquitetura é prototype-based em Omniglot. Adicionar complexidade introduz mais forgetting (BWT pior) sem ganho em ACC.
+
+### Achado mecanístico documentado (positivo, mesmo com resultado negativo no Marco 1)
+
+> **ProtoNet metric learning é inerentemente robusto a catastrophic forgetting em Omniglot.**
+
+Razões mecanísticas:
+1. **Não há classifier head treinado** pra "esquecer" — prototypes são computados FRESH no eval do support set
+2. **Encoder aprende métrica genérica** (separar caracteres por similaridade) que transfere bem entre tasks da mesma família visual
+3. **Tasks na mesma família** (alphabets diferentes em Omniglot) compartilham features básicas (curvas, traços, simetria) — encoder não precisa "esquecer" pra aprender novas tasks
+
+**Esse é insight científico real**, mesmo que o Marco 1 não tenha produzido método novo que bata baseline. Pode virar apêndice do paper C3 ou subseção em "Discussion" como observação relevante pra continual learning literature.
+
+### O que foi aprendido (positivo)
+
+1. **Caracterização rigorosa** de quando ProtoNet é robusto vs frágil em CL
+2. **Ablações sistemáticas** que isolam contribuição de cada mecanismo (linear vs CNN, com vs sem trace, com vs sem plasticidade)
+3. **Setup adversarial tentado e documentado** (alphabets + skip warmup) — informa pesquisa futura sobre quando bio-inspired methods agregam
+4. **Insight sobre plasticidade na camada errada** (#29): plasticidade meta-aprendida APÓS CNN não previne CNN drift — implica que pra CL com bio-inspired, plasticidade precisa ser AT the source of forgetting, não downstream
+
+### Implicação pra projeto
+
+**Caminho 4 ativado.** C3 (sessão #20: 93.10% ACC com 75% sparsity) vira target de paper. Marco 1 não produz paper independente, mas seus achados podem virar apêndice/discussion no paper C3.
+
+---
+
+## Plano paper C3 — Workshop NeurIPS Bio-Plausible Learning
+
+**Status:** scoping nesta sessão. Paper writing começa na sessão #31 (não nesta).
+
+### Título tentativo
+
+> **"k-WTA Sparsity Preserves Prototypical Network Performance in Few-Shot Learning"**
+
+Alternativas:
+- "Biologically-Inspired Sparsity in Prototypical Networks: Empirical Analysis on Omniglot"
+- "Sparse Coding in Few-Shot Metric Learning: How Much k-WTA Can ProtoNet Tolerate?"
+
+### Contribuição central
+
+Demonstração empírica de que **codificação esparsa biológica é compatível com deep representation learning em few-shot metric learning**: aplicar k-WTA (75% das ativações zeradas) ao embedding final de um Prototypical Network preserva 93.10% acurácia em Omniglot 5-way 1-shot, dentro de **-1.45 p.p.** do baseline ProtoNet completo (94.55%). Esparsidade até 87.5% mantém >90% ACC. Esta robustez não é trivial: random encoder com k-WTA fica em 37.60% — o ganho vem do TREINO sob restrição de sparsity, não da estrutura k-WTA estática.
+
+### Estrutura proposta (6-8 páginas)
+
+| Seção | Conteúdo | Tamanho est. |
+|---|---|---|
+| 1. Introduction | Motivação bio-inspired learning + pergunta científica sobre sparsity em metric learning | ~1 pg |
+| 2. Background | ProtoNet (Snell 2017), k-WTA (Maass 2014, Ahmad & Hawkins 2019, Lynch & Ahmad 2019), sparse distributed representations, Omniglot | ~1 pg |
+| 3. Method | Arquitetura C3 (CNN-4 + k-WTA no embedding 64D), 3 níveis de k testados (32/16/8 = 50/75/87.5% sparsity), validação random encoder + k-WTA | ~1 pg |
+| 4. Experiments | Tabela principal (3 sparsities × 5w1s + 20w1s × IC95% bootstrap), curva sparsity × ACC, comparação com baselines (Pixel kNN, Iter 1 STDP, ProtoNet vanilla), validação random + k-WTA | ~2 pgs |
+| 5. Discussion | Implicações pra continual learning (Marco 1 como apêndice, insight sobre robustez ProtoNet), limitações (Omniglot é dataset visualmente simples, generalização cross-domain TBD), trabalho futuro | ~1-2 pgs |
+| 6. Conclusion | 1 parágrafo |
+| Appendix (opcional) | Marco 1 — caracterização de robustez ProtoNet a forgetting | ~1-2 pgs |
+
+### Experimentos prontos (não precisa rodar nada novo)
+
+Tudo já está no repo:
+
+- **C3a/b/c em Omniglot 5w1s e 20w1s** (sessão #20, `experiment_01_oneshot/c3_protonet_sparse.py`)
+- **ProtoNet baseline 94.55%** (sessão #20, `experiment_01_oneshot/baselines.py`)
+- **Random encoder + k-WTA validation 37.60%** (sessão #20)
+- **Tabela cumulativa do projeto:** STDP 35.98% → C1b 56.28% → C2-simplified 64.08% → C3b 93.10%
+
+Logs e checkpoints já existem (sessão #20 commit `fc75495`).
+
+### Experimentos opcionais (apenas se Luis quiser fortalecer)
+
+Não bloqueiam paper. Cada um custaria ~1 sessão extra:
+
+| Experimento | Custo | Benefício |
+|---|---|---|
+| Sweep mais fino de k (k ∈ {4, 6, 12, 24, 48}) | ~30 min | Caracteriza fronteira de sparsity tolerada |
+| k-WTA em camadas intermediárias (não só embedding final) | ~1h | Valida que sparsity downstream basta vs needs deep |
+| Comparação com ProtoNet+dropout no embedding (controle) | ~1h | Distingue "sparsity por k-WTA" de "regularização genérica" |
+
+### Cronograma estimado
+
+| Sessão | Conteúdo | Tempo real est. |
+|---|---|---|
+| **#31** | Outline detalhado + Intro + Background | 2-3 h |
+| **#32** | Methods + Experiments (tabelas + figs principais) | 2-3 h |
+| **#33** | Discussion + revisão geral | 2-3 h |
+| **#34** | Figures refinement + citações + bibliography | 1-2 h |
+| **#35** | Peer review interno (se possível) + revisão | 2-3 h |
+| **Total** | **5 sessões de paper writing** | **10-15 h** |
+
+**Submissão alvo:** NeurIPS Workshop on Bio-plausible Learning (deadline típico setembro/outubro). Backups: ICML AI for Science Workshop, NESY (Neuro-Symbolic), CCN (Cognitive Computational Neuroscience).
+
+### Pausa recomendada antes de #31
+
+**Pausa de 1+ semana entre #30 e #31 é saudável.** Escrever paper exige modo cognitivo diferente de pesquisar (síntese > exploração). Distância temporal ajuda a ver achados com clareza. Sem cadência fixa.
+
+### Estado pós-#30
+
+- **Marco 1 ENCERRADO** formalmente.
+- **C3 paper scoping completo.** Próxima sessão (#31, quando Luis decidir) começa Intro+Background.
+- **Project Hebb status:** 30 sessões investidas, 1 paper publicável em pipeline (C3), achados mecanísticos documentados em 8 weekly markdown files.

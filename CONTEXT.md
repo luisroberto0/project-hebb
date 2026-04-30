@@ -27,6 +27,30 @@ Sessões #1-#13 mostraram que STDP aditivo + k-WTA + clamp na parametrização D
 **(2) Sucesso numérico ≠ sucesso mecanístico.**
 Sessão #20 (C3: ProtoNet + k-WTA esparso) atinge as duas metas numéricas do §4 (≥90% 5w1s, ≥70% 20w1s) MAS usa backprop end-to-end. **Atingiu metade da meta.** Documentar como milestone publicável (workshop) é honesto; tratar como objetivo cumprido seria desonesto. Próximo marco do projeto é **continual learning sem replay buffer** — capacidade que LLMs não têm, e que plasticidade local meta-aprendida pode atacar diretamente. Ver `STRATEGY.md` "Decisão Pós-Sessão #20".
 
+### 1.2 Refino #30 (2026-04-29, pós-sessão #29) — Marco 1 encerrado
+
+Após 9 sessões dedicadas a Marco 1 (continual learning sem replay buffer), 4 abordagens testadas — todas ≤ baseline naive ProtoNet (80.65%):
+
+| Abordagem | ACC 5w1s | Sessão |
+|---|---|---|
+| Naive ProtoNet random splits | 82.58% | #23 |
+| Naive ProtoNet alphabets+no-warmup | 80.65% | #25 |
+| Possibilidade B encoder linear | 47.89% | #27 |
+| Caminho 5e (CNN+plast+trace+k-WTA) | 74.78% | #29 |
+
+Pelo critério literal definido em `STRATEGY.md` "Decisão Pós-Sessão #27" (#29 ACC 74.78% < 78% → Caminho 4), Marco 1 encerrado.
+
+**Achado mecanístico positivo:** ProtoNet metric learning é inerentemente robusto a catastrophic forgetting em Omniglot — prototypes-fresh-no-eval + encoder métrica genérica protegem naturalmente. Mecanismos bio-inspirados (plasticidade meta-aprendida, trace STDP-like, k-WTA) não conseguem bater quando combinados com prototype-based metric learning em Omniglot. Insight científico documentado, vira apêndice possível do paper C3.
+
+**Status atualizado das capacidades pós-LLM (§1):**
+
+- ✅ **Aprendizado one-shot real:** atingido numericamente via C3 (93.10% 5w1s, 80.72% 20w1s). Mecanismo: ProtoNet + k-WTA esparso. Restrição não cumprida: usa backprop end-to-end (não plasticidade local). Aceito como milestone publicável.
+- ❌ **Aprendizado contínuo sem catastrophic forgetting:** Marco 1 encerrado em #30 sem produzir método novo que bata baseline. ProtoNet naive já é robusto; bio-inspired methods não agregam. Achado caracterizado, mas hipótese pós-LLM não foi avançada além do baseline.
+- 🔵 **Eficiência radical em hardware consumer:** não atacado nesta fase.
+- 🔵 **Raciocínio temporal via timing:** não atacado nesta fase.
+
+**Próximo passo:** paper C3 (workshop NeurIPS Bio-Plausible Learning ~setembro 2026). Ver `STRATEGY.md` "Plano paper C3 — Workshop NeurIPS Bio-Plausible Learning". Após paper, reavaliação do projeto pra decidir se vale atacar outros critérios pós-LLM ou encerrar Project Hebb como exploração documentada com 1 milestone publicado.
+
 ---
 
 ## 2. Princípio Operacional
