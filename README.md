@@ -29,6 +29,8 @@ C3b atinge as duas metas numéricas do `CONTEXT.md` §4 (≥90% 5w1s, ≥70% 20w
 
 **Paper C3:** "k-WTA Sparsity Preserves Prototypical Network Performance in Few-Shot Learning". Submissão alvo NeurIPS Bio-Plausible Learning Workshop ~setembro 2026. Cronograma: 5 sessões de paper writing (~10-15h reais). Ver `STRATEGY.md` "Plano paper C3".
 
+**Status paper writing:** sessão #31 (2026-04-30) iniciou drafts em `paper_c3/`. Outline + Introduction + Background + refs.bib em draft. Methods + Experiments → sessão #32. Discussion → #33.
+
 ---
 
 ## Quick start
@@ -151,15 +153,25 @@ project-hebb/
 │   ├── c3_protonet_sparse.py         # C3: ProtoNet + k-WTA (#20) ← TARGET PAPER
 │   ├── tests/, utils/, figs/sessao_11/
 │   └── run_all.ps1
-└── experiment_02_continual/  # Continual learning (Marco 1 ENCERRADO em #30)
-    ├── PLAN.md (marcado ENCERRADO no topo)
-    ├── PAPERS.md (lit review EWC/SI/GEM/A-GEM/Hadsell)
-    ├── WEEKLY-1.md (sessões #22-#29)
-    ├── baseline_naive.py             # Naive sequential ProtoNet (#23, #25)
-    ├── c2_continual_arch_a.py        # Scaffold (não implementado)
-    ├── c2_continual_arch_b.py        # Possibilidade B linear (#27)
-    ├── c2_continual_arch_c.py        # Scaffold (não implementado)
-    └── c5e_combined.py               # Caminho 5e kitchen sink (#28-#29)
+├── experiment_02_continual/  # Continual learning (Marco 1 ENCERRADO em #30)
+│   ├── PLAN.md (marcado ENCERRADO no topo)
+│   ├── PAPERS.md (lit review EWC/SI/GEM/A-GEM/Hadsell)
+│   ├── WEEKLY-1.md (sessões #22-#29)
+│   ├── baseline_naive.py             # Naive sequential ProtoNet (#23, #25)
+│   ├── c2_continual_arch_a.py        # Scaffold (não implementado)
+│   ├── c2_continual_arch_b.py        # Possibilidade B linear (#27)
+│   ├── c2_continual_arch_c.py        # Scaffold (não implementado)
+│   └── c5e_combined.py               # Caminho 5e kitchen sink (#28-#29)
+└── paper_c3/                 # Workshop paper draft (NeurIPS Bio-Plausible ~set/2026)
+    ├── README.md             # Overview, target venue, status
+    ├── outline.md            # Estrutura detalhada de cada seção
+    ├── intro.md              # Section 1: Introduction (draft #31)
+    ├── background.md         # Section 2: Background (draft #31)
+    ├── methods.md            # TODO #32
+    ├── experiments.md        # TODO #32
+    ├── discussion.md         # TODO #33
+    ├── conclusion.md         # TODO #33
+    └── refs.bib              # Bibliography (draft #31, ~14 entradas)
 ```
 
 Pastas em `.gitignore`: `data/`, `checkpoints/`, `logs/`, `wandb/`, `.venv/`.
