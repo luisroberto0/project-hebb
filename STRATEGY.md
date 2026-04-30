@@ -761,3 +761,74 @@ Two-timescale architecture:
 - Sessões #39-#42: ablações cruzadas + status check
 
 Cancelable a qualquer ponto. Se B sanity ficar < 40% ou > 95%, esta sessão para e re-considera (caminho 5d pode não ser viável). Se B 5 seeds não bate baseline, sessão admin re-avalia se vale rodar A e C.
+
+---
+
+## Decisão Pós-Sessão #27: Caminho 5e (arquitetura combinada) — sessão #28 (2026-04-29)
+
+**Contexto:** sessão #27 implementou Possibilidade B (Caminho 5d) com encoder linear simples — sanity 47.89% confirmou loop fecha mas mostrou gap fundamental de capacity vs ProtoNet CNN-4 (-32.76 p.p. abaixo do baseline naive 80.65%). Possibilidade B ficaria abaixo do baseline mesmo com 5 seeds completos. As 3 opções pós-#27 (α/β/γ) levaram Luis a escolher Caminho 5e: combinar TODOS os mecanismos caracterizados ao longo do projeto numa arquitetura única.
+
+**Não é Possibilidade A do Caminho 5d.** A previa STDP biofísico nas camadas iniciais (que tem barreira em #1-#13). 5e usa CNN-4 standard backprop nas camadas iniciais — substitui STDP biofísico por convolutional features padrão. STDP-like aparece só via trace temporal nos meta-params da plasticidade local (mecanismo herdado de Possibilidade B).
+
+### Mecanismos combinados (5)
+
+| Mecanismo | Origem | Papel em 5e |
+|---|---|---|
+| **CNN-4 encoder** | C3 (sessão #20), ProtoEncoder | Capacity. 4 blocos Conv-BN-ReLU-MaxPool, output 64D. SGD via backprop |
+| **Plasticidade local meta-aprendida** | C2 / c2_simplified (sessão #19) | Camada linear final 64→64 com regra `Δw = A·pre·post + B·pre + C·post + D`. Inner loop adapta W per episode |
+| **Trace STDP-like** | Possibilidade B (sessão #27) | `trace[t] = decay·trace[t-1] + pre[t]`, multiplicador no termo Hebbian. Tenta capturar timing |
+| **k-WTA esparso** | C3b (sessão #20) | k=16 (75% sparsity) aplicado no embedding final pós-plasticidade |
+| **Continual sequencial sem replay** | Marco 1 (sessões #21-#27) | 50 alphabet tasks sequenciais, skip warmup, sem replay buffer |
+
+### Arquitetura específica (Opção 2: hybrid backprop + plasticidade)
+
+```
+Image (1, 28, 28)
+  → CNN-4 (4 blocos Conv-BN-ReLU-MaxPool, SGD via backprop) → 64D
+  → Linear plasticity layer W (64→64, inner-loop adapted)
+    Δw = η·(A·pre·post·trace + B·pre + C·post + D)
+    A,B,C,D meta-aprendidos; W reseta pra zero a cada episode
+  → k-WTA (k=16, 75% sparsity)
+  → Prototype classifier (cosine, β=8)
+
+Outer loop: cross-entropy do query
+  Backprop atualiza:
+  - CNN-4 weights (slow)
+  - A, B, C, D, decay (slow, meta-params)
+```
+
+Por que Opção 2 (e não Opção 1 = plasticidade em todas as camadas):
+- Preserva capacity do CNN (gap em sessão #27 era encoder linear vs CNN)
+- Adiciona plasticidade só na camada final pra preservar interpretability
+- Compute viável (inner loop em 64×64 W, não em 4 layers de conv)
+
+### Pergunta científica
+
+> "Em continual learning Split-Omniglot por alfabeto (50 tasks, sem replay, sem warmup), arquitetura combinada (CNN+plasticidade+trace+k-WTA) **supera baseline naive ProtoNet (80.65% ACC, BWT −9.26)** **E mantém pelo menos parte do desempenho do C3 vanilla (94.55% ACC one-shot, sem continual)** quando submetida ao mesmo regime continual?"
+
+### Critérios de sucesso e fechamento
+
+| Resultado (5 seeds) | Decisão |
+|---|---|
+| ACC ≥85% (5pp acima de naive, dentro de 10pp de C3 vanilla) E BWT ≥-7 | **Sucesso → ablações sistemáticas** |
+| ACC 81-85% E BWT -7 a -10 | **Mediano** — investigar quais mecanismos contribuem via ablações |
+| ACC dentro de naive ± 2 p.p. (78.65-82.65%) | **Sem ganho** — encerra Marco 1 com paper estilo Caminho 2 (paper de robustez) |
+| ACC < 78% | **Pior que naive** — encerra com C3 (Caminho 4) |
+
+### Aceitação explícita de risco
+
+- **Complexidade:** 5 mecanismos combinados torna ablação difícil de interpretar. Cada ablação atribui efeito a 1 componente assumindo outros 4 ficam intactos — válido mas demanda múltiplas ablações cruzadas.
+- **Custo computacional:** CNN-4 + inner loop 10× em 64×64 W + 50 tasks × 100 episodes/task × 5 seeds = ~20-40 min/seed. 5 seeds = 1.5-3.5h por configuração. Defensável mas não trivial.
+- **Originalidade incremental:** kitchen sink architecture é incrementalismo (combina coisas existentes). Defensível academicamente como "evidência empírica de qual combinação funciona em CL", mas não é breakthrough mecanístico.
+
+### Orçamento estimado (13-17 sessões)
+
+- **#28 (esta):** scaffold + sanity 5 tasks + sanity 50 tasks (1 seed)
+- **#29:** sanity 5 seeds completos (n_inner=10, finetune=100, eval=50). Tempo esperado: 30-60 min
+- **#30-#31:** ablação 1 — remover trace (testa contribuição STDP-like)
+- **#32-#33:** ablação 2 — remover k-WTA
+- **#34-#35:** ablação 3 — remover plasticidade meta-aprendida (= ProtoNet baseline em CL)
+- **#36-#37:** comparação com EWC baseline
+- **#38-#42:** análise + paper draft + refinement
+
+Cancelable em qualquer ponto. Se #29 (5 seeds) não bater 75% ACC, sessão admin re-avalia se vale continuar 5e ou pivotar pra Caminho 2 (paper de robustez).

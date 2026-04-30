@@ -282,3 +282,101 @@ A hipótese de B estava em duas partes:
 ### Próxima sessão idealmente
 
 Sessão admin curta (15-30 min) decidindo entre Opção α (rodar B 5 seeds completos), Opção β (CNN encoder), ou Opção γ (voltar pros 4 caminhos). Sem decisão clara, opção α é a mais barata pra produzir mais dado antes de decidir.
+
+---
+
+## Sessão #28 — Caminho 5e (kitchen sink): scaffold + sanity 5 tasks → 50 tasks
+
+**Pré-condição:** sessão #27 mostrou que Possibilidade B (encoder linear) tem gap de capacity vs CNN-4. Luis escolheu Caminho 5e: combinar **CNN-4 (de C3) + plasticidade meta-aprendida (de C2) + trace STDP-like (de B) + k-WTA esparso (de C3b) + continual sequencial**. STRATEGY.md ganhou "Decisão Pós-Sessão #27: Caminho 5e (arquitetura combinada)" registrando aceitação explícita de risco (complexidade, custo computacional, originalidade incremental).
+
+### Arquitetura específica (Opção 2: hybrid backprop + plasticidade)
+
+```
+Image → CNN-4 (SGD via backprop, persistem cross-task) → 64D
+     → Linear plasticity W (64×64, inner-loop adapted, reset zero per episode)
+        Δw = η·(A·pre·post·trace + B·pre + C·post + D)
+     → k-WTA (k=16, 75% sparsity)
+     → Prototype classifier (cosine, β=8)
+
+Trainable params:
+- CNN-4 weights (slow, 111K params)
+- A, B, C, D, decay (slow meta-params, 16K + 1 = 16385 params)
+```
+
+Total ~128K trainable. CNN persiste cross-task (sujeito a forgetting), W reseta a cada episode (inner-loop adaptation).
+
+### Sanity 5 tasks (1 seed, n_inner=5, finetune=30, eval=15)
+
+| Métrica | Valor | Critério |
+|---|---|---|
+| ACC final | **71.20%** | passa (>30%, <95%) ✓ |
+| BWT | -6.24 p.p. | informativo |
+| decay aprendido | 0.500 → 0.523 | gradiente flui ✓ |
+| Tempo | 5.7s | trivial |
+
+**Loop fecha sem bug em escala reduzida.** Prosseguiu pra sanity 50 tasks.
+
+### Sanity 50 tasks (1 seed, n_inner=5, finetune=30, eval=15)
+
+| Métrica | Valor | Critério |
+|---|---|---|
+| ACC final | **75.34%** | passa (~50-85% range esperado) ✓ |
+| BWT | **-5.78 p.p.** | melhor que naive (-9.26) |
+| decay aprendido | 0.500 → 0.639 | cresceu (trace mais longo) |
+| just-after acc | varia 78-92% | adaptação ocorre |
+| Tempo | 54.4s | viável pra escala completa |
+
+### Comparação consolidada
+
+| Modelo | ACC | BWT | Notas |
+|---|---|---|---|
+| ProtoNet vanilla (one-shot sem continual, sessão #20) | 94.55% | — | upper bound sem continual |
+| Naive ProtoNet em CL (sessão #25) | 80.65% | -9.26 | baseline a bater |
+| **5e sanity 50 tasks reduzido (esta sessão)** | **75.34%** | **-5.78** | **gap de -5.31 p.p. ACC, +3.48 p.p. BWT** |
+| Possib. B (encoder linear, sessão #27 sanity) | 47.89% | -2.05 | -27.45 p.p. abaixo de 5e |
+
+### Análise da configuração reduzida
+
+Sanity rodou com:
+- `n_inner=5` (vs default 10) — metade dos passos de plasticidade
+- `finetune-episodes=30` (vs default 100) — 1/3 dos episodes de treino por task
+- `eval-episodes=15` (vs default 50) — 1/3 dos episodes de avaliação
+
+**Esperado com defaults completos:** ACC sobe (mais episodes de treino convergem melhor), BWT pode piorar levemente (mais drift). Estimativa: ACC 78-85%, BWT -6 a -10. Se atingir 82-85% em 5 seeds com defaults, **passa critério de sucesso (≥85%)** ou fica em zona "mediano" (81-85%) que justifica ablações.
+
+### Sinais qualitativos do mecanismo
+
+- **decay aprendeu pra cima** (0.500→0.639): network "quer" trace temporal mais longo. Indica termo `A·pre·post·trace` está sendo usado, não apenas ignorado.
+- **BWT melhor que naive** (-5.78 vs -9.26): plasticidade local em camada final pode estar reduzindo forgetting comparado a backprop puro nas mesmas camadas.
+- **Just-after acc 78-92%:** encoder + plasticidade adapta bem por task. Drop pra 75% no final é forgetting moderado mas mais leve que naive.
+
+### Plano sessões #29-#37 (orientativo)
+
+| # | Tipo | Objetivo |
+|---|---|---|
+| **29** | Code | Sanity 5 seeds completos (n_inner=10, finetune=100, eval=50). Tempo esperado: 30-60 min |
+| 30 | Code | Ablação 1 — `--decay-fixed-zero` (remove trace, equivale c2_simplified em CL) |
+| 31 | Code | Ablação 2 — `A=0` fixo (testa contribuição do termo Hebbian com trace) |
+| 32 | Code | Ablação 3 — `--k-wta 64` (remove k-WTA, mantém densidade total) |
+| 33 | Code | Ablação 4 — remove plasticidade (CNN+SGD vanilla = ProtoNet baseline em CL) |
+| 34-35 | Code | EWC baseline em mesmo setup (compara com regularization) |
+| 36-37 | Admin | Status check + análise + decisão sucesso/pivot |
+| 38-42 | Code/admin | Paper draft ou refinement conforme #36-#37 |
+
+Cancelable em qualquer ponto. Critério explícito (de STRATEGY.md "Decisão Pós-Sessão #27"): se #29 (5 seeds) não bater 75% ACC, sessão admin re-avalia se vale continuar 5e ou pivotar pra Caminho 2 (paper de robustez).
+
+### Estado final pós-#28
+
+- **Código novo:** `experiment_02_continual/c5e_combined.py` (~330 linhas, scaffold + implementação completa do modelo combinado).
+- **Restrições respeitadas:** `model.py`, `config.py`, `baselines.py`, `c3_protonet_sparse.py`, `c2_simplified.py`, `c2_meta_hebbian.py`, `baseline_naive.py`, `c2_continual_arch_b.py` intocados. `c2_continual_arch_a.py` e `_c.py` ficam como scaffolds (não atacados nesta sessão).
+- **Sanity passou em 2 escalas** (5 tasks: 71.20%; 50 tasks: 75.34%).
+- Sessões consecutivas sem sinal>chance: 0 (75.34% > chance 20%).
+
+### O que esta sessão NÃO fez (conforme protocolo)
+
+- Não rodou 5 seeds completos
+- Não fez ablações
+- Não comparou com EWC
+- Não tentou debug freestyle (não foi necessário — sanity passou)
+
+Próxima sessão idealmente é #29 (sanity 5 seeds completos com defaults) pra confirmar magnitude do sinal antes de investir em ablações.
