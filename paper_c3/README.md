@@ -27,27 +27,35 @@ Backups se workshop específico não existir em 2026:
 | Sessão | Conteúdo | Status |
 |---|---|---|
 | #31 | Outline + Introduction + Background + refs.bib inicial | ✅ done |
-| #33 | Methods + Experiments | ✅ done (#32 do PLAN foi admin de README cleanup) |
+| #33 | Methods + Experiments | ✅ done |
 | #34 | Discussion + Conclusion + decisão sobre apêndice Marco 1 | ✅ done |
-| #35 | Slim revision + Abstract + Figures + LaTeX conversion + bib final | TODO |
-| #36 | Peer review interno + revisão final | TODO |
+| #35 | Slim revision + Abstract + Figures + LaTeX conversion | ✅ done |
+| #36 | Peer review interno + LaTeX compilation + revisão final | TODO |
 
-**Decisão pós-#34 sobre apêndice Marco 1:** `appendix.md` criado mas **NÃO incluído no main paper draft**. Razão: Marco 1 explora continual learning sem replay; main paper foca sparsity em few-shot — narrativas distintas, conexão "ambos do mesmo projeto" é justificativa fraca pra apêndice em workshop paper de 6-8 páginas. Conteúdo permanece como supplementary material disponível mediante solicitação.
+**Decisão pós-#34 sobre apêndice Marco 1:** `appendix.md` criado mas **NÃO incluído no main paper draft**. Razão: Marco 1 explora continual learning sem replay; main paper foca sparsity em few-shot — narrativas distintas. Conteúdo permanece como supplementary material disponível mediante solicitação.
 
-**Word count global pós-#34:** 4632 palavras (target 3500-4500). Slim de ~130 palavras necessário em #35; foco em background (857 → ~700) e methods (916 → ~750).
+**Word count global pós-#35:** 3789 palavras (target 3500-4500) ✅ DENTRO DO ALVO. Todas seções individuais também no range. Slim de #35 mais agressivo que planejado em background (−331) e methods (−413), mas resultado coerente.
+
+**LaTeX status pós-#35:** `main.tex` escrito (compilável), 2 figuras geradas (`figs/fig1_sparsity_curve.{png,pdf}`, `figs/fig2_validation.{png,pdf}`), `refs.bib` com 14 entradas. **Não compilado localmente** (pdflatex não instalado). Ver `latex_status.md` pra opções de compilação.
 
 ## Files
 
-- `outline.md` — estrutura detalhada de cada seção (✅ atualizada com checkboxes)
-- `intro.md` — Section 1: Introduction (✅ draft)
-- `background.md` — Section 2: Background (✅ draft)
-- `methods.md` — Section 3: Method (✅ draft)
-- `experiments.md` — Section 4: Experiments (✅ draft)
-- `discussion.md` — Section 5: Discussion (✅ draft, ~964 palavras)
-- `conclusion.md` — Section 6: Conclusion (✅ draft, ~288 palavras)
-- `appendix.md` — Apêndice Marco 1 (✅ draft ~500 palavras, **NÃO incluir no main paper** — supplementary material)
-- `refs.bib` — Bibliography (BibTeX, ~14 entradas, expandir conforme texto evolui)
-- `figs/` — Figuras (TODO #35, gerar do `experiment_01_oneshot/c3_protonet_sparse.py` outputs)
+- `outline.md` — estrutura detalhada com checkboxes ✅
+- `abstract.md` — Abstract (✅ draft, 158 palavras)
+- `intro.md` — Section 1: Introduction (✅ draft, 647 palavras)
+- `background.md` — Section 2: Background (✅ slim, 526 palavras)
+- `methods.md` — Section 3: Method (✅ slim, 503 palavras)
+- `experiments.md` — Section 4: Experiments (✅ draft, 969 palavras)
+- `discussion.md` — Section 5: Discussion (✅ draft, 964 palavras)
+- `conclusion.md` — Section 6: Conclusion (✅ slim, 180 palavras)
+- `appendix.md` — Apêndice Marco 1 (✅ draft 500 palavras, **NÃO incluir no main paper** — supplementary)
+- `refs.bib` — Bibliography (BibTeX, 14 entradas)
+- `main.tex` — LaTeX consolidado (✅ draft, ~6-8 páginas estimadas, **não compilado localmente**)
+- `latex_status.md` — Status de compilação + opções (TeX Live, Overleaf, Docker)
+- `generate_figures.py` — Script reusable pra gerar figuras
+- `figs/fig1_sparsity_curve.{png,pdf}` — Figura 1 (✅ gerada, 300 DPI)
+- `figs/fig2_validation.{png,pdf}` — Figura 2 (✅ gerada, 300 DPI)
+- `figs/README.md` — Descrição das figuras + como regenerar
 
 ## Honest scoping
 

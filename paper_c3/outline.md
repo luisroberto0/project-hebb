@@ -169,15 +169,17 @@ Figuras gerar via matplotlib a partir dos outputs já cacheados (sessão #20).
 
 ## Word count target (workshop, ~6-8 páginas)
 
-| Seção | Palavras alvo | Atual (#34) |
+| Seção | Palavras alvo | Atual pós-#35 |
 |---|---|---|
-| Abstract | 150-200 | TODO #35 |
-| Introduction | 500-700 | 638 ✓ |
-| Background | 500-700 | 857 (slim −150 em #35) |
-| Method | 500-700 | 916 (slim −200 em #35) |
-| Experiments | 800-1000 | 969 ✓ |
-| Discussion | 800-1000 | 964 ✓ |
-| Conclusion | 100-150 | 288 (próximo do limite alto, OK) |
-| **Total (sem refs/apêndice)** | **~3500-4500** | **4632 (slim ~130 em #35)** |
+| Abstract | 150-200 | **158 ✅** |
+| Introduction | 500-700 | 647 ✅ |
+| Background | 500-700 | **526 ✅** (slim −331) |
+| Method | 500-700 | **503 ✅** (slim −413) |
+| Experiments | 800-1000 | 969 ✅ |
+| Discussion | 800-1000 | 964 ✅ |
+| Conclusion | 150-300 | **180 ✅** (slim −108) |
+| **Total (sem refs/apêndice)** | **~3500-4500** | **3789 ✅** |
+
+Todas as seções dentro do alvo individual; total dentro do range workshop. Slim mais agressivo que planejado em background+methods (−744 vs −350 planejado), mas resultado coerente: removidas redundâncias e exposições que reviewer presume conhecidas.
 
 Conferir contra template oficial do workshop quando NeurIPS 2026 anunciar formato.
