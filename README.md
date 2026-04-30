@@ -231,6 +231,10 @@ Esse projeto é pesquisa, não produto. Métrica de progresso é **insight verif
 
 90% do tempo é leitura, hipótese, refinamento conceitual. 10% é experimento. Não otimizar código antes de validar ideia. Disciplina > entusiasmo.
 
+## Autor
+
+Luis Roberto — [LinkedIn](https://www.linkedin.com/in/luisroberto0/)
+
 ## Licença
 
 MIT. Ver `LICENSE`.
