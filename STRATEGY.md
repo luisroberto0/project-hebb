@@ -685,3 +685,79 @@ Esta sessão é diagnóstico. **Decisão entre Caminhos 1/2/3/4 fica pra próxim
 - Se "consolidar C3 e reavaliar projeto inteiro" → Caminho 4
 
 Cada resposta corresponde a um caminho diferente. Não há resposta certa — só resposta consistente com prioridades reais (que só Luis sabe).
+
+---
+
+## Decisão Pós-Sessão #26: Caminho 5d (3 arquiteturas) — sessão #27 (2026-04-29)
+
+**Contexto:** após reflexão sobre os 4 caminhos da revisão #26, Luis escolheu uma alternativa: testar empiricamente 3 possibilidades arquiteturais que combinam **STDP biofísico** (família STDP de #1-#13) + **plasticidade local diferenciável** (família C2 de #17-#19) + **continual learning sequencial sem replay** (Marco 1).
+
+Não é literalmente nenhum dos Caminhos 1-4 — é um híbrido que aposta que a combinação dos achados anteriores (mesmo que cada um isolado tenha tido limitações) pode produzir contribuição original. Razões pra essa escolha (registradas pelo Luis):
+
+1. C3 já é resultado defensável (workshop paper); não vamos "encerrar com C3" prematuramente sem testar a tese híbrida.
+2. Setups de continual learning (#23, #25) confirmaram que ProtoNet sozinho é robusto — o que define um floor claro pra propostas comparem.
+3. STDP+C2 hybrid é experimentalmente novo (não há paper específico sobre essa combinação em continual learning).
+4. Bate frontalmente a tese pós-LLM original ("plasticidade local diferenciável" como mecanismo).
+
+### Aviso explícito (registrado pra pôr todos os dados na mesa)
+
+- **STDP biofísico (Diehl & Cook 2015) tem barreira estrutural conhecida** das sessões #1-#13 — atinge teto em ~36% em Omniglot one-shot via matched filter trivial.
+- **Sessão #18 mostrou que termo Hebbian puro A·pre·post é dispensável** em C2 (contribuição vem de B, C, D).
+- **Esta sessão testa se em contexto CONTINUAL essas conclusões se mantêm ou mudam.** Hipótese específica que justifica o teste: continual learning introduz pressão temporal (sequência de tasks) que pode tornar trace STDP relevante de forma que one-shot estático não tornou.
+
+### Possibilidade A — STDP biofísico nas camadas iniciais + C2 nas finais
+
+Encoder em duas partes:
+- Camadas 1-2 (early): STDP biofísico estilo Diehl & Cook 2015 — atualiza durante apresentação do support, sem backprop. Aprende features bottom-up.
+- Camadas 3-4 (late): plasticidade meta-aprendida estilo C2 — `Δw = A·pre·post + B·pre + C·post + D`, A/B/C/D meta-aprendidos via outer loop.
+
+**Hipótese:** STDP captura features genéricas resilientes a forgetting (porque updates são locais e não dependem de gradiente cross-task), C2 captura especificidade da task atual via meta-learning. Combinação: features estáveis + adaptação rápida.
+
+**Risco principal:** STDP biofísico mostrou barreira em #1-#13. Pode contribuir 0 ou negativamente.
+
+### Possibilidade B — Camada única com regra híbrida (FOCO desta sessão)
+
+Encoder linear simples (igual `c2_simplified.py`). Regra de plasticidade unificada:
+
+```
+Δw = η · (A · pre · post · trace + B · pre + C · post + D)
+```
+
+Onde `trace` é um STDP-like trace (decay exponencial sobre histórico de pre-spikes durante o inner loop). Todos os parâmetros (A, B, C, D + decay) meta-aprendidos via outer-loop gradiente.
+
+**Hipótese:** o termo Hebbian se torna não-trivial quando combinado com trace temporal. Em #18 sem trace, A foi dispensável. Com trace, A pode codificar timing-dependent learning.
+
+**Por que B primeiro:** arquitetura mais compacta (uma camada só, mais fácil de debugar). Se B não mostra ganho do termo trace, A e C também não vão (ambas dependem da mesma intuição — STDP timing matters).
+
+### Possibilidade C — STDP within-task + C2 between-task
+
+Two-timescale architecture:
+- **Within-task:** durante apresentação dos 14 chars do alfabeto, STDP atualiza pesos com plasticidade local rápida (sem gradiente).
+- **Between-task:** entre tasks, C2 outer-loop gradient consolida ajustes ao acumular signals.
+
+**Hipótese:** STDP rápido captura adaptação à task atual; C2 lento previne forgetting via consolidação do que ficou estável.
+
+**Risco principal:** complexidade. Two-timescale é difícil de tunar (taxa relativa, quando consolidar, etc).
+
+### Pergunta científica unificada
+
+> "Em continual learning Split-Omniglot por alfabeto (50 tasks, sem replay, sem warmup), alguma das 3 arquiteturas (A/B/C) **supera o baseline naive ProtoNet (80.65% ACC, BWT −9.26)** com **margem ≥3 p.p. em ACC ou ≥5 p.p. em BWT**, **E mostra contribuição não-trivial do componente STDP/Hebbian** (ablação removendo termo A no caso de B; ablação removendo camadas STDP em A e C) **≥3 p.p. de ganho residual**?"
+
+### Critério de fechamento Caminho 5d
+
+| Resultado | Decisão |
+|---|---|
+| Pelo menos 1 arquitetura supera baseline E ablação confirma contribuição STDP ≥3 p.p. | **Sucesso → escrever paper** combinando achado mecanístico + método |
+| 1+ supera baseline mas ablação mostra STDP irrelevante | **Resultado parcial:** vira paper estilo Caminho 2 ("ProtoNet+plasticidade meta-aprendida em continual learning, sem componente STDP") |
+| Nenhuma supera baseline | **Encerrar como achado empírico:** "STDP não agrega em continual learning Omniglot, em 3 arquiteturas testadas". Caminho 4 (publicar só C3) recupera. |
+
+### Orçamento estimado
+
+- 12-18 sessões pra implementar 3 arquiteturas + ablações cruzadas
+- Sessão #27 (esta): scaffolds 3 arq + B implementação + sanity de B
+- Sessões #28-#30: B completo (5 seeds) + ablação A=0
+- Sessões #31-#34: A implementação + ablação
+- Sessões #35-#38: C implementação + ablação
+- Sessões #39-#42: ablações cruzadas + status check
+
+Cancelable a qualquer ponto. Se B sanity ficar < 40% ou > 95%, esta sessão para e re-considera (caminho 5d pode não ser viável). Se B 5 seeds não bate baseline, sessão admin re-avalia se vale rodar A e C.

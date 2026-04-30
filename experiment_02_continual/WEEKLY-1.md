@@ -198,3 +198,87 @@ Adicionalmente, **subsample 14 chars/task em alphabet mode (vs 5 em random mode)
 - Pergunta científica oficial **broken pela segunda vez** (sessão #23 brokei a primeira; setup adversarial proposto na #24 não consertou).
 - Sessões consecutivas sem sinal>chance: 0 (resultado é informativo, não null).
 - **Marco 1 está em risco** se naive não cair pra range adversarial. Próxima sessão precisa decidir caminho ou aceitar que Marco 1 vai ter margem científica pequena.
+
+---
+
+## Sessão #26 (admin) — revisão estratégica pós-#25
+
+Sem código. Documentou 4 caminhos (1 setup-E, 2 reformular pergunta, 3 pivot, 4 encerrar Marco 1) em STRATEGY.md "Revisão Pós-Sessão #25". Decisão pendente do Luis.
+
+---
+
+## Sessão #27 — Caminho 5d (3 arquiteturas STDP+C2+continual): scaffolds + B sanity
+
+**Pré-condição:** Luis escolheu testar empiricamente uma 5ª opção (não previa nas 4 da #26): combinar STDP biofísico + plasticidade local meta-aprendida + continual learning sequencial em 3 arquiteturas. STRATEGY.md ganhou "Decisão Pós-Sessão #26: Caminho 5d (3 arquiteturas)".
+
+**Aviso explícito registrado:** STDP biofísico tem barreira estrutural conhecida (#1-#13, ~36% Omniglot one-shot via matched filter trivial). Termo Hebbian puro foi mostrado dispensável em sessão #18 (C2 contribuição vem de B,C,D). Esta sessão testa se em CONTEXTO CONTINUAL (com pressão temporal) essas conclusões mudam.
+
+### Scaffolds criados
+
+`experiment_02_continual/c2_continual_arch_a.py`, `_b.py`, `_c.py` — 3 arquiteturas com docstring detalhada (hipótese específica, métricas-alvo, ablações pré-definidas). A e C ficam com `# TODO: implementar` até B passar sanity.
+
+### Possibilidade B — regra híbrida unificada (IMPLEMENTADA)
+
+Regra de plasticidade por peso:
+```
+Δw_ij = η · (A_ij · pre_j · post_i · trace_j + B_ij · pre_j + C_ij · post_i + D_ij)
+```
+
+`trace_j[t] = decay · trace_j[t-1] + pre_j[t]` (STDP-like exponential trace ao longo do inner loop).
+
+Meta-params: A, B, C, D por peso em 2 layers (`784→128→32`) + decay scalar global. Total ~417K params (mesma escala de C2). Pesos iniciais zero, encoder linear (sem tanh), prototype classifier (cosine, β=8).
+
+Hipótese: **trace temporal pode tornar termo Hebbian A·pre·post·trace não-trivial em CL** (em #18 sem trace, A foi dispensável — talvez timing matters em sequência de tasks).
+
+### Sanity (1 seed, n_inner=5, finetune-eps=30, eval-eps=15)
+
+| Métrica | Valor | Critério da sessão |
+|---|---|---|
+| ACC final | **47.89%** | passa (>40%, <95%) |
+| BWT | -2.05 p.p. | informativo (menos forgetting que naive) |
+| decay aprendido | 0.500 → 0.443 | gradiente flui ✓ |
+| just-after acc range | 36-68% | adaptação ocorre, alta variância |
+| Tempo | 52.6s | 1 seed reduzido |
+
+**Loop funciona empiricamente:**
+- Plasticidade atualiza pesos (que começam em zero) → encoder discriminativo emerge
+- Gradiente flui pelos meta-params (decay treinou)
+- Inner loop produz embeddings que classificam queries acima de chance
+
+### Análise honesta
+
+**ACC=47.89% está -32.76 p.p. abaixo do baseline naive ProtoNet (80.65%).** Comparação: ProtoNet usa CNN-4 (~110K params em conv layers, treinada via SGD), B usa encoder linear (sem capacidade convolucional, sem não-linearidades). Esperado que B fique abaixo em ACC bruto. Mas **a hipótese central do Caminho 5d era que B agregaria sobre baseline via trace temporal — isso seria ACC > 80.65%, não < 50%.**
+
+Com defaults (n_inner=10, finetune=100, eval=50), ACC provavelmente sobe pra 55-70% em 5 seeds completos. Mesmo com upside, é **improvável bater baseline 80.65%**.
+
+### O que isso significa pra Caminho 5d
+
+A hipótese de B estava em duas partes:
+1. Loop converge em CL: ✓ confirmado (sanity 47.89%)
+2. Bate baseline naive: ✗ improvável (gap de 33 p.p. com config sanity reduzida)
+
+**Implicação pra A e C:** Possibilidades A (STDP+C2 stacked) e C (two-timescale) provavelmente herdarão a mesma limitação fundamental — encoder mais simples que CNN-4. STDP biofísico em A já mostrou barreira em #1-#13 (~36%). Adicionar STDP a um encoder linear não vai magicamente bater CNN-4.
+
+**Possibilidade que muda o quadro:** se B com defaults completos (5 seeds) atingir 70-80% E ablação A=0 mostrar que A·pre·post·trace contribui ≥3 p.p., aí Caminho 5d tem viabilidade. Caso contrário, é improvável que A e C salvem.
+
+### Decisão pendente do Luis (não tomada nesta sessão)
+
+3 opções a considerar antes de #28:
+
+**Opção α:** Rodar B completo (5 seeds, defaults). Custo: ~10-15 min execução. Confirma se ACC sobe substancialmente com config completa. Se sim (≥70%), justifica investir em A e C. Se não (≤55%), Caminho 5d fica difícil de defender.
+
+**Opção β:** Aceitar que encoder linear é teto e adicionar capacidade (CNN encoder + plasticidade meta-aprendida). Implica re-design não-trivial. Custo: ~2 sessões.
+
+**Opção γ:** Voltar pros 4 caminhos da #26. Sanity B mostrou que Caminho 5d enfrenta mesma limitação fundamental que C2 isolado em one-shot — gap de capacity vs CNN-4 baseline.
+
+### Estado final pós-#27
+
+- **Scaffolds criados:** `c2_continual_arch_a.py`, `_b.py` (implementado), `_c.py`.
+- **B sanity:** 47.89% ACC, loop funciona.
+- `model.py`, `config.py`, `baseline_naive.py`, `c2_simplified.py`, `c2_meta_hebbian.py` intocados (conforme restrição).
+- Sessões consecutivas sem sinal>chance: 0 (47.89% > chance 20%).
+- **Sinal: empírico mas insuficiente.** B sanity confirma viabilidade técnica do paradigma híbrido, mas magnitude do gap até baseline naive sugere arquitetura precisa repensada.
+
+### Próxima sessão idealmente
+
+Sessão admin curta (15-30 min) decidindo entre Opção α (rodar B 5 seeds completos), Opção β (CNN encoder), ou Opção γ (voltar pros 4 caminhos). Sem decisão clara, opção α é a mais barata pra produzir mais dado antes de decidir.
