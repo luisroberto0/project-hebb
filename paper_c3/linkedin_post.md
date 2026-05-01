@@ -34,7 +34,7 @@ Marco paralelo do projeto também caracterizou continual learning (sem replay bu
 **Por que não submeti pra workshop?** Tempo. Não tenho espaço pra rebuttals/revisões/registration que submissão acadêmica formal exige. Postar aqui alcança parte do que peer-review faria — feedback de gente da área — sem o overhead institucional. Paper draft preservado pra submissão futura se fizer sentido.
 
 📂 Repo completo (código, dados, 8 weekly notes documentando o processo): github.com/luisroberto0/project-hebb
-📄 PDF deep dive (paper draft, 8 páginas): github.com/luisroberto0/project-hebb/blob/main/paper_c3/Project_Hebb_C3_DeepDive.pdf
+📄 PDF deep dive (paper draft, 8 páginas): [github.com/luisroberto0/project-hebb/blob/main/paper_c3/Project_Hebb_C3_DeepDive.pdf](https://github.com/luisroberto0/project-hebb/blob/main/paper_c3/Project_Hebb_C3_DeepDive.pdf)
 
 Comentários e pushback são muito bem-vindos. Especialmente: alguém já testou k-WTA explícito em ProtoNet com sweep de sparsity? Refs que eu deveria conhecer?
 
@@ -49,4 +49,4 @@ Comentários e pushback são muito bem-vindos. Especialmente: alguém já testou
 - [ ] Decidir se inclui o "Marco paralelo" parágrafo — adiciona ~200 chars mas mostra rigor (caracterização negativa documentada)
 - [ ] Decidir entre #PesquisaIA / #IA / #InteligenciaArtificial — qual hashtag tem mais reach na rede do Luis
 - [ ] Anexar `paper_c3/figs/fig1_sparsity_curve.png` no post (visual forte)
-- [ ] Considerar se "PDF deep dive github.com/luisroberto0/project-hebb/blob/main/paper_c3/Project_Hebb_C3_DeepDive.pdf" deveria ser "PDF disponível em [link]" se Overleaf compile já estiver pronto na hora de postar
+- [ ] Considerar se "PDF deep dive [github.com/luisroberto0/project-hebb/blob/main/paper_c3/Project_Hebb_C3_DeepDive.pdf](https://github.com/luisroberto0/project-hebb/blob/main/paper_c3/Project_Hebb_C3_DeepDive.pdf)" deveria ser "PDF disponível em [link]" se Overleaf compile já estiver pronto na hora de postar
