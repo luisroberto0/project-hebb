@@ -3,7 +3,6 @@
 > Status: draft sessão #36. Pra Luis revisar e publicar quando quiser.
 > Caracteres alvo: 1500-2500. Atual: ~1900.
 > Anexar imagem: `paper_c3/figs/fig1_sparsity_curve.png` (visual contraintuitivo, plateau até 75% sparsity)
-> Tom: honesto, sem hype, sem inflar autoridade.
 
 ---
 
