@@ -3,7 +3,6 @@
 > Status: draft sessão #36. Fallback se versão longa parecer demais.
 > Caracteres alvo: ~800. Atual: ~750.
 > Anexar imagem: `paper_c3/figs/fig1_sparsity_curve.png`
-> Tom: igual versão longa — honesto, sem hype.
 
 ---
 
