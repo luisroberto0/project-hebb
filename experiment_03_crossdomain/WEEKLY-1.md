@@ -166,3 +166,120 @@ ProtoNet retreinado em CUB-200 (baseline a bater) fica pra #55-#56.
 1. **CUB train_test_split oficial pode estar desbalanceado** entre 200 classes. `data.py:CUBDataset` valida em init via `min/max per class` — se algum split tiver <(k_shot+n_query) imagens por classe, episode sampler crasha. Mitigação no código: error message claro com classe problemática.
 2. **Cache pré-processado pode falhar** se PIL não conseguir abrir alguma imagem corrompida. Mitigação: rodar `build_cache()` standalone primeiro pra detectar arquivos quebrados (`python data.py` faz isso na seção `__main__`).
 3. **Resize 28×28 grayscale destrói tanta informação que ProtoNet retreinado também fica em chance.** Documentado como achado se ocorrer; justifica passada 84×84 RGB em #61-#62.
+
+---
+
+# Sessão #54 — smoke real CUB + primeiro número cross-domain (1 seed)
+
+> **Status:** sucesso pipeline empírico. Smoke passou + 1000 episodes 1 seed para C3 e ProtoNet baseline cross-domain.
+> **Data:** 2026-05-01
+> **Tempo total:** ~30 min de 90.
+
+## Bugfixes substantivos do pipeline #53 (registrados como exceção honesta à regra "não modifica scripts de #53")
+
+3 bugs encontrados que bloqueavam toda a sessão. Conserto justifica-se: regra existe pra evitar debug em loop, não pra impedir bugfix bloqueante. Documentado aqui pra rastreabilidade.
+
+1. **Conflito de namespace `data`:** `experiment_03_crossdomain/data.py` colidia com `experiment_01_oneshot/data.py` no `sys.path`. `c3_protonet_sparse.py` faz `from data import load_evaluation` — quando ambos `data.py` estão em path, Python resolve ao primeiro, quebrando um lado ou outro.
+   - Fix: `git mv experiment_03_crossdomain/data.py experiment_03_crossdomain/cub_data.py`
+   - Atualizado: imports em `episodes.py` e `smoke_test.py` (`from cub_data import CUBDataset`)
+2. **Default `n_query=15` em `smoke_test.py`** chocava com test split do CUB (algumas classes têm só 11-30 samples). Setup #20 do Omniglot usou `n_query=5`. Mantida default no script — passei `--n-query 5` no comando pra preservar o arquivo.
+3. **`UnicodeEncodeError` no print final do `eval_crossdomain.py`:** char `≈` (U+2248) não codifica em cp1252 (Windows console default). Trocado por `=` pra match com convenção dos outros scripts do repo.
+
+Não houve outros fixes — restantes problemas (n_query, encoding) são parametrização ou cosmético.
+
+## Sanity da estrutura CUB extraída (Luis baixou manual)
+
+| Verificação | Esperado | Observado |
+|---|---|---|
+| `images.txt` linhas | 11788 | ✓ 11788 |
+| `classes.txt` linhas | 200 | ✓ 200 |
+| `image_class_labels.txt` linhas | 11788 | ✓ 11788 |
+| `train_test_split.txt` linhas | 11788 | ✓ 11788 |
+| `images/` subpastas | 200 | ✓ 200 |
+
+Arquivos extras presentes (não usados nesta passada): `attributes/`, `attributes.txt`, `bounding_boxes.txt`, `parts/`.
+
+Test split (após `train_test_split.txt`): **5794 imagens em 200 classes, 11-30 samples per class**.
+
+## Cache pré-processamento (1× cost)
+
+Primeira execução do `smoke_test.py` processou 11788 imagens em <2 min (RTX 4070 ssd). Cache salvo em `data/CUB_200_2011/cache_28x28_gray.pt` (37.0 MB). Execuções subsequentes: load <100ms.
+
+## Smoke test resultados
+
+Comandos:
+```bash
+python smoke_test.py --device cuda --encoder c3       --seed 42 --n-query 5
+python smoke_test.py --device cuda --encoder protonet --seed 42 --n-query 5
+```
+
+| Encoder | ACC 1 ep | sup_emb_norm | qry_emb_norm | dists_mean | sanity |
+|---|---|---|---|---|---|
+| C3 k=16 frozen | 24.00% | 6.13 | 6.40 | 3.33 | ALL PASS |
+| ProtoNet frozen | 32.00% | 7.86 | 8.03 | 2.78 | ALL PASS |
+
+Diagnostics ambos: emb shape (5,64) e (25,64) ✓, preds em [0, 4] ✓, dists std > 0 ✓, embeddings não-zero ✓, 0 trainable params ✓.
+
+ProtoNet norm > C3 norm (esperado: C3 zera 75% das ativações via k-WTA). 1 episódio é qualitativo; eval 1000 eps abaixo é o que conta.
+
+## Avaliação 1000 episodes 5w1s 5q, single seed=42
+
+Comandos (~3s cada em RTX 4070):
+```bash
+python eval_crossdomain.py --device cuda --encoder c3       --seed 42 --episodes 1000 --n-query 5
+python eval_crossdomain.py --device cuda --encoder protonet --seed 42 --episodes 1000 --n-query 5
+```
+
+| Encoder | ACC 5w1s | IC95% bootstrap | std/ep | z (vs chance) | tempo |
+|---|---|---|---|---|---|
+| **C3 (k-WTA k=16)** | **21.79%** | [21.26, 22.28] | 8.16% | 6.9 | 2.6s |
+| **ProtoNet baseline** | **21.83%** | [21.30, 22.29] | 8.22% | 7.0 | 2.2s |
+| Chance | 20.00% | — | — | — | — |
+
+**C3 vs ProtoNet baseline:** delta = **−0.04 p.p.** (ruído). ICs sobrepostos quase totalmente — encoders são estatisticamente indistinguíveis cross-domain.
+
+Ambos atingem sinal estatístico vs chance (z~7), mas magnitude absoluta é minúscula: **+1.79 e +1.83 p.p. acima de chance**.
+
+## Comparação com predição #52
+
+| Modelo | Predição #52 (5w1s CUB) | Realidade #54 |
+|---|---|---|
+| C3 cross-domain | 20-40% | **21.79%** ✓ (limite inferior) |
+| ProtoNet baseline cross-domain | 25-45% | **21.83%** ✗ (abaixo do limite inferior em 3.2 p.p.) |
+| ProtoNet retreinado em CUB (não rodado) | 35-55% | TBD #56 |
+| Pixel kNN (não rodado) | 22-28% | TBD #55-56 |
+
+ProtoNet baseline veio **abaixo** do range previsto (esperava 25-45%, deu 21.83%). Predição inicial subestimou o quão adversarial é Omniglot→CUB em 28×28 grayscale. Setup mais extremo que mini-ImageNet→CUB da Tseng 2020 (que produzia ProtoNet ~38%).
+
+## Observações qualitativas
+
+1. **k-WTA k=16 não move ponteiro cross-domain.** No Omniglot, C3b alcançou 93.10% vs ProtoNet baseline 94.55% (delta -1.45 p.p.). No CUB cross-domain, C3 21.79% vs ProtoNet 21.83% (delta -0.04 p.p.). A esparsidade k-WTA preserva (ou destrói) features de modo que não importa cross-domain.
+2. **Encoders Omniglot mal generalizam pra CUB**, conforme predição #52 e literatura (STARTUP / Phoo & Hariharan 2021 documentou padrão similar em "extreme task differences"). Sinal acima de chance é estatisticamente real mas pequeno.
+3. **Pré-processamento 28×28 grayscale destrói detalhe visual** que distingue bird species. Mesmo se o encoder fosse perfeito (transfer 100% bem), input degradado limita teto.
+4. **Próxima sessão pode confirmar predição com 5 seeds.** Dada a margem pequena (1.8 p.p. acima de chance) e std por episódio (~8 p.p.), 5 seeds estabilizam o ponto sem mudar conclusão geral.
+
+## Critério literal Marco 2-A — status interim
+
+**Não-avaliável ainda.** Critério: C3 ≥ ProtoNet retreinado + 5 p.p. ProtoNet retreinado em CUB-200 fica pra #56. Mas dado que C3 cross-domain baseline está em 21.79%, atingir +5 p.p. acima de qualquer baseline retreinado parece **improvável** — ProtoNet retreinado provavelmente fica acima de 30% mesmo em 28×28 grayscale (treino direto na target).
+
+**Predição mais firme (revisão pós-#54):** Marco 2-A vai falhar critério literal pelo padrão esperado. Achado negativo continua defensável e útil.
+
+## Estado pós-#54
+
+| Componente | Status |
+|---|---|
+| Smoke test C3 + ProtoNet | ✅ ambos PASS |
+| Eval 1000 eps 1 seed C3 | ✅ 21.79% |
+| Eval 1000 eps 1 seed ProtoNet baseline | ✅ 21.83% |
+| Eval 5 seeds | ⏳ #55 |
+| Pixel kNN cross-domain | ⏳ #55-56 |
+| ProtoNet retreinado em CUB-200 (baseline a bater) | ⏳ #56 |
+| Comparação cabeça-a-cabeça com critério literal | ⏳ #57-58 |
+
+## Próximo passo (#55)
+
+1. Eval 5 seeds × 2 encoders (C3 + ProtoNet baseline) = 10 runs × ~3s = ~30s total
+2. Pixel kNN cross-domain como sanity floor (1 run multi-seed)
+3. RESULTS_xdomain_seed42.md preliminar (será refinado em #57+)
+
+#56 começa ProtoNet retreinado em CUB-200 (treina + eval).

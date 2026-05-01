@@ -14,7 +14,7 @@ from dataclasses import dataclass
 
 import torch
 
-from data import CUBDataset
+from cub_data import CUBDataset
 
 
 @dataclass

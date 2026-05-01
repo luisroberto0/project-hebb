@@ -25,7 +25,7 @@ import torch
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "experiment_01_oneshot"))
 
-from data import CUBDataset
+from cub_data import CUBDataset
 from episodes import CUBEpisodeSampler, proto_episode_eval
 from c3_protonet_sparse import ProtoEncoder, ProtoEncoderSparse
 
