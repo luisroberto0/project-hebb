@@ -388,3 +388,135 @@ ProtoNet retreinado em CUB-200 (baseline a bater pelo critério literal):
 5. Se confirma falha do critério, #57 começa scoping do paper de exploração negativa
 
 Tempo esperado #56: ~3 min treino × 5 seeds + ~30s eval = ~16 min.
+
+---
+
+# Sessão #56 — ProtoNet retreinado em CUB (sanduíche fechado, 2 resolucoes)
+
+> **Status:** quadro completo de 6 condicoes. Critério literal Marco 2-A REFUTADO empiricamente em ambas resolucoes.
+> **Data:** 2026-05-01
+> **Tempo total:** ~30 min de 90.
+
+## Setup
+
+- 2 resolucoes: 28x28 grayscale (compat C3) e 84x84 RGB (literatura standard)
+- 5 seeds × 2 resolucoes = 10 checkpoints novos em `experiment_01_oneshot/checkpoints/protonet_cub_{28,84}_seed{42-46}.pt`
+- Treino: episode-based 5w1s5q, 5000 episodes, Adam lr=1e-3 (mesmos hyperparams #20)
+- Eval: 5 seeds × 1000 episodes 5w1s5q em CUB test split
+- Cache 84x84 RGB construido (+~3 min, 280 MB)
+
+### Modificacoes nos scripts
+
+- `cub_data.py`: parametro `resolution={28,84}` no `CUBDataset.__init__`, caches separados (`cache_28x28_gray.pt` e `cache_84x84_rgb.pt`)
+- `train_cub_protonet.py` NOVO: `ProtoEncoderRGB` (CNN-4 com `Conv2d(3,64)` primeira layer + `AdaptiveAvgPool2d((1,1))` final pra colapsar (B, 64, 5, 5) -> (B, 64) preservando embed_dim=64), `TrainEpisodeSampler` adaptado (filtra classes com k_shot+n_query+ samples)
+- `eval_crossdomain.py`: nova flag `--encoder cub_retrained --resolution {28,84}`
+
+## Resultados (5 seeds × 1000 eps cada, CUB test split)
+
+Quadro completo de 6 condicoes:
+
+| Modelo | Input | ACC mean | std inter-seed | IC95% inter-seed | Δ vs chance |
+|---|---|---|---|---|---|
+| **ProtoNet retreinado CUB 84x84 RGB** | (3, 84, 84) | **49.84%** | 0.82% | [49.38, 50.59] | +29.84 |
+| **ProtoNet retreinado CUB 28x28 gray** | (1, 28, 28) | **34.31%** | 0.31% | [34.06, 34.55] | +14.31 |
+| Pixel kNN cross-domain | (1, 28, 28) raw | 22.81% | 0.18% | [22.69, 22.97] | +2.81 |
+| ProtoNet baseline (Omniglot frozen) | (1, 28, 28) | 22.13% | 0.30% | [21.90, 22.36] | +2.13 |
+| C3 (k-WTA k=16, Omniglot frozen) | (1, 28, 28) | 22.09% | 0.32% | [21.84, 22.34] | +2.09 |
+| Random encoder + k-WTA k=16 | (1, 28, 28) | 21.91% | 0.17% | [21.76, 22.03] | +1.91 |
+| chance | — | 20.00% | — | — | — |
+
+Por seed (sanity de estabilidade):
+
+| Seed | ProtoNet retreinado 28x28 | ProtoNet retreinado 84x84 |
+|---|---|---|
+| 42 | 34.56% | 49.37% |
+| 43 | 33.97% | 49.35% |
+| 44 | 34.02% | 49.74% |
+| 45 | 34.33% | 51.29% |
+| 46 | 34.64% | 49.46% |
+
+Variabilidade inter-seed pequena em ambas resolucoes (~0.3-0.8% std) — numeros estaveis.
+
+## Decomposicao do gap (analise das 2 historias #56)
+
+Pergunta era: ProtoNet retreinado 28x28 ~= 84x84 RGB (Historia B, cross-domain fundamental) ou >= +10 p.p. de ganho com 84x84 (Historia A, pre-proc gargalo)?
+
+| Comparacao | Δ ACC | Componente |
+|---|---|---|
+| Random encoder -> C3 (treino Omniglot frozen) | +0.18 p.p. | Treino fonte distante: irrelevante |
+| C3 cross-domain -> ProtoNet retreinado 28x28 (mesmo input) | **+12.22 p.p.** | Treino na target (mesmo input degradado) |
+| ProtoNet retreinado 28x28 -> 84x84 RGB | **+15.53 p.p.** | Resolucao + canais RGB |
+| Total: random encoder -> ProtoNet retreinado 84x84 | +27.93 p.p. | Combinado |
+
+**Resposta: HISTORIA MISTA (A+B), pesos similares.** Pre-processamento 28x28 grayscale e treino em fonte distante sao GARGALOS COMPARAVEIS pra cross-domain few-shot:
+
+- Pre-proc (resolucao+canais): +15.53 p.p. quando vai 28x28 -> 84x84 RGB com encoder retreinado
+- Cross-domain transfer: +12.22 p.p. quando treino vai Omniglot -> CUB com mesmo input 28x28 grayscale
+
+Os dois fatores combinados explicam quase todo o sinal cross-domain (acima de baseline arquitetural ~22%).
+
+## Verificacao crítério literal Marco 2-A
+
+Critério: C3 (22.09%) >= ProtoNet retreinado + 5 p.p.
+
+| Baseline | ACC | Limiar critério (C3 >= +5pp) | Status |
+|---|---|---|---|
+| ProtoNet retreinado CUB 28x28 | 34.31% | C3 precisaria atingir >=39.31% | **REFUTADO**: gap = -17.22 p.p. ABAIXO |
+| ProtoNet retreinado CUB 84x84 RGB | 49.84% | C3 precisaria atingir >=54.84% | **REFUTADO**: gap = -32.75 p.p. ABAIXO |
+
+**Critério Marco 2-A firmemente refutado em ambas resolucoes.** Achado pre-experimento (#52 predicao: gap -25 a -50 p.p.) confirmado: realidade -17.22 p.p. (28x28) e -32.75 p.p. (84x84 RGB).
+
+## Achado mecanístico (positivo, mesmo com critério refutado)
+
+Em "extreme task differences" (Omniglot binary chars 28x28 -> CUB RGB textures), encoder bio-inspirado treinado em fonte distante produz APENAS sinal arquitetural generico (~+2 p.p. acima de chance), estatisticamente indistinguivel de random encoder. Treino na fonte distante NAO transfere — encoder Omniglot e "anti-transfer" pra CUB nesta condicao.
+
+O que de fato move o ponteiro:
+1. **Treino na target domain** (mesmo input degradado 28x28 grayscale): +12.22 p.p.
+2. **Resolucao adequada** (84x84 RGB): +15.53 p.p. adicional
+3. Combinado: encoder retreinado 84x84 RGB atinge 49.84%, batendo C3 em +27.75 p.p.
+
+Padrao consistente com:
+- Phoo & Hariharan 2021 (STARTUP): self-training na target e necessario em extreme task differences
+- Chen 2019: baselines simples (treinados na target) superam meta-learning sofisticado cross-domain
+- Tseng 2020: ProtoNet baseline mini-ImageNet->CUB ~38%; nosso setup (Omniglot 28x28 gray -> CUB) e mais extremo, ProtoNet baseline cai pra 22%
+
+## Implicacao pro paper Marco 2-A
+
+Paper de exploracao negativa empiricamente caracterizado. Contribuicao defensavel:
+
+> "Encoders bio-inspirados (k-WTA esparso) treinados em fonte radicalmente distante (Omniglot binary chars) NAO generalizam pra CUB-200 cross-domain few-shot. Em 28x28 grayscale, sao estatisticamente indistinguiveis de random encoder e inferiores a Pixel kNN. Esparsidade k-WTA k=16 nao move o ponteiro nem positivamente nem negativamente — features aprendidas em chars binarios sao tao especificas que nem mesmo a sparsity ajuda. Em contraste, ProtoNet retreinado direto na target atinge 34% (28x28) e 50% (84x84 RGB), demonstrando que treino na target e a alavanca principal — nao a esparsidade do encoder fonte."
+
+Setup metodologicamente original (Omniglot single-source -> CUB 28x28 grayscale nao tem precedente direto na literatura — confirmado em PAPERS.md #52). Workshop-scope: paper documenta limites de transfer bio-inspirado em extreme task differences, com numeros sistematicos em 6 condicoes.
+
+## Estado pos-#56
+
+| Componente | Status |
+|---|---|
+| 5 checkpoints C3 (seeds 42-46) Omniglot | ✅ |
+| 5 checkpoints ProtoNet baseline (seeds 42-46) Omniglot | ✅ |
+| 5 checkpoints ProtoNet retreinado CUB 28x28 (seeds 42-46) | ✅ |
+| 5 checkpoints ProtoNet retreinado CUB 84x84 RGB (seeds 42-46) | ✅ |
+| Cache CUB 28x28 grayscale | ✅ (37 MB) |
+| Cache CUB 84x84 RGB | ✅ (~280 MB) |
+| Eval 4 condicoes baseline (Omniglot encoders + Pixel kNN + Random) | ✅ |
+| Eval 2 condicoes baseline retreinado (28, 84) | ✅ |
+| **Critério literal Marco 2-A** | ❌ **refutado em ambas resolucoes** |
+
+## Proximo passo (#57)
+
+Critério literal foi resolvido empiricamente. Roadmap original previa #57-#58 = "comparacao cabeca-a-cabeca + verificacao crítério". Como critério ja foi refutado com clareza, #57 pode pular pra:
+
+**Opcao A: Caracterizacao adicional**
+- Por classe: quais bird species C3 acerta vs erra (ja planejado pra #59-#60)?
+- 5w5s e n-shot sweep: caracteriza data efficiency curva
+- Sweep de k-WTA (k=8, 32, 64): testa se outras sparsities movem ponteiro
+
+**Opcao B: Inicio do paper draft**
+- Outline + intro + background usando lit review #52
+- Methods: encoders + setup
+- Experiments: 6 condicoes ja medidas
+- Discussion: anti-transfer mechanism, comparacao com STARTUP/Chen
+
+**Recomendacao:** Opcao B parece mais alinhada com critério ja refutado. Caracterizacao adicional e marginal — numero principal ja e claro. Mas decisao final do Luis em #57 admin.
+
+Ainda dentro do limite hard de 15 sessoes (#52-#66): sobram 10 sessoes. Mais que suficiente pra paper draft (5 sessoes pre-LinkedIn no padrao C3) + buffer pra correcoes.

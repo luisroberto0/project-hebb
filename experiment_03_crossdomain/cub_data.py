@@ -43,16 +43,33 @@ CUB_ROOT_DEFAULT = REPO_ROOT / "data" / "CUB_200_2011"
 CACHE_PATH_DEFAULT = CUB_ROOT_DEFAULT / "cache_28x28_gray.pt"
 
 
-def _build_transform() -> transforms.Compose:
-    """Pipeline: resize 28×28 + grayscale + ToTensor [0,1].
+def _cache_path_for(resolution: int, cub_root: Path) -> Path:
+    """Cache filename per resolution. 28→grayscale, 84→RGB (sessão #56)."""
+    if resolution == 28:
+        return cub_root / "cache_28x28_gray.pt"
+    if resolution == 84:
+        return cub_root / "cache_84x84_rgb.pt"
+    raise ValueError(f"unsupported resolution: {resolution} (expected 28 or 84)")
 
-    Output shape per image: (1, 28, 28).
+
+def _build_transform(resolution: int = 28) -> transforms.Compose:
+    """Pipeline per resolution.
+
+    resolution=28: Resize 28×28 + grayscale + ToTensor → (1, 28, 28). Compat C3.
+    resolution=84: Resize 84×84 + RGB + ToTensor → (3, 84, 84). Literatura standard.
     """
-    return transforms.Compose([
-        transforms.Resize((28, 28)),
-        transforms.Grayscale(num_output_channels=1),
-        transforms.ToTensor(),  # [0, 1]
-    ])
+    if resolution == 28:
+        return transforms.Compose([
+            transforms.Resize((28, 28)),
+            transforms.Grayscale(num_output_channels=1),
+            transforms.ToTensor(),
+        ])
+    if resolution == 84:
+        return transforms.Compose([
+            transforms.Resize((84, 84)),
+            transforms.ToTensor(),  # 3-channel RGB, [0, 1]
+        ])
+    raise ValueError(f"unsupported resolution: {resolution}")
 
 
 def _parse_metadata(cub_root: Path) -> dict:
@@ -89,16 +106,19 @@ def _parse_metadata(cub_root: Path) -> dict:
     return {"id_to_path": id_to_path, "id_to_class": id_to_class, "id_to_train": id_to_train}
 
 
-def build_cache(cub_root: Path = CUB_ROOT_DEFAULT, cache_path: Path = CACHE_PATH_DEFAULT,
-                 verbose: bool = True) -> dict:
-    """Pre-processes all CUB images to (1, 28, 28) grayscale tensors and caches.
+def build_cache(cub_root: Path = CUB_ROOT_DEFAULT, cache_path: Path | None = None,
+                 resolution: int = 28, verbose: bool = True) -> dict:
+    """Pre-processes all CUB images to cached tensors per resolution.
+
+    resolution=28: output (N, 1, 28, 28) grayscale (default, sessão #53).
+    resolution=84: output (N, 3, 84, 84) RGB (sessão #56).
 
     Returns dict with:
-        images: (N, 1, 28, 28) tensor
-        labels: (N,) tensor of class IDs (1-indexed, matching CUB convention)
-        is_train: (N,) bool tensor (True = train split, False = test/eval split)
+        images, labels, is_train tensors.
     """
     cub_root = Path(cub_root)
+    if cache_path is None:
+        cache_path = _cache_path_for(resolution, cub_root)
     cache_path = Path(cache_path)
 
     if cache_path.exists():
@@ -107,14 +127,17 @@ def build_cache(cub_root: Path = CUB_ROOT_DEFAULT, cache_path: Path = CACHE_PATH
         return torch.load(cache_path, weights_only=False)
 
     if verbose:
-        print(f"  [cub-cache] building cache from {cub_root}/images/ ...")
+        print(f"  [cub-cache] building cache (res={resolution}) from {cub_root}/images/ ...")
 
     meta = _parse_metadata(cub_root)
-    transform = _build_transform()
+    transform = _build_transform(resolution=resolution)
     images_dir = cub_root / "images"
 
     n = len(meta["id_to_path"])
-    imgs = torch.zeros(n, 1, 28, 28, dtype=torch.float32)
+    if resolution == 28:
+        imgs = torch.zeros(n, 1, 28, 28, dtype=torch.float32)
+    else:
+        imgs = torch.zeros(n, 3, 84, 84, dtype=torch.float32)
     labels = torch.zeros(n, dtype=torch.long)
     is_train = torch.zeros(n, dtype=torch.bool)
 
@@ -159,12 +182,14 @@ class CUBDataset(Dataset):
     """
 
     def __init__(self, split: str = "test", cub_root: Path = CUB_ROOT_DEFAULT,
-                  cache_path: Path = CACHE_PATH_DEFAULT, verbose: bool = True):
+                  cache_path: Path | None = None, resolution: int = 28, verbose: bool = True):
         if split not in ("train", "test", "all"):
             raise ValueError(f"split must be 'train', 'test', or 'all'; got {split!r}")
         self.split = split
+        self.resolution = resolution
 
-        cache = build_cache(cub_root=cub_root, cache_path=cache_path, verbose=verbose)
+        cache = build_cache(cub_root=cub_root, cache_path=cache_path,
+                             resolution=resolution, verbose=verbose)
         all_imgs = cache["images"]
         all_lbls = cache["labels"]
         is_train = cache["is_train"]

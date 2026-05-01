@@ -37,7 +37,8 @@ def bootstrap_ci(values: np.ndarray, n_resamples: int = 1000, alpha: float = 0.0
     return float(np.quantile(samples, alpha / 2)), float(np.quantile(samples, 1 - alpha / 2))
 
 
-def load_encoder(encoder_kind: str, ckpt_path: Path, k_wta: int, device: torch.device):
+def load_encoder(encoder_kind: str, ckpt_path: Path, k_wta: int, device: torch.device,
+                  resolution: int = 28):
     if not ckpt_path.exists():
         raise FileNotFoundError(f"Checkpoint not found: {ckpt_path}")
 
@@ -48,6 +49,14 @@ def load_encoder(encoder_kind: str, ckpt_path: Path, k_wta: int, device: torch.d
         encoder = ProtoEncoderSparse(k=k_wta).to(device)
     elif encoder_kind == "protonet":
         encoder = ProtoEncoder().to(device)
+    elif encoder_kind == "cub_retrained":
+        if resolution == 28:
+            encoder = ProtoEncoder().to(device)
+        elif resolution == 84:
+            from train_cub_protonet import ProtoEncoderRGB
+            encoder = ProtoEncoderRGB().to(device)
+        else:
+            raise ValueError(f"unsupported resolution: {resolution}")
     else:
         raise ValueError(f"unknown encoder_kind: {encoder_kind}")
 
@@ -59,8 +68,9 @@ def load_encoder(encoder_kind: str, ckpt_path: Path, k_wta: int, device: torch.d
 
 
 def run_one_seed(encoder_kind: str, ckpt_path: Path, k_wta: int, dataset, device,
-                  seed: int, episodes: int, n_way: int, k_shot: int, n_query: int) -> dict:
-    encoder = load_encoder(encoder_kind, ckpt_path, k_wta, device)
+                  seed: int, episodes: int, n_way: int, k_shot: int, n_query: int,
+                  resolution: int = 28) -> dict:
+    encoder = load_encoder(encoder_kind, ckpt_path, k_wta, device, resolution=resolution)
     n_trainable = sum(p.numel() for p in encoder.parameters() if p.requires_grad)
     if n_trainable != 0:
         raise RuntimeError(f"Encoder has {n_trainable} trainable params; should be frozen")
@@ -87,23 +97,26 @@ def run_one_seed(encoder_kind: str, ckpt_path: Path, k_wta: int, dataset, device
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--device", default="cuda")
-    p.add_argument("--encoder", choices=("c3", "protonet"), default="c3")
+    p.add_argument("--encoder", choices=("c3", "protonet", "cub_retrained"), default="c3")
     p.add_argument("--ckpt", default=None)
     p.add_argument("--k-wta", type=int, default=16)
+    p.add_argument("--resolution", type=int, choices=(28, 84), default=28,
+                   help="Input resolution. 28=grayscale (compat C3); 84=RGB (literatura).")
     p.add_argument("--n-way", type=int, default=5)
     p.add_argument("--k-shot", type=int, default=1)
     p.add_argument("--n-query", type=int, default=5)
     p.add_argument("--episodes", type=int, default=1000)
     p.add_argument("--seeds", type=int, nargs="+", default=[42],
-                   help="One or more seeds. Each seed: separate run with sampling determinism + checkpoint with matching name.")
+                   help="One or more seeds.")
     args = p.parse_args()
 
     device = torch.device(args.device if torch.cuda.is_available() or args.device == "cpu" else "cpu")
-    print(f"[eval] device={device} encoder={args.encoder} seeds={args.seeds} eps={args.episodes}")
+    print(f"[eval] device={device} encoder={args.encoder} resolution={args.resolution} "
+          f"seeds={args.seeds} eps={args.episodes}")
 
     repo_root = Path(__file__).resolve().parent.parent
-    print(f"[eval] loading CUB-200 test split (28x28 grayscale)...")
-    dataset = CUBDataset(split="test", verbose=True)
+    print(f"[eval] loading CUB-200 test split (res={args.resolution})...")
+    dataset = CUBDataset(split="test", resolution=args.resolution, verbose=True)
 
     chance = 1.0 / args.n_way
     runs = []
@@ -112,18 +125,19 @@ def main():
             ckpt_path = Path(args.ckpt)
         elif args.encoder == "c3":
             ckpt_path = repo_root / "experiment_01_oneshot" / "checkpoints" / f"c3_kwta_k16_seed{seed}.pt"
-        else:
+        elif args.encoder == "protonet":
             ckpt_path = repo_root / "experiment_01_oneshot" / "checkpoints" / f"protonet_omniglot_seed{seed}.pt"
+        else:  # cub_retrained
+            ckpt_path = repo_root / "experiment_01_oneshot" / "checkpoints" / f"protonet_cub_{args.resolution}_seed{seed}.pt"
 
         if not ckpt_path.exists():
             raise FileNotFoundError(
-                f"Missing checkpoint for seed={seed}: {ckpt_path}. "
-                f"Run train_encoders.py with matching --seed first."
+                f"Missing checkpoint for seed={seed}: {ckpt_path}."
             )
         print(f"[eval] seed={seed} ckpt={ckpt_path.name}")
         r = run_one_seed(args.encoder, ckpt_path, args.k_wta, dataset, device,
                           seed=seed, episodes=args.episodes, n_way=args.n_way,
-                          k_shot=args.k_shot, n_query=args.n_query)
+                          k_shot=args.k_shot, n_query=args.n_query, resolution=args.resolution)
         z = (r["mean"] - chance) / (r["std"] / np.sqrt(r["n_eps"])) if r["std"] > 0 else float("inf")
         print(f"  seed={seed}: ACC={r['mean']*100:.2f}% IC95%[{r['lo']*100:.2f}, {r['hi']*100:.2f}] "
               f"z={z:.1f} std/ep={r['std']*100:.2f}% t={r['elapsed']:.1f}s")
