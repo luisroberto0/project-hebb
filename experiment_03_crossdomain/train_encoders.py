@@ -77,37 +77,49 @@ def train_one_encoder(name: str, encoder, args, cfg, device, save_path: Path):
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--device", default="cuda")
-    p.add_argument("--seed", type=int, default=42)
+    p.add_argument("--seeds", type=int, nargs="+", default=[42],
+                   help="One or more seeds; trains both encoders per seed")
     p.add_argument("--train-episodes", type=int, default=5000)
     p.add_argument("--ckpt-dir", default="experiment_01_oneshot/checkpoints")
+    p.add_argument("--skip-existing", action="store_true",
+                   help="Skip seeds whose checkpoints already exist")
     args = p.parse_args()
+    # Backward-compat single-arg internal access
+    args.seed = args.seeds[0]
 
     cfg = default_config()
     device = torch.device(args.device if torch.cuda.is_available() or args.device == "cpu" else "cpu")
-    print(f"Device: {device}")
+    print(f"Device: {device}, seeds={args.seeds}")
 
     repo_root = Path(__file__).resolve().parent.parent
     ckpt_dir = repo_root / args.ckpt_dir
 
-    # ProtoNet baseline (sem k-WTA)
-    torch.manual_seed(args.seed)
-    enc_proto = ProtoEncoder().to(device)
-    train_one_encoder(
-        "ProtoNet baseline", enc_proto, args, cfg, device,
-        ckpt_dir / f"protonet_omniglot_seed{args.seed}.pt",
-    )
+    for seed in args.seeds:
+        args.seed = seed
+        proto_path = ckpt_dir / f"protonet_omniglot_seed{seed}.pt"
+        c3_path = ckpt_dir / f"c3_kwta_k16_seed{seed}.pt"
 
-    # C3b: ProtoNet + k-WTA k=16 (75% sparsity)
-    torch.manual_seed(args.seed)
-    enc_c3 = ProtoEncoderSparse(k=16).to(device)
-    train_one_encoder(
-        "C3b k=16 (75% sparse)", enc_c3, args, cfg, device,
-        ckpt_dir / f"c3_kwta_k16_seed{args.seed}.pt",
-    )
+        if args.skip_existing and proto_path.exists() and c3_path.exists():
+            print(f"\n[seed={seed}] both checkpoints exist, skipping (--skip-existing)")
+            continue
 
-    print("\n=== Both checkpoints saved ===")
-    print(f"  {ckpt_dir / f'protonet_omniglot_seed{args.seed}.pt'}")
-    print(f"  {ckpt_dir / f'c3_kwta_k16_seed{args.seed}.pt'}")
+        # ProtoNet baseline (sem k-WTA)
+        torch.manual_seed(seed)
+        enc_proto = ProtoEncoder().to(device)
+        train_one_encoder(
+            "ProtoNet baseline", enc_proto, args, cfg, device, proto_path,
+        )
+
+        # C3b: ProtoNet + k-WTA k=16 (75% sparsity)
+        torch.manual_seed(seed)
+        enc_c3 = ProtoEncoderSparse(k=16).to(device)
+        train_one_encoder(
+            "C3b k=16 (75% sparse)", enc_c3, args, cfg, device, c3_path,
+        )
+
+        print(f"\n=== seed={seed} done ===")
+        print(f"  {proto_path}")
+        print(f"  {c3_path}")
 
 
 if __name__ == "__main__":

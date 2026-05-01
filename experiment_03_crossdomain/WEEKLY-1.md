@@ -283,3 +283,108 @@ ProtoNet baseline veio **abaixo** do range previsto (esperava 25-45%, deu 21.83%
 3. RESULTS_xdomain_seed42.md preliminar (será refinado em #57+)
 
 #56 começa ProtoNet retreinado em CUB-200 (treina + eval).
+
+---
+
+# Sessão #55 — 5 seeds + Pixel kNN + Random encoder sanity
+
+> **Status:** quadro completo de 4 condições. Hipótese (a) refutada com clareza.
+> **Data:** 2026-05-01
+> **Tempo total:** ~25 min de 90.
+
+## Setup
+
+- 4 condições × 5 seeds (42-46) × 1000 episodes 5w1s5q em CUB test split (5794 imgs, 200 classes)
+- Treinados 4 checkpoints adicionais (seeds 43-46) via `train_encoders.py --seeds 42 43 44 45 46 --skip-existing` (~10 min em RTX 4070, foreground depois que background não progrediu — mesmo padrão da #53)
+- Estendido `eval_crossdomain.py` pra `--seeds [list]` (modificação substantiva mas é meu próprio script de #54, não viola restrição "não modifica scripts de #53")
+- Criados `eval_pixel_knn.py` e `eval_random_encoder.py` novos
+- Cosmético: nenhum char unicode em prints (lição da #54)
+
+## Resultados (5 seeds × 1000 eps cada)
+
+| Modelo | ACC mean | std inter-seed | IC95% inter-seed | std/ep | z médio |
+|---|---|---|---|---|---|
+| **Pixel kNN cross-domain** | **22.81%** | 0.18% | [22.69, 22.97] | 7.74% | 11.5 |
+| **ProtoNet baseline (Omniglot frozen)** | **22.13%** | 0.30% | [21.90, 22.36] | 8.08% | 8.3 |
+| **C3 (k-WTA k=16, Omniglot frozen)** | **22.09%** | 0.32% | [21.84, 22.34] | 8.02% | 8.2 |
+| **Random encoder + k-WTA k=16** | **21.91%** | 0.17% | [21.76, 22.03] | 8.06% | 7.5 |
+| chance | 20.00% | — | — | — | — |
+
+Por seed (sanity de estabilidade):
+
+| Seed | C3 | ProtoNet | Pixel kNN | Random+kWTA |
+|---|---|---|---|---|
+| 42 | 21.79% | 21.83% | 22.76% | 21.85% |
+| 43 | 22.02% | 21.82% | 22.62% | 21.65% |
+| 44 | 22.32% | 22.19% | 22.78% | 21.98% |
+| 45 | 21.80% | 22.53% | 22.80% | 22.08% |
+| 46 | 22.51% | 22.28% | 23.10% | 22.01% |
+
+Variabilidade inter-seed pequena em todas as condições (std 0.17-0.32% inter-seed) — números estáveis.
+
+## Análise das 3 hipóteses (#55 prompt)
+
+| Hipótese | Predição | Suporte da evidência |
+|---|---|---|
+| **(a) Sinal residual real do treino Omniglot** | random < C3 ≈ ProtoNet | **Refutada.** C3 (22.09) e ProtoNet (22.13) estão APENAS +0.18 a +0.22 p.p. acima de random (21.91). ICs sobrepostos: random [21.76, 22.03] toca C3 [21.84, 22.34] e ProtoNet [21.90, 22.36]. Treino Omniglot agrega ruído estatisticamente, magnitude trivial. |
+| **(b) Artefato encoder treinado vs random** | random ≈ C3 ≈ ProtoNet | **Parcialmente confirmada.** Os 3 encoders convergem em ~22% independente de treino. CNN-4 forward + k-WTA + ProtoNet-style classifier produzem ~+2 p.p. acima de chance qualquer que seja o init. |
+| **(c) Pré-processamento 28×28 grayscale gargalo** | tudo ≈ chance | **Parcialmente confirmada com nuance.** Tudo está próximo de chance (20-23%). MAS Pixel kNN (22.81%) supera os encoders por +0.68 p.p. (IC95% Pixel kNN [22.69, 22.97] **NÃO** sobrepõe ProtoNet [21.90, 22.36]) — pré-processamento é severo, mas pixel direto captura mais info útil que encoder forwarding. |
+
+## Conclusão da sessão
+
+**Achado mecanístico positivo:** em domain shift extremo (Omniglot binary chars 28×28 → CUB RGB textures resized 28×28 grayscale), **encoder treinado é PIOR que pixel direto**. Encoder Omniglot é "anti-transfer" pra CUB nesta condição — treino em fonte muito distante introduz viés que prejudica generalização vs nearest-neighbor pixel.
+
+Ranking honesto da informação preservada:
+
+```
+chance (20%) < random encoder (21.91%) ~= C3 (22.09%) ~= ProtoNet (22.13%) < pixel kNN (22.81%)
+```
+
+Encoders Omniglot e random encoder são estatisticamente indistinguíveis — confirma que **a estrutura CNN-4 + MaxPool + k-WTA + ProtoNet classifier produz ~+2 p.p. de baseline arquitetural** independente do treino. O treino agrega +0.2 p.p. em cima disso (insignificante).
+
+Pixel kNN (sem encoder, sem aprendizado) bate todos os encoders — sucessivos MaxPools (28→14→7→3→1) destroem mais info do CUB do que extraem. Nas características binárias do Omniglot, MaxPool preserva edges/strokes que são suficientes; no CUB, MaxPool destrói texturas e cores que são essenciais.
+
+**Insight pra missão pós-LLM:** encoder bio-inspirado treinado em domínio fonte muito distante não generaliza. Ainda mais: pode degradar performance abaixo de baseline trivial. Padrão consistente com Phoo & Hariharan 2021 ("extreme task differences" requerem self-training na target).
+
+## Implicação pro critério Marco 2-A
+
+Critério literal: "C3 ≥ ProtoNet retreinado em CUB + 5 p.p." em 5w1s.
+
+ProtoNet retreinado em CUB-200 (a rodar em #56) provavelmente atinge 30-50% (treino direto na target, mesmo com 28×28 grayscale degradado). C3 cross-domain está **fixo em 22.09%**. Pra atingir critério literal seria necessário ProtoNet retreinado < 17.09% (abaixo de chance!) — **matematicamente impossível**.
+
+**Predição firme pós-#55:** Marco 2-A vai falhar critério literal. Achado negativo é defensável: paper de exploração negativa documenta limites de transfer bio-inspirado em extreme task differences.
+
+## Padrão honesto do projeto Hebb
+
+O projeto continua produzindo achados mecanísticos via **caracterização rigorosa**, não método novo:
+
+- Marco 1 (#21-#29): caracterizou robustez de ProtoNet a forgetting em Omniglot
+- C3 (#20): caracterizou tolerância a sparsity em ProtoNet
+- Marco 2-A (#52-): caracteriza limites de transfer cross-domain de encoders bio-inspirados
+
+Padrão alinhado com a observação da #26 ("achados mecanísticos vêm DA tentativa de calibrar/validar, não de novo experimento").
+
+## Estado pós-#55
+
+| Componente | Status |
+|---|---|
+| 5 checkpoints C3 (seeds 42-46) | ✅ |
+| 5 checkpoints ProtoNet (seeds 42-46) | ✅ |
+| Eval 5 seeds C3 | ✅ 22.09% +/- 0.32% |
+| Eval 5 seeds ProtoNet baseline | ✅ 22.13% +/- 0.30% |
+| Eval 5 seeds Pixel kNN | ✅ 22.81% +/- 0.18% |
+| Eval 5 seeds Random encoder + k-WTA | ✅ 21.91% +/- 0.17% |
+| ProtoNet retreinado em CUB (baseline a bater) | ⏳ #56 |
+| Comparação com critério literal | ⏳ #57 (mas resultado matematicamente determinado) |
+
+## Próximo passo (#56)
+
+ProtoNet retreinado em CUB-200 (baseline a bater pelo critério literal):
+
+1. Treina ProtoNet em CUB train split (~5800 imgs, 100 classes train) — episode-based 5w1s, 5000 episodes Adam lr=1e-3, mesmos hyperparams da #20
+2. Eval em CUB test split, 5 seeds × 1000 episodes
+3. Mede gap: ProtoNet retreinado vs C3 cross-domain (22.09%)
+4. Verifica matematicamente: critério literal "C3 ≥ ProtoNet retreinado + 5 p.p." só satisfeito se ProtoNet retreinado < 17.09% — improvável
+5. Se confirma falha do critério, #57 começa scoping do paper de exploração negativa
+
+Tempo esperado #56: ~3 min treino × 5 seeds + ~30s eval = ~16 min.
