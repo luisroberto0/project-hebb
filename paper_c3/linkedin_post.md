@@ -9,9 +9,9 @@
 
 🧠 **75% das ativações de uma rede neural podem ser zeradas com perda de só 1.5% de acurácia.**
 
-Resultado de um side project que rodei nos últimos meses, paralelo ao Rytora. Compartilho como anúncio + convite pra discussão.
+Resultado de um side project pessoal que rodei nos últimos meses. Compartilho como anúncio + convite pra discussão.
 
-**Contexto.** Project Hebb é pesquisa pessoal em arquiteturas neurais bio-inspiradas — plasticidade local, codificação esparsa, few-shot learning. 36 sessões de trabalho, ~50h totais. Não é o foco da empresa; é exploração de fundo, guiada pela pergunta: o que LLMs *não* fazem que cérebros fazem, e como mecanismos biológicos clássicos se comportam quando aplicados a métodos modernos de deep learning?
+**Contexto.** Project Hebb é pesquisa pessoal em arquiteturas neurais bio-inspiradas — plasticidade local, codificação esparsa, few-shot learning. 36 sessões de trabalho, ~50h totais. É exploração de fundo, guiada pela pergunta: o que LLMs *não* fazem que cérebros fazem, e como mecanismos biológicos clássicos se comportam quando aplicados a métodos modernos de deep learning?
 
 **O que testei.** Apliquei *k-WTA esparso* (winner-take-all top-k, princípio biológico clássico do córtex) ao embedding final de uma Prototypical Network em few-shot Omniglot. Três níveis de sparsity: 50%, 75%, 87.5%. Treinamento end-to-end com gradient fluindo pelos top-k channels selecionados.
 
@@ -32,7 +32,7 @@ Curva é dramaticamente plana até 75% — só começa a degradar após.
 
 Marco paralelo do projeto também caracterizou continual learning (sem replay buffer): achado mecanístico de que ProtoNet metric learning é *naturalmente* robusto a catastrophic forgetting em Omniglot. Métodos bio-inspirados que testei não conseguiram bater o baseline naive — documentado honestamente como exploração negativa.
 
-**Por que não submeti pra workshop?** Tempo. Founder não tem espaço pra rebuttals/revisões/registration. Postar aqui alcança parte do que peer-review faria — feedback de gente da área — sem o overhead institucional. Paper draft preservado pra submissão futura se fizer sentido.
+**Por que não submeti pra workshop?** Tempo. Não tenho espaço pra rebuttals/revisões/registration que submissão acadêmica formal exige. Postar aqui alcança parte do que peer-review faria — feedback de gente da área — sem o overhead institucional. Paper draft preservado pra submissão futura se fizer sentido.
 
 📂 Repo completo (código, dados, 8 weekly notes documentando o processo): github.com/luisroberto0/project-hebb
 📄 PDF deep dive (paper draft, 8 páginas): em breve no repo
@@ -49,6 +49,5 @@ Comentários e pushback são muito bem-vindos. Especialmente: alguém já testou
 - [ ] Confirmar repo URL correto (github.com/luisroberto0/project-hebb)
 - [ ] Decidir se inclui o "Marco paralelo" parágrafo — adiciona ~200 chars mas mostra rigor (caracterização negativa documentada)
 - [ ] Decidir entre #PesquisaIA / #IA / #InteligenciaArtificial — qual hashtag tem mais reach na rede do Luis
-- [ ] Considerar se "founder" é melhor que "co-founder" ou outra forma — depende de como Luis se posiciona publicamente
 - [ ] Anexar `paper_c3/figs/fig1_sparsity_curve.png` no post (visual forte)
 - [ ] Considerar se "PDF deep dive em breve no repo" deveria ser "PDF disponível em [link]" se Overleaf compile já estiver pronto na hora de postar

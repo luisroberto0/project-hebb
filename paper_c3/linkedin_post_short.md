@@ -7,7 +7,7 @@
 
 ---
 
-🧠 Project Hebb — side project paralelo ao Rytora.
+🧠 Project Hebb — side project pessoal de pesquisa em IA bio-inspirada.
 
 **Pergunta:** quanto sparsity uma rede de few-shot learning tolera?
 
