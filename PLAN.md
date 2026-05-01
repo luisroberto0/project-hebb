@@ -90,6 +90,7 @@ A ordem reflete maturidade teórica decrescente: 01 tem décadas de fundamentaç
 - **2026-04-30 (sessão #36c) — Removidas 4 menções a contexto profissional dos posts LinkedIn (longo + curto). Project Hebb posicionado como projeto pessoal puro.**
 - **2026-04-30 (sessão #36d) — Removidas todas as menções a contexto profissional em README, STRATEGY, CONTEXT, paper_c3/README, PLAN. Project Hebb posicionado como pesquisa pessoal independente em todos os docs do repo.**
 - **2026-05-14 (sessão #52) — Marco 2-A kickoff: cross-domain CUB-200 atacando critério pós-LLM "one-shot inédito". Critério literal: C3 ≥ ProtoNet retreinado + 5 p.p. ACC 5w1s. 15 sessões max (#52-#66). Sem código nesta sessão — STRATEGY/CONTEXT/PLAN+PAPERS scoping completo. Caminho 5f confirmado cancelado em scoping pré-#37 (não criou arquivos).**
+- **2026-05-15 (sessão #53) — Marco 2-A primeira código: scripts cross-domain prontos (data.py/episodes.py/smoke_test.py/train_encoders.py), 2 encoders Omniglot treinados e salvos em checkpoints/ (ProtoNet baseline + C3 k=16, replicando setup #20 — sessão #20 nunca havia salvo state_dict). CUB download BLOQUEADO por velocidade da rede (~60 KB/s, 5h estimado). Mirrors HF testados retornaram 401/404. Smoke test cross-domain real fica pra #54 após Luis baixar CUB manual fora da sessão. Sessões consecutivas sem sinal>chance: irrelevant (não é experimento estatístico).**
 
 ---
 
