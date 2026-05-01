@@ -78,48 +78,81 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--device", default="cuda")
     p.add_argument("--seeds", type=int, nargs="+", default=[42],
-                   help="One or more seeds; trains both encoders per seed")
+                   help="One or more seeds")
     p.add_argument("--train-episodes", type=int, default=5000)
     p.add_argument("--ckpt-dir", default="experiment_01_oneshot/checkpoints")
     p.add_argument("--skip-existing", action="store_true",
                    help="Skip seeds whose checkpoints already exist")
+    p.add_argument("--k-wta", type=int, default=16,
+                   help="k for k-WTA. Special: k=64 (>= embed_dim 64) means no-op k-WTA, "
+                        "equivalent to ProtoNet baseline gradient flow. In that case we copy "
+                        "from protonet_omniglot_seed{seed}.pt instead of retraining.")
+    p.add_argument("--include-protonet", action="store_true",
+                   help="Also train ProtoNet baseline (default off; treat as separate concern). "
+                        "For k=16 with no other flags, behaves like #53 default (trains both).")
     args = p.parse_args()
-    # Backward-compat single-arg internal access
     args.seed = args.seeds[0]
 
     cfg = default_config()
     device = torch.device(args.device if torch.cuda.is_available() or args.device == "cpu" else "cpu")
-    print(f"Device: {device}, seeds={args.seeds}")
+    print(f"Device: {device}, seeds={args.seeds}, k_wta={args.k_wta}")
 
     repo_root = Path(__file__).resolve().parent.parent
     ckpt_dir = repo_root / args.ckpt_dir
 
+    # Default behaviour for k=16 without explicit flags: also train ProtoNet baseline (compat #53)
+    train_protonet = args.include_protonet or (args.k_wta == 16 and not args.include_protonet)
+
     for seed in args.seeds:
         args.seed = seed
         proto_path = ckpt_dir / f"protonet_omniglot_seed{seed}.pt"
-        c3_path = ckpt_dir / f"c3_kwta_k16_seed{seed}.pt"
+        c3_path = ckpt_dir / f"c3_kwta_k{args.k_wta}_seed{seed}.pt"
 
-        if args.skip_existing and proto_path.exists() and c3_path.exists():
-            print(f"\n[seed={seed}] both checkpoints exist, skipping (--skip-existing)")
+        # ProtoNet baseline path (only if asked)
+        if train_protonet:
+            if args.skip_existing and proto_path.exists():
+                print(f"\n[seed={seed}] {proto_path.name} exists, skipping (--skip-existing)")
+            else:
+                torch.manual_seed(seed)
+                enc_proto = ProtoEncoder().to(device)
+                train_one_encoder(
+                    "ProtoNet baseline", enc_proto, args, cfg, device, proto_path,
+                )
+
+        # C3 with given k
+        if args.skip_existing and c3_path.exists():
+            print(f"\n[seed={seed}] {c3_path.name} exists, skipping (--skip-existing)")
             continue
 
-        # ProtoNet baseline (sem k-WTA)
-        torch.manual_seed(seed)
-        enc_proto = ProtoEncoder().to(device)
-        train_one_encoder(
-            "ProtoNet baseline", enc_proto, args, cfg, device, proto_path,
-        )
+        if args.k_wta >= 64:
+            # k>=64=embed_dim means k-WTA is no-op (returns z unchanged).
+            # Gradient flow is identical to ProtoNet baseline. Copy state_dict
+            # with prefix adjustment: ProtoEncoder has 'net.*', ProtoEncoderSparse
+            # nests it as 'encoder.net.*'.
+            if not proto_path.exists():
+                raise FileNotFoundError(
+                    f"k_wta={args.k_wta} >= embed_dim 64 means no-op k-WTA. "
+                    f"Need {proto_path} to exist (ProtoNet baseline weights). "
+                    f"Run with --include-protonet first or train ProtoNet baseline separately."
+                )
+            print(f"\n[seed={seed}] k={args.k_wta} >= 64: no-op k-WTA, copying ProtoNet baseline weights")
+            ckpt_proto = torch.load(proto_path, map_location="cpu", weights_only=False)
+            old_state = ckpt_proto["state_dict"]
+            new_state = {f"encoder.{k}": v for k, v in old_state.items()}
+            ckpt_proto["state_dict"] = new_state
+            ckpt_proto["copied_from"] = str(proto_path)
+            ckpt_proto["k_wta"] = args.k_wta
+            ckpt_proto["session"] = f"#57 k={args.k_wta} (no-op k-WTA, copy of ProtoNet baseline with prefix adjust)"
+            torch.save(ckpt_proto, c3_path)
+            print(f"  saved {c3_path}")
+        else:
+            torch.manual_seed(seed)
+            enc_c3 = ProtoEncoderSparse(k=args.k_wta).to(device)
+            train_one_encoder(
+                f"C3 k={args.k_wta}", enc_c3, args, cfg, device, c3_path,
+            )
 
-        # C3b: ProtoNet + k-WTA k=16 (75% sparsity)
-        torch.manual_seed(seed)
-        enc_c3 = ProtoEncoderSparse(k=16).to(device)
-        train_one_encoder(
-            "C3b k=16 (75% sparse)", enc_c3, args, cfg, device, c3_path,
-        )
-
-        print(f"\n=== seed={seed} done ===")
-        print(f"  {proto_path}")
-        print(f"  {c3_path}")
+        print(f"\n=== seed={seed} k={args.k_wta} done ===")
 
 
 if __name__ == "__main__":

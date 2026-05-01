@@ -124,7 +124,7 @@ def main():
         if args.ckpt is not None:
             ckpt_path = Path(args.ckpt)
         elif args.encoder == "c3":
-            ckpt_path = repo_root / "experiment_01_oneshot" / "checkpoints" / f"c3_kwta_k16_seed{seed}.pt"
+            ckpt_path = repo_root / "experiment_01_oneshot" / "checkpoints" / f"c3_kwta_k{args.k_wta}_seed{seed}.pt"
         elif args.encoder == "protonet":
             ckpt_path = repo_root / "experiment_01_oneshot" / "checkpoints" / f"protonet_omniglot_seed{seed}.pt"
         else:  # cub_retrained

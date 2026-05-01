@@ -520,3 +520,136 @@ Critério literal foi resolvido empiricamente. Roadmap original previa #57-#58 =
 **Recomendacao:** Opcao B parece mais alinhada com critério ja refutado. Caracterizacao adicional e marginal — numero principal ja e claro. Mas decisao final do Luis em #57 admin.
 
 Ainda dentro do limite hard de 15 sessoes (#52-#66): sobram 10 sessoes. Mais que suficiente pra paper draft (5 sessoes pre-LinkedIn no padrao C3) + buffer pra correcoes.
+
+---
+
+# Sessao #57 -- k-WTA sweep cross-domain (k=8, 16, 32, 64)
+
+> **Status:** predicao confirmada. k-WTA universalmente irrelevante cross-domain extreme.
+> **Data:** 2026-05-01
+> **Tempo total:** ~25 min de 60.
+
+## Pergunta cientifica
+
+C3 com k-WTA em 4 niveis de sparsity (k=8, 16, 32, 64 = sparsity 87.5%, 75%, 50%, 0%) cross-domain Omniglot->CUB -- todas convergem em ~22% (indistinguiveis), confirmando que k-WTA e universalmente irrelevante cross-domain? Ou existe um k que extrai mais informacao do encoder Omniglot?
+
+**Predicao registrada pre-experimento:** todas em 21.5-22.5% com ICs sobrepostos. Treino fonte distante e gargalo, nao esparsidade.
+
+## Setup
+
+- 3 sparsities novas treinadas: k=8 (87.5%), k=32 (50%), k=64 (0% = no-op k-WTA)
+- k=16 ja tinha (sessao #55): 22.09% +/- 0.32%
+- k=64 nao retreinado: e copia do `protonet_omniglot_seed{seed}.pt` com state_dict ajustado pra prefixo `encoder.` (ProtoEncoderSparse nesta ProtoEncoder em `self.encoder`). Sanity: k=64 deve reproduzir EXATAMENTE ProtoNet baseline (22.13%)
+- Treino 5 seeds × k=8 e k=32: ~67s/seed × 5 × 2 = ~11 min total
+- Eval: 5 seeds × 1000 eps × 3 valores k = ~30s total
+
+### Modificacoes nos scripts
+
+- `train_encoders.py`: flag `--k-wta N` (default 16). k=64 detecta no-op e copia ProtoNet baseline com prefixo ajustado. Flag `--include-protonet` controla se treina baseline (default: treina apenas se k=16, mantendo compat com #53).
+- `eval_crossdomain.py`: corrigido para usar `f"c3_kwta_k{args.k_wta}_seed{seed}.pt"` em vez de hard-coded `c3_kwta_k16_*` (bug pre-#57).
+- 15 checkpoints novos em `experiment_01_oneshot/checkpoints/`: `c3_kwta_k8_seed{42-46}.pt`, `c3_kwta_k32_seed{42-46}.pt`, `c3_kwta_k64_seed{42-46}.pt`
+
+### Bug encontrado e corrigido (k=64 prefix mismatch)
+
+Primeira tentativa de copiar ProtoNet baseline -> c3_kwta_k64 falhou no eval load_state_dict porque `ProtoEncoder` tem `self.net.0.0.weight` mas `ProtoEncoderSparse` (que usa-se pra eval com k-WTA) tem `self.encoder.net.0.0.weight` (nested). Solucao: durante copy, renomear keys com prefixo `encoder.`. Sanity: apos correcao, eval k=64 reproduz EXATAMENTE ProtoNet baseline (22.13% +/- 0.30%, identico a #55).
+
+## Resultados (5 seeds x 1000 eps cada, CUB test split)
+
+### Tabela k-WTA sweep cross-domain
+
+| k | Sparsity | ACC mean | std inter-seed | IC95% inter-seed | std/ep mean |
+|---|---|---|---|---|---|
+| 8 | 87.5% | **21.68%** | 0.44% | [21.34, 22.04] | 8.05% |
+| 16 | 75% | **22.09%** | 0.32% | [21.84, 22.34] | 8.02% |
+| 32 | 50% | **22.20%** | 0.53% | [21.77, 22.57] | 8.09% |
+| 64 | 0% (vanilla) | **22.13%** | 0.30% | [21.90, 22.36] | 8.08% |
+| chance | -- | 20.00% | -- | -- | -- |
+
+### Resultados por seed
+
+| Seed | k=8 | k=16 | k=32 | k=64 |
+|---|---|---|---|---|
+| 42 | 21.10% | 21.79% | 21.37% | 21.83% |
+| 43 | 21.59% | 22.02% | 22.29% | 21.82% |
+| 44 | 22.34% | 22.32% | 22.48% | 22.19% |
+| 45 | 21.62% | 21.80% | 22.07% | 22.53% |
+| 46 | 21.75% | 22.51% | 22.77% | 22.28% |
+
+Variabilidade inter-seed pequena em todas as condicoes (std 0.30-0.53%) -- numeros estaveis.
+
+### Analise estatistica
+
+- Range total entre means (k=8 a k=32): 21.68 a 22.20 = **0.52 p.p.**
+- ICs **TODOS sobrepostos**: [21.34, 22.04] (k=8) toca [21.84, 22.34] (k=16) toca [21.77, 22.57] (k=32) toca [21.90, 22.36] (k=64)
+- k=8 e ligeiramente mais baixo (21.68% vs ~22.1% de k>=16) -- consistente com Omniglot #20 onde k=8 tambem perdeu mais que k=16/32 -- mas magnitude minuscula (0.4 p.p.) e IC sobrepoe demais
+
+**Conclusao:** k-WTA e **universalmente irrelevante cross-domain extreme**. Sparsity de 87.5% (k=8) a 0% (k=64) produzem o mesmo numero (~22%). Predicao confirmada com clareza.
+
+## Comparacao com Omniglot in-domain (paper #20)
+
+| k | Sparsity | Omniglot in-domain | CUB cross-domain | Δ in→cross |
+|---|---|---|---|---|
+| 8 | 87.5% | 90.77% | 21.68% | -69.09 p.p. |
+| 16 | 75% | 93.10% | 22.09% | -71.01 p.p. |
+| 32 | 50% | 93.35% | 22.20% | -71.15 p.p. |
+| 64 | 0% vanilla | 94.55% | 22.13% | -72.42 p.p. |
+
+**Insight central pra paper Marco 2-A:**
+
+- **Omniglot in-domain:** spread entre k=8 e k=64 = **3.78 p.p.** (k-WTA k=8 perde ~4 p.p. vs vanilla, paper #20 documentou).
+- **CUB cross-domain:** spread = **0.52 p.p.** (ruido).
+
+Em outras palavras: **o efeito de k-WTA documentado em paper #20 (esparsidade preserva ProtoNet ate 75%) DESAPARECE cross-domain**. Sparsity nao e toxica nem benefica em transfer extremo -- e **invisivel**. Os 69-72 p.p. de queda in→cross sao quase identicos pra qualquer k.
+
+Frame do paper:
+
+> "Paper #20 mostrou que k-WTA preserva ProtoNet in-domain. Marco 2-A complementa: k-WTA nao preserva NEM degrada NADA cross-domain extreme. Esparsidade biologica e neutra em transfer entre dominios visuais radicalmente diferentes -- nem ajuda nem prejudica. O que importa cross-domain e treino na target (+12.22 p.p.) e resolucao adequada (+15.53 p.p.), nao a sparsity da representacao fonte."
+
+## Decisao pos-#57
+
+**Predicao confirmada com clareza.** Achado fortalecido pra paper:
+
+1. ✅ k-WTA universalmente irrelevante cross-domain (4 sparsities testadas, todas em IC sobreposto)
+2. ✅ Comparacao in-domain vs cross-domain mostra "k-WTA effect collapse" em transfer extremo
+3. ✅ Mecanismo identificado: encoder bio-inspirado treinado em fonte distante e "anti-transfer" (refutado #55)
+4. ✅ Alavancas reais identificadas: treino na target + resolucao (decomposto #56)
+
+**Recomendacao revisada pos-#57:** #58 comeca paper draft. Caracterizacao adicional (5w5s, n-shot sweep, analise por classe) seria marginal -- numero principal e tabela completa ja estabelecidos. Paper de exploracao negativa tem 3 contribuicoes empiricas claras + decomposicao mecanistica. Workshop-scope.
+
+## Estado pos-#57
+
+| Componente | Status |
+|---|---|
+| 4 sparsities k-WTA cross-domain caracterizadas (k=8, 16, 32, 64) | ✅ |
+| Comparacao in-domain vs cross-domain (paper #20 vs Marco 2-A) | ✅ tabulada |
+| Sanity k=64 = ProtoNet baseline | ✅ confirmado (22.13% identico) |
+| 7 condicoes totais caracterizadas em CUB test split | ✅ |
+
+## Numeros finais consolidados Marco 2-A (todos 5 seeds × 1000 eps × CUB test split)
+
+| Modelo | Input | ACC mean | std inter-seed |
+|---|---|---|---|
+| ProtoNet retreinado CUB 84x84 RGB | (3, 84, 84) | 49.84% | 0.82% |
+| ProtoNet retreinado CUB 28x28 gray | (1, 28, 28) | 34.31% | 0.31% |
+| Pixel kNN cross-domain | (1, 28, 28) raw | 22.81% | 0.18% |
+| C3 k=32 (50% sparse) cross-domain | (1, 28, 28) | 22.20% | 0.53% |
+| C3 k=64 = ProtoNet baseline cross-domain | (1, 28, 28) | 22.13% | 0.30% |
+| C3 k=16 (75% sparse) cross-domain | (1, 28, 28) | 22.09% | 0.32% |
+| Random encoder + k-WTA k=16 | (1, 28, 28) | 21.91% | 0.17% |
+| C3 k=8 (87.5% sparse) cross-domain | (1, 28, 28) | 21.68% | 0.44% |
+| chance | -- | 20.00% | -- |
+
+## Proximo passo (#58)
+
+Paper draft kickoff. Estrutura tentativa (paralela a paper C3 #31-#36):
+
+- `paper_marco2a/README.md`: target venue, status, autoria
+- `paper_marco2a/outline.md`: 6 secoes + apendice (caracterizacao adicional opcional)
+- `paper_marco2a/intro.md`: hook (k-WTA preserva in-domain, desaparece cross-domain), gap, contribuicoes
+- `paper_marco2a/background.md`: cross-domain few-shot literature (Triantafillou, Tseng, Chen, Phoo & Hariharan), k-WTA + sparse coding, paper #20 reference
+- `paper_marco2a/methods.md`: encoders + setup
+- `paper_marco2a/experiments.md`: 7 condicoes em CUB test split
+- `paper_marco2a/discussion.md`: anti-transfer mechanism, decomposicao do gap
+- `paper_marco2a/conclusion.md`: short
+
+Ainda dentro do limite hard #66. Sobram 9 sessoes -- mais que suficiente pra paper draft + revisao.
