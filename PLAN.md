@@ -89,6 +89,7 @@ A ordem reflete maturidade teórica decrescente: 01 tem décadas de fundamentaç
 - **2026-04-30 (sessão #36b) — Fixes LaTeX: cite kingma2015adam em refs.bib, Figure 2 inserida em Section 4.4 main.tex, header cosmético. PDF requer recompilação manual via Overleaf.**
 - **2026-04-30 (sessão #36c) — Removidas 4 menções a contexto profissional dos posts LinkedIn (longo + curto). Project Hebb posicionado como projeto pessoal puro.**
 - **2026-04-30 (sessão #36d) — Removidas todas as menções a contexto profissional em README, STRATEGY, CONTEXT, paper_c3/README, PLAN. Project Hebb posicionado como pesquisa pessoal independente em todos os docs do repo.**
+- **2026-05-14 (sessão #52) — Marco 2-A kickoff: cross-domain CUB-200 atacando critério pós-LLM "one-shot inédito". Critério literal: C3 ≥ ProtoNet retreinado + 5 p.p. ACC 5w1s. 15 sessões max (#52-#66). Sem código nesta sessão — STRATEGY/CONTEXT/PLAN+PAPERS scoping completo. Caminho 5f confirmado cancelado em scoping pré-#37 (não criou arquivos).**
 
 ---
 

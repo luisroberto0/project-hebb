@@ -71,6 +71,26 @@ Razão: tempo limitado de side project não absorve rebuttals/revisões/registra
 
 **Project Hebb entra em estado de manutenção pós-#36.** Não há próximas sessões planejadas. Se houver retomada (Marco 2 em outro critério pós-LLM, ablações C3 adicionais), reabrir via sessão administrativa primeiro. Ver `STRATEGY.md` "Decisão pós-#35: LinkedIn em vez de NeurIPS".
 
+### 1.4 Refino #52 (2026-05-14) — Marco 2-A ativo (cross-domain CUB-200)
+
+Após pausa de ~2 semanas pós-#36d, decisão admin de reabrir projeto com **Marco 2-A — cross-domain few-shot Omniglot→CUB-200-2011**, atacando especificamente um dos 4 critérios pós-LLM oficiais do §1: **one-shot inédito** (generalização pra domínio visual radicalmente diferente do treino).
+
+Caminho 5f (kitchen sink+STDP biofísico) cancelado em scoping antes de #37 começar — duplicava 5e que já falhou em #29. Marco 2-A é a próxima exploração formal.
+
+**Pergunta científica:** "C3 (encoder #20 congelado) bate ProtoNet retreinado em CUB-200 por ≥5 p.p. em 5w1s?"
+
+**Predição:** falha por -25 a -50 p.p. (literatura cross-domain few-shot indica gaps largos quando source/target são domínios distantes; Omniglot→CUB é mais extremo que setups padrão). Achado negativo seria defensável e útil — caracteriza limites de transfer learning bio-inspirado.
+
+**Limite hard:** 15 sessões (#52-#66). Critério literal de sucesso fixo. Admin obrigatória em #66 decide próximo passo. Detalhes: `STRATEGY.md` "Decisão pós-pausa: Marco 2-A — sessão #52" + `experiment_03_crossdomain/PLAN.md`.
+
+**Implicação pra status §1.2:**
+- ✅ one-shot Omniglot via C3 — atingido numericamente, publicação LinkedIn pendente (separada deste marco)
+- 🟡 **one-shot inédito (cross-domain CUB-200)** — Marco 2-A em andamento, sessões #52-#66
+- ❌ continual learning — Marco 1 encerrado em #30
+- 🔵 eficiência radical e raciocínio temporal — não atacados
+
+Project Hebb sai de estado de manutenção; entra em estado de exploração com critério literal e fechamento automático em #66.
+
 ---
 
 ## 2. Princípio Operacional

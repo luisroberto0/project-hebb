@@ -1005,3 +1005,98 @@ Ambos com tom honesto preservado (sem "breakthrough", sem "novel", sem hype). Li
 Roadmap original "submission alvo NeurIPS Bio-Plausible Learning ~setembro 2026" oficialmente cancelado. Sessões #36 (era peer review) e potencial #37 (revisão final pré-submissão) ficam sem propósito — substituídas por compilação Overleaf + post LinkedIn.
 
 **Project Hebb entra em estado de manutenção** após esta decisão. Não há próximas sessões planejadas. Se Luis quiser retomar (Marco 2 em outro critério pós-LLM, ou ablações adicionais do C3), reabrir via nova sessão administrativa primeiro.
+
+---
+
+## Decisão pós-pausa: Marco 2-A — sessão #52 (2026-05-14)
+
+**Contexto:** Após pausa de ~2 semanas pós-#36d, decisão admin de Luis pra reabrir Project Hebb com **Marco 2-A — cross-domain few-shot Omniglot→CUB-200**. Sequência de eventos relevantes:
+
+- Marco 1 (continual learning sem replay) **encerrado** em #30 pelo critério literal de #29.
+- Paper C3 finalizado pré-publicação em #36; LaTeX fixes em #36b; LinkedIn posts limpos em #36c; menções a contexto profissional removidas em #36d. Publicação via LinkedIn permanece **pendente** (Luis publica em momento separado, sem dependência deste marco).
+- Caminho 5f (kitchen sink+STDP biofísico) **cancelado em scoping** antes de #37 começar: ao avaliar 3 opções arquiteturais (α/β/γ), constatou-se que 5f-β duplicava mecanismo do 5e (que falhou em #29) e 5f-α/γ tinham riscos elevados sem informação nova clara. Luis abortou sem criar arquivos.
+
+### Posicionamento dentro da missão pós-LLM
+
+CONTEXT.md §1 lista 4 capacidades pós-LLM. Status pós-#36:
+
+| Capacidade | Status pré-#52 | Marco 2-A ataca? |
+|---|---|---|
+| Aprendizado one-shot real | ✅ atingido numericamente via C3 (Omniglot, mesma família visual) | — |
+| **One-shot inédito (cross-domain)** | 🔵 **não atacado** — sub-capacidade implícita do §1 ("formar representação durável a partir de 1 exemplo") em domínios visuais radicalmente diferentes | **SIM** |
+| Aprendizado contínuo sem catastrophic forgetting | ❌ Marco 1 encerrado em #30 sem método novo | — |
+| Eficiência radical em hardware consumer | 🔵 não atacado | — |
+| Raciocínio temporal via timing | 🔵 não atacado | — |
+
+Marco 2-A é, portanto, **passo dentro da missão pós-LLM** (não exploração isolada). One-shot em Omniglot é caso degenerado — todo Omniglot character é da mesma família visual (binary strokes 28×28). One-shot inédito exige generalizar pra domínio fundamentalmente diferente (RGB textures naturais, alta resolução, estatística visual distinta). LLMs não fazem isso bem; é capacidade que o projeto tem motivo legítimo pra atacar.
+
+### Pergunta científica
+
+> "C3 (CNN-4 + k-WTA k=16, treinado em Omniglot na sessão #20, weights congelados) aplicado em CUB-200-2011 cross-domain few-shot — bate ProtoNet retreinado em CUB-200 por **≥5 p.p.** em ACC 5-way 1-shot? Caso contrário, qual o gap absoluto e o que ele revela sobre transferência de features bio-inspiradas entre domínios visuais drasticamente diferentes (binary chars 28×28 → RGB textures ~500×500)?"
+
+Pergunta tem 2 outcomes informativos:
+1. **Critério atingido (≥+5 p.p. acima de ProtoNet retreinado):** evidência surpreendente de que k-WTA aprende features de baixo nível mais universais que ProtoNet denso. Justifica paper de exploração positiva.
+2. **Critério não atingido:** caracterização do gap. Achado negativo defensável: "encoder bio-inspirado treinado em Omniglot não generaliza pra CUB cross-domain". Informa limites de transfer learning bio-inspirado pra missão pós-LLM.
+
+### Predição provisional (registrada agora, pré-experimento)
+
+Baseada em literatura cross-domain few-shot (Chen 2019, Tseng 2020, Phoo & Hariharan 2021):
+
+| Modelo | ACC 5w1s CUB esperado |
+|---|---|
+| Pixel kNN cross-domain (sanity floor) | 22-28% |
+| C3 (encoder #20 Omniglot, weights congelados) | **20-40%** |
+| ProtoNet baseline (encoder Omniglot, weights congelados) | 25-45% |
+| ProtoNet **retreinado** em CUB-200 (baseline a bater) | 60-75% |
+
+**Gap esperado:** C3 cross-domain está **−25 a −50 p.p. ABAIXO** de ProtoNet retreinado, **não acima**. Critério literal "C3 ≥ ProtoNet retreinado + 5 p.p." → predição: **vai falhar**.
+
+Razões da predição:
+- Omniglot é binary 28×28 com estatística visual completamente distinta de RGB natural. Distance shift é maior que setups típicos da literatura (mini-ImageNet→CUB, que já produzem 35-50% típico).
+- Resize CUB pra 28×28 destrói informação visual fina (textures, pattern, color) que distingue bird species.
+- C3 encoder otimizado pra Omniglot pode ter aprendido features hyper-especializadas em traços binários, com transfer ainda pior que ProtoNet baseline.
+
+**Se a predição acertar:** achado negativo defensável e útil. Não é fracasso do projeto — é caracterização honesta de limites.
+
+**Se errar pra cima:** dado surpreendente. Justificaria investigação adicional (qual classe/feature C3 acerta melhor? sweep de resolução?).
+
+### Critério literal de fechamento
+
+| Resultado (#52-#66, IC95% bootstrap, 5 seeds) | Decisão |
+|---|---|
+| C3 cross-domain ≥ ProtoNet retreinado + 5 p.p. ACC 5w1s | **Sucesso** → paper de exploração positiva (workshop-scope, ~5 sessões de escrita) |
+| C3 dentro de ProtoNet retreinado ± 5 p.p. (qualquer direção) | **Mediano** — caracterização sem critério literal atingido. Sessão admin obrigatória em #66 decide entre paper de caracterização ou encerramento. |
+| C3 < ProtoNet retreinado − 5 p.p. (predição confirmada) | **Achado negativo defensável** → paper de exploração negativa (workshop-scope) ou apêndice em paper futuro. Marco 2-A encerrado. |
+
+Não há "pivot dentro de Marco 2-A" via mudança de critério. Critério literal acima é fixo. Mudanças de scope (encoder maior, resolução maior, dataset diferente) viram **Marco 2-A.2** (extensão), não substituição do experimento original.
+
+### Limite hard de sessões: 15 (#52-#66)
+
+- **#52 (esta):** scoping + STRATEGY/CONTEXT update + lit review + experiment_03_crossdomain/PLAN+PAPERS
+- **#53:** download CUB-200 + dataloader + smoke test pipeline (1 episódio CUB)
+- **#54:** rodar C3 cross-domain (encoder Omniglot weights congelados → CUB eval) + ProtoNet baseline cross-domain
+- **#55-#56:** Pixel kNN cross-domain + ProtoNet retreinado em CUB-200 (baseline a bater)
+- **#57-#58:** comparação cabeça-a-cabeça com IC95% bootstrap. Verificar critério literal.
+- **#59-#60:** caracterização (5w1s vs 5w5s, sweep n_shots, análise por classe — quais bird species C3 acerta vs erra?)
+- **#61-#62:** experimentos extras conforme #60 (resolução 84×84? encoder maior? backbone ResNet?)
+- **#63-#65:** análise + paper de exploração draft (positivo se atinge critério, negativo defensável se não atinge)
+- **#66:** **admin obrigatória.** Critério atingido? → paper. Não atingido? → encerrar Marco 2-A, decidir entre Marco 2-B (eficiência radical), Marco 2-C (raciocínio temporal), ou encerrar projeto.
+
+Cancelable em qualquer ponto se evidência for clara antes de #66 (ex: #57 já mostra C3 < 30% e ProtoNet retreinado > 70% com IC apertado — não precisa esperar mais 9 sessões pra confirmar).
+
+### Restrições e tom honesto
+
+- **Sem cadência fixa** (igual decisão (c) Confirmação Pós-#21).
+- **Não substitui paper C3** (publicação LinkedIn pendente, separada deste marco).
+- **Não modifica scripts existentes** (`c3_protonet_sparse.py`, `baselines.py` congelados como referência reproduzível pra C3 paper).
+- **Encoder C3 da sessão #20 = referência canônica.** Marco 2-A NÃO retreina C3 em CUB. Retreinar é Marco 2-A.2 (extensão), não desta versão.
+- **Resolução de input:** primeira passada usa CUB resized pra 28×28 grayscale pra preservar comparabilidade arquitetural com C3 (input shape `(B, 1, 28, 28)`). Documentar como limitação. Sessões #61-#62 podem testar 84×84 ou maior.
+- **Predição registrada como falha esperada.** Tom honesto: não inflar expectativas. Caso surpreenda pra cima, ainda mais defensável (predição contrariada).
+
+### Cancelamento de roadmap anterior
+
+Roadmap pós-#36 era "Project Hebb em manutenção sem próximas sessões planejadas". Marco 2-A reabre formalmente o projeto em modo exploração de critério pós-LLM específico. Estado pós-#52 não retorna ao mesmo regime de #21-#29 (Marco 1) — limite hard de 15 sessões com critério literal evita re-abertura indefinida.
+
+### Estado de código pós-#52
+
+Intocado. Apenas docs novos (`experiment_03_crossdomain/PLAN.md` + `PAPERS.md`). #53 começa código.
