@@ -62,7 +62,7 @@ Pelo critério literal definido em `STRATEGY.md` "Decisão Pós-Sessão #27" (#2
 
 Após sessão #35 finalizar paper C3 pré-peer-review, decisão estratégica do Luis: **NÃO submeter pra NeurIPS Bio-Plausible Workshop.** Em vez disso, postar no LinkedIn em PT como anúncio + repo público + PDF deep dive anexado.
 
-Razão: founder Rytora não tem espaço pra rebuttals/revisões/registration/attendance que submissão acadêmica formal exige. LinkedIn alcança parte do que peer review faria (feedback técnico nos comentários) sem overhead institucional. Paper draft preservado pra submissão futura se fizer sentido depois.
+Razão: tempo limitado de side project não absorve rebuttals/revisões/registration/attendance que submissão acadêmica formal exige. LinkedIn alcança parte do que peer review faria (feedback técnico nos comentários) sem overhead institucional. Paper draft preservado pra submissão futura se fizer sentido depois.
 
 **Implicação pra status §1.2:**
 - ✅ one-shot via C3 — atingido numericamente, **publicado via LinkedIn** (em vez de workshop)
@@ -75,7 +75,7 @@ Razão: founder Rytora não tem espaço pra rebuttals/revisões/registration/att
 
 ## 2. Princípio Operacional
 
-Esse projeto **não é** o Rytora (BuildLabs/VoiceLabs). É pesquisa de longo prazo, separada do trabalho comercial. Métrica não é receita — é **insight verificável**.
+Esse projeto é pesquisa pessoal de longo prazo, side project disciplinado separado das obrigações principais. Métrica não é receita — é **insight verificável**.
 
 90% do tempo é leitura, hipótese, refinamento conceitual. 10% é experimento. **Não otimize código antes de validar ideia.**
 

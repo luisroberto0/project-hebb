@@ -258,9 +258,9 @@ Esta seção responde **6 perguntas concretas** sobre o "Projeto B" — a contin
 
 **Recomendação: B HÍBRIDO** (publicar C3 como milestone primeiro, depois B reduzido focado).
 
-| Versão | Tempo | Compatível com founder Rytora? | Risco |
+| Versão | Tempo | Compatível com side project? | Risco |
 |---|---|---|---|
-| B ambicioso (atacar 4 critérios pós-LLM, 3-5 anos) | 15-20h/semana | **Não** — exigiria mudança radical de alocação de tempo, conflita com obrigação comercial Rytora | Burnout, atrito conjugal/Rytora, ROI distante |
+| B ambicioso (atacar 4 critérios pós-LLM, 3-5 anos) | 15-20h/semana | **Não** — exigiria mudança radical de alocação de tempo, conflita com outras obrigações | Burnout, atrito conjugal/profissional, ROI distante |
 | **B reduzido** (atacar 1 critério em 1-2 anos, 5-7h/semana) | 5-7h/semana | **Sim** — encaixa em "side project disciplinado" do CONTEXT.md §2 | Saturação, falta de novidade real, perda de motivação |
 | **B híbrido** (publicar C3 + B reduzido) | 5-7h/semana + 2 weekends de paper | **Sim** | Distração entre escrita e exploração; diluir foco |
 
@@ -270,7 +270,7 @@ Esta seção responde **6 perguntas concretas** sobre o "Projeto B" — a contin
 - Custo de escrever C3 paper é finito e independente do trabalho de B — pode ser feito em 1-2 weekends sem comprometer cadência de pesquisa.
 
 **Por que híbrido > ambicioso:**
-- Founder de Rytora não pode realisticamente alocar 15-20h/semana em side project não-comercial sem prejudicar produto comercial.
+- Side project não absorve realisticamente 15-20h/semana sem prejudicar outras prioridades.
 - 3-5 anos atacando 4 critérios simultâneos é receita pra produzir nada concreto. Disciplina > entusiasmo (CONTEXT.md §8).
 
 **Risco principal de híbrido:** distração ao escrever C3 paper enquanto B precisa de continuidade conceitual. Mitigado por: paper de C3 é workshop (~6-8 páginas) com experimentos prontos; escrita pode ser modular (intro/methods/experiments) e separada da pesquisa de B.
@@ -285,7 +285,7 @@ Análise dos 4 critérios contra realidade pós-#20:
 |---|---|---|---|---|
 | **Continual learning** | Alta (EWC 2017, SI 2017, GEM 2017, A-GEM 2019, MAS 2018, lots of recent work) | Sim — C2 plasticity meta-learning + C3 sparsity podem balancear stability-plasticity | Split-Omniglot, Permuted MNIST, Split-CIFAR-10/100, CLEAR, COIL-100 | **Alto** |
 | One-shot inédito | Média | Já em Omniglot one-shot; pra ser "inédito" precisa cross-domain (Mini-ImageNet → CUB, generated novel chars) | Cross-domain few-shot benchmarks existem mas menos estabelecidos | Médio |
-| Eficiência radical | Baixa pra setup atual | Requer SNN simulation detalhada (Brian2/NEST) ou hardware neuromórfico (Loihi, $$) | Pouco padronizado; cada paper define próprio | Baixo (founder, sem capital pra hardware) |
+| Eficiência radical | Baixa pra setup atual | Requer SNN simulation detalhada (Brian2/NEST) ou hardware neuromórfico (Loihi, $$) | Pouco padronizado; cada paper define próprio | Baixo (side project, sem capital pra hardware) |
 | Raciocínio temporal | Baixa | Conecta com SNN temporal coding mas distante de C2/C3 | Niche, poucos benchmarks padrão | Baixo |
 
 **Por que continual learning:**
@@ -298,7 +298,7 @@ Análise dos 4 critérios contra realidade pós-#20:
 
 **Por que NÃO escolher os outros agora:**
 - *One-shot inédito*: scope difícil, pode virar "rodar Mini-ImageNet" que é mais incremental que continual learning.
-- *Eficiência radical*: requer capital hardware ou aprendizado profundo de Brian2/NEST. ROI baixo pra founder.
+- *Eficiência radical*: requer capital hardware ou aprendizado profundo de Brian2/NEST. ROI baixo pra side project.
 - *Raciocínio temporal*: especulativo, lit menos consolidada, conecta menos com o que já temos.
 
 ### (c) Pergunta científica concreta e mensurável
@@ -320,13 +320,12 @@ Quebrando os termos:
 | Avg acc ≥75% E BWT ≥−10% E bate EWC por ≥3 p.p. | **Sucesso → escrever paper** (workshop-quality em 8 sessões, conference em 12-16). |
 | Avg acc 65-75%, ou BWT entre −10% e −20%, ou bate EWC por <3 p.p. | **Resultado mediano → reavaliar:** vale escrever workshop paper ainda? Ou pivotar pra outro critério? Decisão administrativa em sessão dedicada. |
 | Avg acc <65% OU BWT <−20% OU pior que EWC | **Pivot:** plasticidade meta-aprendida não é o motor pra continual learning. Considerar replay-based methods, ou pivotar pra eficiência radical. |
-| Nada funciona após 20 sessões + ablações exaustivas | **Encerrar como exploração documentada.** O projeto vira documentação rigorosa do que NÃO funcionou. Aprendizado pessoal mantido. Rytora segue como prioridade comercial. |
+| Nada funciona após 20 sessões + ablações exaustivas | **Encerrar como exploração documentada.** O projeto vira documentação rigorosa do que NÃO funcionou. Aprendizado pessoal mantido. |
 
 ### (e) Orçamento de tempo aceito
 
 **Pré-condições assumidas (sujeitas a correção pelo Luis):**
-- Founder de Rytora; tempo principal alocado ao produto comercial.
-- Project Hebb é side project disciplinado (CONTEXT.md §2).
+- Project Hebb é side project disciplinado (CONTEXT.md §2); tempo principal alocado a outras prioridades.
 
 **Proposta:**
 - **5-7 horas/semana**, distribuídas em 1-2 sessões de 60-90 min cada.
@@ -972,8 +971,8 @@ Não bloqueiam paper. Cada um custaria ~1 sessão extra:
 
 ### Razão da decisão
 
-1. **Founder Rytora sem tempo pra pipeline NeurIPS.** Submissão acadêmica formal envolve: rebuttals (1-2 semanas de turnaround intenso), revisões pós-acceptance (mais 2-4 semanas), camera-ready preparation (logística), registration ($300-1000+), e potencialmente attendance presencial (tempo + custo). Side project 5-7h/semana não absorve esse overhead sem comprometer Rytora.
-2. **LinkedIn alcança parte do que peer review faria.** Rede técnica do Luis (founders, devs, ML researchers) consegue dar feedback substantivo nos comentários — não com rigor de double-blind, mas suficiente pra calibrar interpretações e identificar refs que não conhecemos. Especialmente com o convite explícito a pushback no post.
+1. **Tempo limitado de side project não absorve pipeline NeurIPS.** Submissão acadêmica formal envolve: rebuttals (1-2 semanas de turnaround intenso), revisões pós-acceptance (mais 2-4 semanas), camera-ready preparation (logística), registration ($300-1000+), e potencialmente attendance presencial (tempo + custo). Side project 5-7h/semana não absorve esse overhead sem comprometer o tempo disponível.
+2. **LinkedIn alcança parte do que peer review faria.** Rede técnica do Luis (engenheiros, devs, ML researchers) consegue dar feedback substantivo nos comentários — não com rigor de double-blind, mas suficiente pra calibrar interpretações e identificar refs que não conhecemos. Especialmente com o convite explícito a pushback no post.
 3. **Paper draft preservado pra submissão futura.** Decisão é "não submeter agora", não "abandonar o draft". Se em 6-12 meses Luis quiser submeter (a outro workshop, conference, ou venue alternativo), o material está pronto. Nada se perde.
 4. **C3 não é breakthrough.** Workshop paper de incrementalismo defensável é exatamente o tipo de trabalho que beneficia mais de visibilidade (LinkedIn) que de credenciamento institucional (workshop). Honestidade do scope alinha com o canal.
 

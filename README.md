@@ -46,7 +46,7 @@ C3b atinge as duas metas numéricas do `CONTEXT.md` §4 (≥90% 5w1s, ≥70% 20w
 
 **Paper C3:** "k-WTA Sparsity Preserves Prototypical Network Performance in Few-Shot Learning". Submissão alvo NeurIPS Bio-Plausible Learning Workshop ~setembro 2026. Cronograma: 5 sessões de paper writing (~10-15h reais). Ver `STRATEGY.md` "Plano paper C3".
 
-**Status paper writing:** sessão #36 (2026-04-30) — **decisão final: NÃO submeter NeurIPS Workshop, publicar via LinkedIn em PT.** Razão: founder Rytora sem tempo pra rebuttals/revisões/registration; LinkedIn alcança parte do que peer review faria sem overhead institucional. Paper draft completo preservado: abstract + 6 seções (3789 palavras) + 2 figuras 300 DPI + main.tex compilável + refs.bib (14 entradas) + LinkedIn post drafts (longo + curto). PDF gerável via Overleaf em ~10 min. Ver `STRATEGY.md` "Decisão pós-#35: LinkedIn em vez de NeurIPS" e `paper_c3/README.md` "Final state". Project Hebb entra em estado de manutenção pós-#36.
+**Status paper writing:** sessão #36 (2026-04-30) — **decisão final: NÃO submeter NeurIPS Workshop, publicar via LinkedIn em PT.** Razão: tempo limitado de side project não absorve rebuttals/revisões/registration; LinkedIn alcança parte do que peer review faria sem overhead institucional. Paper draft completo preservado: abstract + 6 seções (3789 palavras) + 2 figuras 300 DPI + main.tex compilável + refs.bib (14 entradas) + LinkedIn post drafts (longo + curto). PDF gerável via Overleaf em ~10 min. Ver `STRATEGY.md` "Decisão pós-#35: LinkedIn em vez de NeurIPS" e `paper_c3/README.md` "Final state". Project Hebb entra em estado de manutenção pós-#36.
 
 ---
 

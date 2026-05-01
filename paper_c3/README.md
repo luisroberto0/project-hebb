@@ -45,7 +45,7 @@ Luis revisou o PDF compilado da sessão #36 (via Overleaf) e identificou 3 issue
 
 ## Final state — pós-#36
 
-**Decisão estratégica final:** **NÃO submeter pra NeurIPS Bio-Plausible Workshop.** Em vez disso, postar no LinkedIn em PT como anúncio + repo + PDF anexado. Razão registrada em `STRATEGY.md` "Decisão pós-#35: LinkedIn em vez de NeurIPS" — founder Rytora não tem tempo pra rebuttals/revisões/registration; LinkedIn alcança parte do que peer-review faria sem overhead institucional.
+**Decisão estratégica final:** **NÃO submeter pra NeurIPS Bio-Plausible Workshop.** Em vez disso, postar no LinkedIn em PT como anúncio + repo + PDF anexado. Razão registrada em `STRATEGY.md` "Decisão pós-#35: LinkedIn em vez de NeurIPS" — tempo limitado de side project não absorve rebuttals/revisões/registration; LinkedIn alcança parte do que peer-review faria sem overhead institucional.
 
 **Paper draft preservado integralmente.** Conteúdo permanece publicável depois se Luis decidir submeter pra workshop futuro.
 
