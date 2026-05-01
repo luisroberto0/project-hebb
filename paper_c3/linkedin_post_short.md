@@ -17,7 +17,7 @@
 **Por que importa:** sparsity é característica do córtex (~2-4% unidades ativas). Esse resultado mostra que princípios bio-inspirados podem coexistir com deep learning mainstream sem custo significativo. Não é breakthrough — é estudo empírico controlado, workshop-scope, com limitações documentadas (single seed, único dataset, k-WTA só no embedding).
 
 📂 Repo: github.com/luisroberto0/project-hebb
-📄 PDF deep dive (8 pgs): em breve no repo
+📄 PDF deep dive (8 pgs): [github.com/luisroberto0/project-hebb/blob/main/paper_c3/Project_Hebb_C3_DeepDive.pdf](https://github.com/luisroberto0/project-hebb/blob/main/paper_c3/Project_Hebb_C3_DeepDive.pdf)
 
 Pushback bem-vindo, especialmente refs que eu deveria conhecer.
 
