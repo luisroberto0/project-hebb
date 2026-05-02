@@ -8,12 +8,9 @@
 
 **Author:** Luis Roberto Pinho da Silva Junior (Independent research)
 
-> *"Don't try to build the mind. Build a neuron that works differently."*
-> — Luis Roberto Pinho da Silva Junior, Project Hebb (2026)
-
 ---
 
-Sparse coding is a hallmark of cortical computation: only a small fraction of neurons respond actively to each input, and this sparsity is functionally relevant for energy efficiency and representation separation~\citep{olshausen1996emergence,ahmad2019dense}. In mainstream deep learning, however, learned representations remain predominantly dense---post-ReLU activations typically have 30--50\% density, and no architectural constraint enforces additional sparsity. Recent work has begun to characterize when sparsity-inspired mechanisms are compatible with modern methods. \citet{pinho2026kwta}\footnote{Self-citation; see CITATION.cff in the project repository.} showed that explicit k-WTA sparse coding applied to the embedding of a Prototypical Network~\citep{snell2017prototypical} preserves few-shot accuracy on Omniglot~\citep{lake2015human}: 75\% of activations zeroed costs only 1.45 percentage points (93.10\% vs.\ 94.55\% for the full ProtoNet baseline), and even 87.5\% sparsity retains 90.77\%. That result establishes a positive in-domain claim about k-WTA tolerance.
+Sparse coding is a hallmark of cortical computation: only a small fraction of neurons respond actively to each input, and this sparsity is functionally relevant for energy efficiency and representation separation~\citep{olshausen1996emergence,ahmad2019dense}. In mainstream deep learning, however, learned representations remain predominantly dense---post-ReLU activations typically have 30--50\% density, and no architectural constraint enforces additional sparsity. Recent work has begun to characterize when sparsity-inspired mechanisms are compatible with modern methods. \citet{pinho2026kwta} showed that explicit k-WTA sparse coding applied to the embedding of a Prototypical Network~\citep{snell2017prototypical} preserves few-shot accuracy on Omniglot~\citep{lake2015human}: 75\% of activations zeroed costs only 1.45 percentage points (93.10\% vs.\ 94.55\% for the full ProtoNet baseline), and even 87.5\% sparsity retains 90.77\%. That result establishes a positive in-domain claim about k-WTA tolerance.
 
 A natural next question follows immediately: \emph{does the effect persist cross-domain?} Few-shot learning research has increasingly emphasized cross-domain robustness~\citep{triantafillou2020meta,tseng2020cross,chen2019closer}, motivated by the observation that meta-learning methods often degrade sharply when source and target domains differ~\citep{phoo2021self}. If sparse coding is a general principle of efficient representation, the expectation is that k-WTA should preserve at least \emph{some} of its in-domain benefit when an Omniglot-trained encoder is applied to a different visual domain. If, conversely, the effect of k-WTA is tied to in-domain regularities, the sparsity-accuracy curve documented on Omniglot should flatten or disappear under domain shift.
 
@@ -31,8 +28,6 @@ The contribution of this work is deliberately empirical and characterizational, 
 \end{enumerate}
 
 We do not claim a new method, biological realism, or a breakthrough mechanism. We claim a precise empirical statement: under extreme domain shift between visually unrelated source and target, an effect that mattered in-domain disappears, and bio-inspired sparsity neither helps nor hurts.
-
-\textbf{Roadmap.} Section~\ref{sec:background} surveys cross-domain few-shot learning and prior work on sparse coding. Section~\ref{sec:method} details the encoders, the k-WTA layer, and the training and evaluation protocols. Section~\ref{sec:experiments} reports the seven characterized conditions and the in-domain comparison. Section~\ref{sec:discussion} discusses likely mechanisms and limitations. Section~\ref{sec:conclusion} concludes.
 
 ---
 

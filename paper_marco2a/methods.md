@@ -26,3 +26,29 @@
 - Pode reusar Section 3 do paper C3 main.tex (linhas ~80-140 do main.tex) com modificações
 - Importante incluir info sobre ProtoEncoderRGB (CNN-4 + AdaptiveAvgPool2d) que é específico Marco 2-A
 - Detalhes pré-processamento: 28×28 grayscale (compat C3) vs 84×84 RGB (literatura)
+
+### A INCLUIR EM #59 §3 (movido de §2.4 background em #58.5)
+
+Conteúdo movido de Section 2 Datasets pra cá (Section 3 Method é onde
+protocolo experimental pertence — convenção académica). Incorporar
+nestes 2 pontos quando draftar #59:
+
+1. **Primary protocol resize 28x28 grayscale (compat encoders Omniglot).**
+   Texto base movido:
+   > "In our primary protocol all images, regardless of source, are resized
+   > to 28x28 and converted to grayscale. This preserves architectural
+   > compatibility with the source-trained encoders' input shape (1, 28, 28).
+   > The cost is severe: 500x500 RGB photographs reduced to 28x28 grayscale
+   > lose nearly all texture and color information that conventionally
+   > distinguishes bird species. We report the impact of this resolution
+   > choice in Section 4 via a parallel 84x84 RGB retrained baseline."
+
+2. **"Extreme task differences" framing (Phoo & Hariharan 2021).**
+   Texto base movido:
+   > "The visual distance between Omniglot and CUB-200-2011 in any
+   > reasonable embedding metric is large. We treat this as an instance
+   > of the 'extreme task differences' regime~\citep{phoo2021self} and
+   > characterize what survives transfer in that regime."
+
+Conectar em §3.4 (cross-domain protocol) ou §3.5 (sparsity sweep) conforme
+fluxo do texto na hora de draftar.

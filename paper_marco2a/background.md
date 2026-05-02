@@ -20,21 +20,11 @@ The k-winner-take-all (k-WTA) operation is a generalization of classical winner-
 
 Within Prototypical Networks specifically, \citet{pinho2026kwta} applied k-WTA to the 64-dimensional final embedding of a CNN-4 ProtoNet, varying $k$ across $\{32, 16, 8\}$ (corresponding to 50\%, 75\%, 87.5\% sparsity). On Omniglot 5-way 1-shot, the accuracy curve was nearly flat between 0\% and 75\% sparsity (94.55\% to 93.10\%, a drop of 1.45 p.p.), with a steeper decline at 87.5\% sparsity (90.77\%). A control with random encoder weights and the same k-WTA operation reached 37.60\%, confirming that the in-domain result depends on training under the sparsity constraint, not on the k-WTA structure applied to arbitrary features. The present paper takes those exact source-trained encoders as inputs and asks whether the in-domain effect survives transfer.
 
-\subsection{Bio-Plausible Learning and Domain Transfer}
-
-Bio-plausible learning research has largely focused on demonstrating capabilities (sparse coding, local plasticity, episodic memory) within the domains where they are documented to occur. Cross-domain robustness of bio-inspired mechanisms has received less direct empirical attention. The implicit hope---occasionally explicit in motivational text---is that biology-inspired regularizers (sparsity, local rules, distributed representations) will produce more general features than purely backprop-driven training, because biology must operate across a single substrate that handles all sensory modalities.
-
-The empirical record on this hope is mixed. \citet{chen2019closer} showed that simple baselines can outperform meta-learning under domain shift, suggesting that complex inductive biases learned in-domain may not transfer well. \citet{phoo2021self} showed that source-domain training, however sophisticated, is insufficient when the target is sufficiently different: target-domain self-training is required. These results raise the possibility that bio-inspired sparsity, like meta-learned representations, is domain-locked in the sense that what helps in one domain does not necessarily help in another.
-
 \subsection{Datasets: Omniglot and CUB-200-2011}
 
 \textbf{Omniglot}~\citep{lake2015human} contains 1623 hand-drawn characters from 50 alphabets, 20 instances per character, originally provided as $28 \times 28$ binary images suitable for one-shot benchmarks. We use the standard background/evaluation split (30 alphabets / 20 alphabets) for source training. Following~\citet{pinho2026kwta}, we report 5-way 1-shot performance.
 
 \textbf{CUB-200-2011}~\citep{wah2011caltech} contains 11{,}788 photographs of 200 bird species, with 30--60 images per class at native resolution near $500 \times 500$ RGB. The dataset includes bounding boxes, part locations, and 312 attribute labels (we do not use these annotations). The official \texttt{train\_test\_split.txt} provides a per-image binary split that we adopt without modification: 5994 images for the train split and 5794 images for the test split, with all 200 classes appearing in both. For cross-domain evaluation we use only the test split. For the retrained baseline (Section~\ref{sec:method}.\ref{subsec:retrained}), we use the train split.
-
-In our primary protocol all images, regardless of source, are resized to $28 \times 28$ and converted to grayscale. This preserves architectural compatibility with the source-trained encoders' input shape $(1, 28, 28)$. The cost is severe: $500 \times 500$ RGB photographs reduced to $28 \times 28$ grayscale lose nearly all texture and color information that conventionally distinguishes bird species. We report the impact of this resolution choice in Section~\ref{sec:experiments} via a parallel $84 \times 84$ RGB retrained baseline.
-
-The visual distance between Omniglot and CUB-200-2011 in any reasonable embedding metric is large. We treat this as an instance of the ``extreme task differences'' regime~\citep{phoo2021self} and characterize what survives transfer in that regime.
 
 ---
 
