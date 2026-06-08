@@ -71,7 +71,7 @@ Razão: tempo limitado de side project não absorve rebuttals/revisões/registra
 
 **Project Hebb entra em estado de manutenção pós-#36.** Não há próximas sessões planejadas. Se houver retomada (Marco 2 em outro critério pós-LLM, ablações C3 adicionais), reabrir via sessão administrativa primeiro. Ver `STRATEGY.md` "Decisão pós-#35: LinkedIn em vez de NeurIPS".
 
-### 1.4 Refino #52 (2026-05-14) — Marco 2-A ativo (cross-domain CUB-200)
+### 1.4 Refino #52 (2026-05-14) — Marco 2-A (cross-domain CUB-200) — ENCERRADO #66 (achado negativo)
 
 Após pausa de ~2 semanas pós-#36d, decisão admin de reabrir projeto com **Marco 2-A — cross-domain few-shot Omniglot→CUB-200-2011**, atacando especificamente um dos 4 critérios pós-LLM oficiais do §1: **one-shot inédito** (generalização pra domínio visual radicalmente diferente do treino).
 
@@ -85,11 +85,13 @@ Caminho 5f (kitchen sink+STDP biofísico) cancelado em scoping antes de #37 come
 
 **Implicação pra status §1.2:**
 - ✅ one-shot Omniglot via C3 — atingido numericamente, publicação LinkedIn pendente (separada deste marco)
-- 🟡 **one-shot inédito (cross-domain CUB-200)** — Marco 2-A em andamento, sessões #52-#66
+- ❌ **one-shot inédito (cross-domain CUB-200)** — Marco 2-A tentado e **encerrado em #66**; critério literal refutado conforme previsto (C3 cross-domain ~22% vs ProtoNet retreinado 34–50%). Achado negativo documentado (paper arquivado, não publicado)
 - ❌ continual learning — Marco 1 encerrado em #30
 - 🔵 eficiência radical e raciocínio temporal — não atacados
 
 Project Hebb sai de estado de manutenção; entra em estado de exploração com critério literal e fechamento automático em #66.
+
+**Atualização #66 (2026-06-08):** Marco 2-A **encerrado** — critério refutado conforme predição registrada em #52. Paper de achado negativo (`paper_marco2a/`) draft-completo + peer review interno + ajustes de rigor incorporados, **arquivado sem publicar** (decisão admin Luis #66, mais conservadora que a do paper C3 pós-#36). Próximo marco (2-B eficiência radical / 2-C raciocínio temporal / encerrar projeto) **em aberto** — decisão do Luis. Project Hebb volta a estado de manutenção. Ver `STRATEGY.md` "Fechamento Marco 2-A — sessão #66".
 
 ---
 

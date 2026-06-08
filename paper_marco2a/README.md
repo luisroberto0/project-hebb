@@ -1,5 +1,7 @@
 # Paper Marco 2-A — Cross-domain k-WTA characterization
 
+> **Status #66 (2026-06-08): Marco 2-A ENCERRADO — paper ARQUIVADO sem publicar.** Draft-completo + peer review interno + ajustes de rigor incorporados. Critério literal refutado conforme previsto. Decisão admin do Luis: arquivar como achado documentado/reproduzível, não publicar (nem workshop, nem LinkedIn). Ver `STRATEGY.md` "Fechamento Marco 2-A — sessão #66".
+
 ## Overview
 
 Paper sobre Marco 2-A do `experiment_03_crossdomain/` (sessões #52-#57): caracterização empírica de k-WTA cross-domain Omniglot→CUB-200, demonstrando que o efeito de k-WTA documentado in-domain (paper C3) **colapsa em transfer extremo**.
@@ -16,12 +18,9 @@ Paper de exploração honesta com 3 achados centrais:
 
 Alternativas em `outline.md`. Decisão final pós-draft completo.
 
-## Target venue (a definir)
+## Target venue — NENHUM (arquivado #66)
 
-Decisão fica pra Luis após draft completo. Candidatos prováveis:
-- NeurIPS Bio-Plausible Learning Workshop (~setembro 2026)
-- ICLR Workshop on Mathematical and Empirical Understanding of Foundation Models
-- LinkedIn-only (consistente com decisão paper C3 pós-#36)
+Decisão admin #66 (Luis): **arquivar sem publicar** (nem workshop, nem LinkedIn). Paper preservado como achado documentado/reproduzível. Candidatos considerados e descartados: NeurIPS Bio-Plausible Workshop, ICLR Workshop, LinkedIn-only.
 
 ## Author
 
@@ -39,7 +38,7 @@ Decisão fica pra Luis após draft completo. Candidatos prováveis:
 | #62 | Conclusion + abstract | ✅ |
 | #63 | LaTeX consolidação + bibliography final | ✅ |
 | #64-65 | Peer review interno + correções seguras | ✅ |
-| #66 | Admin obrigatória — decide próximo passo | pendente |
+| #66 | Admin — Marco 2-A encerrado, ajustes incorporados, paper arquivado sem publicar | ✅ |
 
 ## Files
 

@@ -1100,3 +1100,45 @@ Roadmap pós-#36 era "Project Hebb em manutenção sem próximas sessões planej
 ### Estado de código pós-#52
 
 Intocado. Apenas docs novos (`experiment_03_crossdomain/PLAN.md` + `PAPERS.md`). #53 começa código.
+
+---
+
+## Fechamento Marco 2-A — sessão #66 (2026-06-08)
+
+**Decisão admin (Luis):** Marco 2-A **encerrado**. Critério literal **refutado conforme previsto**. Paper de achado negativo **arquivado sem publicar**.
+
+### Resultado vs critério literal
+
+Critério: "C3 cross-domain ≥ ProtoNet retreinado + 5 p.p. em ACC 5w1s CUB-200". Resultado (#52-#57, 5 seeds, IC95% bootstrap):
+
+| Condição | ACC 5w1s CUB |
+|---|---|
+| ProtoNet retreinado CUB 84×84 RGB | 49.84% |
+| ProtoNet retreinado CUB 28×28 gray | 34.31% |
+| Pixel kNN cross-domain | 22.81% |
+| C3 (k-WTA, Omniglot congelado, todas sparsities) | 21.68–22.20% |
+| Random encoder + k-WTA | 21.91% |
+| chance | 20.00% |
+
+C3 está **−12 a −28 p.p. ABAIXO** de ProtoNet retreinado → critério **REFUTADO** (predição #52 confirmada). Cancelável era permitido desde #57; levado até #66 para fechar o paper de caracterização.
+
+### 3 achados (achado negativo defensável)
+
+1. **k-WTA effect collapse:** spread in-domain 3.78 p.p. → cross-domain 0.52 p.p. (ruído, ICs sobrepostos).
+2. **Anti-transfer:** encoder treinado ≈ random (+0.18 p.p.); ambos perdem pra Pixel kNN (22.81%) — encoder bio-inspirado não agrega sobre pixel cru em transfer extremo.
+3. **Bottleneck decomposition:** target training (+12.22 p.p.) e input fidelity/resolução+cor (+15.53 p.p.) são os gargalos reais e ~aditivos; sparsity contribui zero.
+
+### Paper Marco 2-A — arquivado
+
+"When Sparsity Stops Mattering: k-WTA Effect Collapse Under Extreme Domain Shift" (`paper_marco2a/`). Draft-completo: 6 seções + abstract + 3 figuras 300 DPI + `main.tex` (validação estrutural OK). Peer review interno adversarial (#64-65, verdict "pequenos ajustes"; todos os números das tabelas conferem). Ajustes de rigor alta+média incorporados (#66): escopo single-pair, downgrade de linguagem estatística, caveat shot-count Phoo, hedge do mecanismo max-pool, escopo STARTUP (supervisionado ≠ self-training). **Arquivado como achado documentado — NÃO publicado.** Decisão mais conservadora que a do paper C3 pós-#36 (nem LinkedIn). Registro de revisão em `paper_marco2a/peer_review.md`.
+
+### Status das 4 capacidades pós-LLM (CONTEXT.md §1)
+
+- one-shot Omniglot (C3) ✅ atingido in-domain (paper C3, LinkedIn pendente, separado)
+- one-shot inédito (cross-domain) ❌ Marco 2-A tentado → achado negativo → **encerrado #66**
+- continual learning ❌ Marco 1 encerrado (#30)
+- eficiência radical / raciocínio temporal 🔵 não atacados
+
+### Próximo passo — EM ABERTO (decisão do Luis)
+
+#66 (admin) decidiu encerrar o 2-A; a escolha do **próximo marco não foi tomada** nesta sessão. Opções registradas: **Marco 2-B** (eficiência radical), **Marco 2-C** (raciocínio temporal/SNN), ou **encerrar o projeto**. Project Hebb **volta a estado de manutenção** pós-#66 até reabertura via sessão admin. Padrão consolidado: reabertura formal antes de novo marco, com critério literal e limite hard de sessões.

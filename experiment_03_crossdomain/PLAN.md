@@ -1,7 +1,12 @@
-# Experimento 03 — Cross-domain few-shot (Marco 2-A)
+# Experimento 03 — Cross-domain few-shot (Marco 2-A) — ENCERRADO
 
-> **Status:** kickoff em sessão #52 (2026-05-14). Sem código rodado nesta sessão.
-> **Limite hard:** 15 sessões (#52-#66). Admin obrigatória em #66.
+> **Status:** **ENCERRADO em #66 (2026-06-08).** Critério literal REFUTADO conforme previsto.
+> Marco 2-A rodado (#52-#57); paper de achado negativo arquivado sem publicar (`paper_marco2a/`).
+> **Resultado:** C3 cross-domain ~22% (todas as sparsities, ICs sobrepostos) vs ProtoNet retreinado 34.31% (28×28 gray) / 49.84% (84×84 RGB). Gap −12 a −28 p.p. → critério refutado (predição #52 confirmada).
+> **3 achados:** k-WTA effect collapse (3.78→0.52 p.p.), anti-transfer (treinado ≈ random ≈ pixel kNN), bottleneck decomposition (target training +12.22, input fidelity +15.53, sparsity zero). Detalhes: `STRATEGY.md` "Fechamento Marco 2-A — sessão #66" + `paper_marco2a/`.
+> _(Plano original abaixo, preservado para histórico.)_
+>
+> **Limite hard original:** 15 sessões (#52-#66). Admin obrigatória em #66.
 
 ---
 
