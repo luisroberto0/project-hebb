@@ -36,7 +36,7 @@ Decisão fica pra Luis após draft completo. Candidatos prováveis:
 | #59 | Methods + Experiments (Table 1 + Table 2) | ✅ |
 | #60 | Figures (3 × 300 DPI PNG+PDF) | ✅ |
 | #61 | Discussion | ✅ |
-| #62 | Conclusion + abstract + refinement | pendente |
+| #62 | Conclusion + abstract | ✅ |
 | #63 | LaTeX consolidação + bibliography final | pendente |
 | #64-65 | Peer review interno + revisão | pendente |
 | #66 | Admin obrigatória — decide próximo passo | pendente |
@@ -49,7 +49,8 @@ Decisão fica pra Luis após draft completo. Candidatos prováveis:
 - `methods.md` — Section 3: Method (✅ draft #59, ~640 palavras)
 - `experiments.md` — Section 4: Experiments (✅ draft #59, ~890 palavras, Table 1 + Table 2)
 - `discussion.md` — Section 5: Discussion (✅ draft #61, ~840 palavras, §5.1–5.6)
-- `conclusion.md` — Section 6: Conclusion (placeholder, draft #62)
+- `conclusion.md` — Section 6: Conclusion (✅ draft #62, ~185 palavras)
+- `abstract.md` — Abstract (✅ draft #62, ~170 palavras)
 - `refs.bib` — Bibliography (BibTeX, ~18 entradas)
 - `main.tex` — LaTeX consolidado (a criar #63)
 - `generate_figures.py` — script reproduzível das 3 figuras (✅ #60)

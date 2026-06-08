@@ -1,39 +1,21 @@
 # Section 6: Conclusion
 
-> Status: PLACEHOLDER. Draft pra sessão #62.
-> Word count target: 150-200 words. 2 parágrafos.
+> Status: drafted sessão #62.
+> Word count target: 150-200 words. Atual: ~185.
 
 ---
 
 \section{Conclusion}
 \label{sec:conclusion}
 
-[Draft #62. Estrutura planejada:]
+We characterized the cross-domain behavior of k-winner-take-all sparsity by transferring CNN-4 Prototypical Network encoders trained on Omniglot, at four sparsity levels, to CUB-200-2011, evaluated over five seeds and 1000 episodes each with bootstrap confidence intervals. The in-domain sparsity-accuracy spread of 3.78 percentage points reported by \citet{pinho2026kwta} collapses to 0.52 p.p.\ under this extreme domain shift, entirely within the overlap of per-condition confidence intervals. A decomposition of the residual gap shows that target-domain training (+12.22 p.p.) and adequate input resolution (+15.53 p.p.) are the operative bottlenecks, while sparsity contributes none; a source-trained encoder is statistically indistinguishable from a random-weight control, and both are outperformed by a representation-free Pixel kNN baseline.
 
-- Parágrafo 1: contribuição central + quantitativos (~100 palavras)
-- Parágrafo 2: implicação + trabalho futuro (~100 palavras)
+The practical implication is narrow but precise: bio-inspired sparsity that is demonstrably compatible in-domain neither helps nor hurts under extreme domain shift, because the operation is applied to a representation that carries no transferable signal. Whether the collapse softens with a closer source, intermediate-layer sparsity, or target-domain self-training remains open.
 
 ---
 
-## Pontos-chave (anotações pra #62)
+## Notas pra #62 (slim revision)
 
-### Parágrafo 1
-
-- Caracterização empírica de k-WTA cross-domain Omniglot→CUB
-- 4 sparsities × 5 seeds × 1000 episodes
-- Achado central: k-WTA effect collapse (3.78 p.p. → 0.52 p.p.)
-- Decomposição: target-domain training (+12.2 p.p.) e resolução (+15.5 p.p.) são gargalos
-- Anti-transfer: encoder treinado ≈ random encoder
-
-### Parágrafo 2
-
-- Sparsity bio-inspired NÃO é universalmente útil
-- In-domain compatibility documentada (paper C3) NÃO transfere
-- "Bio-plausible neither helps nor hurts cross-domain" — implicação prática
-- Trabalho futuro: source mais próxima, self-training, architecture variants
-
-## Tom recomendado
-
-- Conciso, declarativo, sem retórica
-- Sem novos claims que não foram apresentados
-- Single paragraph se mais natural
+- Word count ~185, dentro do target 150-200
+- Não introduz claim novo (todos os números já em Abstract/Experiments)
+- Confirmar `\citet{pinho2026kwta}` consistente

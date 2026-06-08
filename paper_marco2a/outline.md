@@ -22,13 +22,13 @@ Decisão final pós-draft completo (Luis decide com material concreto).
 
 | Seção | Word target | Status |
 |---|---|---|
-| Abstract | 150-180 | ⏳ #62 |
+| Abstract | 150-180 | ✅ #62 |
 | 1. Introduction | 600-800 | ✅ #58 |
 | 2. Background | 700-900 | ✅ #58 |
 | 3. Method | 500-700 | ✅ #59 |
 | 4. Experiments | 800-1000 | ✅ #59 (figs ✅ #60) |
 | 5. Discussion | 700-900 | ✅ #61 |
-| 6. Conclusion | 150-200 | ⏳ #62 |
+| 6. Conclusion | 150-200 | ✅ #62 |
 | **Total** | **~3500-4500** | — |
 
 ---
