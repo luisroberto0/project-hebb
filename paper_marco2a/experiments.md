@@ -75,7 +75,7 @@ The in-domain spread of 3.78 p.p.\ between $k=8$ and $k=64$ is the empirical sig
 Successive comparisons isolate where the gap between random-weight and high-performance conditions originates:
 
 \begin{itemize}
-    \item \textbf{Random encoder} (21.91\%) $\to$ \textbf{$k=16$ source-trained} (22.09\%): $+0.18$ p.p. The contribution of training on Omniglot, holding the input pipeline fixed, is statistically negligible.
+    \item \textbf{Random encoder} (21.91\%) $\to$ \textbf{$k=16$ source-trained} (22.09\%): $+0.18$ p.p. The contribution of training on Omniglot, holding the input pipeline fixed, is negligible and within seed-to-seed variation.
     \item \textbf{$k=16$ source-trained} (22.09\%) $\to$ \textbf{ProtoNet retrained on CUB at $28 \times 28$} (34.31\%): $+12.22$ p.p. With the same input pipeline, switching the training distribution from source to target accounts for over twelve percentage points.
     \item \textbf{Retrained at $28 \times 28$} (34.31\%) $\to$ \textbf{retrained at $84 \times 84$ RGB} (49.84\%): $+15.53$ p.p. With training on the target held fixed, increasing input resolution and adding color contributes another fifteen-and-a-half points.
 \end{itemize}
@@ -85,7 +85,7 @@ The two large contributors---target-domain training and adequate input fidelity-
 \subsection{Anti-Transfer Evidence}
 \label{subsec:anti-transfer}
 
-The 0.18 p.p.\ gap between random and source-trained encoders is statistically indistinguishable from zero: the 95\% CI of the random encoder ([21.76, 22.03]) overlaps the CI of the source-trained $k=16$ encoder ([21.84, 22.34]), and the difference is well within seed-to-seed variation. Five thousand episodes of episodic training on Omniglot produce no detectable transferable signal in this regime. We refer to this pattern as \emph{anti-transfer}: an encoder trained on a sufficiently distant source is at best equivalent to an untrained one, and---as the next subsection shows---may underperform a representation that involves no encoder at all. The pattern is consistent with the diagnoses of \citet{phoo2021self}: source-domain training, however thorough, is insufficient under extreme task differences, and self-training on the target domain is required to bridge the gap.
+The 0.18 p.p.\ gap between random and source-trained encoders shows no measurable positive transfer: the 95\% CI of the random encoder ([21.76, 22.03]) overlaps the CI of the source-trained $k=16$ encoder ([21.84, 22.34]), and the difference is well within seed-to-seed variation. Five thousand episodes of episodic training on Omniglot produce no detectable transferable signal in this regime. We refer to this pattern as \emph{anti-transfer}: an encoder trained on a sufficiently distant source is at best equivalent to an untrained one, and---as the next subsection shows---may underperform a representation that involves no encoder at all. The pattern is consistent with the diagnoses of \citet{phoo2021self}, who argue that source-domain training is insufficient under extreme task differences and that target-domain adaptation may be required to bridge the gap.
 
 \subsection{Pixel kNN Dominates Encoded Representations}
 \label{subsec:pixel-dominates}

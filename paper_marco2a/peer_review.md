@@ -6,6 +6,20 @@
 
 **Pequenos ajustes.** O paper está sólido e honesto; **todos os números das Tabelas 1 e 2 conferem exatamente com a fonte** (verificação exaustiva). Nenhum erro invalida os resultados centrais. Foram encontrados ~10 defeitos de **consistência interna** (seguros, já corrigidos) e ~16 **decisões de julgamento** (escopo/tom/claim) que cabem ao autor.
 
+## Status #66 — ajustes incorporados
+
+Luis (#66) optou por incorporar os ajustes de **alta + média prioridade**, mantendo o título, e **encerrar o Marco 2-A** (arquivar sem publicar). Aplicados em `main.tex` + `.md` fonte (commit do #66):
+
+- ✅ **A (escopo):** abstract, intro (contrib + parágrafo final) e conclusão escopados para o par único "(Omniglot→CUB, CNN-4, embedding-level k-WTA)". Título mantido.
+- ✅ **B (estatística):** "statistically indistinguishable/negligible" → "within overlapping 95% bootstrap CIs / within seed-to-seed variation" (abstract, intro, §4.3, §4.5, conclusão).
+- ✅ **C (Phoo):** §5.4 ganhou caveat de shot-count (Phoo é 5w5s; nosso 5w1s é mais difícil → collapse mais severo).
+- ✅ **D (max-pool):** intro suavizada para casar com §5.1; §5.1 concede o confounder do random-encoder e hedga "near-degenerate".
+- ✅ **E (termos):** "effect collapse" e "anti-transfer" definidos operacionalmente na 1ª ocorrência (sem implicar mecanismo causal).
+- ✅ **F (STARTUP):** §5.2 explicita que o +12.22 é retreino **supervisionado**, não self-training; framing STARTUP movido para escopo de future work. §4.5 suavizada ("may be required").
+- ✅ **G (input fidelity):** "input resolution" → "input fidelity (resolution and color)" em abstract/§4.3/conclusão.
+
+**Não aplicados (baixa prioridade, item H/I):** merge §5.5/§5.6, poda de redundância numérica, "maximally distant" (já suavizado em F), frase sobre self-citation não-publicada, defesa explícita de n=5 seeds, framing "is this just a negative result". Ficam registrados aqui caso o paper seja retomado.
+
 ---
 
 ## ✅ Correções seguras aplicadas (#65)
