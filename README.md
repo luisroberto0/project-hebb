@@ -7,7 +7,7 @@ Pesquisa em arquiteturas neurais bio-inspiradas: plasticidade local diferenciáv
 
 ---
 
-## Status (atualizado em 2026-06-08, pós-sessão #60)
+## Status (atualizado em 2026-06-08, pós-sessão #65)
 
 **Marco 2-A — cross-domain few-shot (ativo, paper em draft).** Após o fechamento do Marco 1 (#30) e a decisão pós-#36 de publicar C3 via LinkedIn, o projeto reabriu em #52 (2026-05-14) para atacar uma sub-capacidade pós-LLM específica: **one-shot inédito** em domínio visual radicalmente diferente do treino. Pergunta: o encoder C3 (CNN-4 + k-WTA k=16) treinado em Omniglot e **congelado** bate ProtoNet retreinado em CUB-200 por ≥5 p.p. cross-domain? Critério literal, limite hard de 15 sessões (#52-#66).
 
@@ -17,7 +17,7 @@ Pesquisa em arquiteturas neurais bio-inspiradas: plasticidade local diferenciáv
 2. **Anti-transfer:** encoder treinado em fonte distante é estatisticamente indistinguível de random encoder cross-domain (+0.18 p.p., ICs sobrepostos). Consistente com STARTUP (Phoo & Hariharan 2021).
 3. **Bottleneck decomposition:** treino na target (+12.22 p.p.) e resolução/cor adequadas (+15.53 p.p.) são os dois gargalos reais e ~aditivos; sparsity contribui zero. Contraintuitivo: Pixel kNN (22.81%) supera todos os encoders.
 
-**Paper Marco 2-A** ("When Sparsity Stops Mattering: k-WTA Effect Collapse Under Extreme Domain Shift", `paper_marco2a/`) em draft: Intro+Background (#58), Methods+Experiments com Table 1 + Table 2 (#59), **3 figuras 300 DPI (#60)**. Restantes: Discussion (#61), Conclusion+abstract (#62), LaTeX (#63), peer review interno (#64-65), admin de decisão (#66). Achado negativo bem caracterizado, workshop-scope.
+**Paper Marco 2-A** ("When Sparsity Stops Mattering: k-WTA Effect Collapse Under Extreme Domain Shift", `paper_marco2a/`) — **draft-completo**: 6 seções + abstract (#58–#62), 3 figuras 300 DPI (#60), `main.tex` consolidado + bib final (#63, validação estrutural OK; compila via Overleaf), e **peer review interno adversarial** (#64–65, verdict "pequenos ajustes" — todos os números das tabelas conferem; 10 correções de consistência aplicadas; 16 decisões de escopo/tom registradas em `paper_marco2a/peer_review.md`). Restante: **#66 (admin)** — decidir quais ajustes de julgamento incorporar e onde/se publicar. Achado negativo bem caracterizado, workshop-scope.
 
 ---
 
