@@ -149,8 +149,8 @@ Decisão final pós-draft completo (Luis decide com material concreto).
 | Scripts reproduzíveis | `experiment_03_crossdomain/*.py` | ✅ |
 | Checkpoints | `experiment_01_oneshot/checkpoints/` | ✅ (gitignored) |
 | Figuras 300 DPI | `paper_marco2a/figs/` | ✅ #60 |
-| Bibliography refs.bib | `paper_marco2a/refs.bib` | em curso #58 |
-| LaTeX consolidado main.tex | — | ⏳ #63 |
+| Bibliography refs.bib | `paper_marco2a/refs.bib` | ✅ #63 final (15 entradas) |
+| LaTeX consolidado main.tex | `paper_marco2a/main.tex` | ✅ #63 (validado estruturalmente) |
 
 ---
 
