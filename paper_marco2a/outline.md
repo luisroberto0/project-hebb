@@ -25,8 +25,8 @@ Decisão final pós-draft completo (Luis decide com material concreto).
 | Abstract | 150-180 | ⏳ #62 |
 | 1. Introduction | 600-800 | ✅ #58 |
 | 2. Background | 700-900 | ✅ #58 |
-| 3. Method | 500-700 | ⏳ #59 |
-| 4. Experiments | 800-1000 | ⏳ #59-#60 |
+| 3. Method | 500-700 | ✅ #59 |
+| 4. Experiments | 800-1000 | ✅ #59 (figs ✅ #60) |
 | 5. Discussion | 700-900 | ⏳ #61 |
 | 6. Conclusion | 150-200 | ⏳ #62 |
 | **Total** | **~3500-4500** | — |
@@ -108,11 +108,11 @@ Decisão final pós-draft completo (Luis decide com material concreto).
 - §4.5 Anti-transfer evidence (encoder treinado ≈ random)
 - §4.6 Pixel kNN dominates encoded representations (achado contraintuitivo)
 
-**Figuras (a gerar #60):**
+**Figuras (✅ geradas #60, `paper_marco2a/figs/`, 300 DPI PNG+PDF):**
 
-- Fig 1: cross-domain accuracy bar chart com 7 condições + chance line. Highlight k-WTA spread.
-- Fig 2: in-domain vs cross-domain dual-panel — left Omniglot (paper C3 numbers), right CUB cross-domain. Shows effect collapse visually.
-- Fig 3 (opcional): bottleneck decomposition waterfall — random → C3 → retreinado 28×28 → retreinado 84×84.
+- ✅ Fig 1 (`fig1_crossdomain_bars`): cross-domain accuracy bar chart com 8 condições + chance line. Highlight k-WTA spread (0.52 p.p.).
+- ✅ Fig 2 (`fig2_effect_collapse`): in-domain vs cross-domain dual-panel — left Omniglot (paper C3 numbers), right CUB cross-domain. Shows effect collapse (3.78 → 0.52 p.p.) visually.
+- ✅ Fig 3 (`fig3_bottleneck_waterfall`): bottleneck decomposition waterfall — random → C3 k=16 → retreinado 28×28 → retreinado 84×84.
 
 ---
 
@@ -148,7 +148,7 @@ Decisão final pós-draft completo (Luis decide com material concreto).
 | Tabela in-domain vs cross-domain | `WEEKLY-1.md` sessão #57 | ✅ |
 | Scripts reproduzíveis | `experiment_03_crossdomain/*.py` | ✅ |
 | Checkpoints | `experiment_01_oneshot/checkpoints/` | ✅ (gitignored) |
-| Figuras 300 DPI | — | ⏳ #60 |
+| Figuras 300 DPI | `paper_marco2a/figs/` | ✅ #60 |
 | Bibliography refs.bib | `paper_marco2a/refs.bib` | em curso #58 |
 | LaTeX consolidado main.tex | — | ⏳ #63 |
 

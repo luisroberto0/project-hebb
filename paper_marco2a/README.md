@@ -32,9 +32,9 @@ Decisão fica pra Luis após draft completo. Candidatos prováveis:
 
 | Sessão | Conteúdo | Status |
 |---|---|---|
-| #58 | Outline + Intro + Background drafted | em curso |
-| #59 | Methods + Experiments | pendente |
-| #60 | Figures + tabelas | pendente |
+| #58 | Outline + Intro + Background drafted | ✅ |
+| #59 | Methods + Experiments (Table 1 + Table 2) | ✅ |
+| #60 | Figures (3 × 300 DPI PNG+PDF) | ✅ |
 | #61 | Discussion | pendente |
 | #62 | Conclusion + abstract + refinement | pendente |
 | #63 | LaTeX consolidação + bibliography final | pendente |
@@ -46,13 +46,14 @@ Decisão fica pra Luis após draft completo. Candidatos prováveis:
 - `outline.md` — estrutura detalhada com checkboxes ✅
 - `intro.md` — Section 1: Introduction (✅ draft #58)
 - `background.md` — Section 2: Background (✅ draft #58)
-- `methods.md` — Section 3: Method (placeholder, draft #59)
-- `experiments.md` — Section 4: Experiments (placeholder, draft #59-#60)
+- `methods.md` — Section 3: Method (✅ draft #59, ~640 palavras)
+- `experiments.md` — Section 4: Experiments (✅ draft #59, ~890 palavras, Table 1 + Table 2)
 - `discussion.md` — Section 5: Discussion (placeholder, draft #61)
 - `conclusion.md` — Section 6: Conclusion (placeholder, draft #62)
 - `refs.bib` — Bibliography (BibTeX, ~18 entradas)
 - `main.tex` — LaTeX consolidado (a criar #63)
-- `figs/` — figuras 300 DPI (a criar #60)
+- `generate_figures.py` — script reproduzível das 3 figuras (✅ #60)
+- `figs/` — fig1_crossdomain_bars, fig2_effect_collapse, fig3_bottleneck_waterfall (PNG+PDF 300 DPI, ✅ #60)
 
 ## Source data
 

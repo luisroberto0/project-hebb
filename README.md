@@ -7,7 +7,19 @@ Pesquisa em arquiteturas neurais bio-inspiradas: plasticidade local diferenciáv
 
 ---
 
-## Status (atualizado em 2026-04-29, pós-sessão #30)
+## Status (atualizado em 2026-06-08, pós-sessão #60)
+
+**Marco 2-A — cross-domain few-shot (ativo, paper em draft).** Após o fechamento do Marco 1 (#30) e a decisão pós-#36 de publicar C3 via LinkedIn, o projeto reabriu em #52 (2026-05-14) para atacar uma sub-capacidade pós-LLM específica: **one-shot inédito** em domínio visual radicalmente diferente do treino. Pergunta: o encoder C3 (CNN-4 + k-WTA k=16) treinado em Omniglot e **congelado** bate ProtoNet retreinado em CUB-200 por ≥5 p.p. cross-domain? Critério literal, limite hard de 15 sessões (#52-#66).
+
+**Resultado (#52-#57, 5 seeds, IC95% bootstrap):** critério **refutado conforme previsto**. As cinco condições CNN-forward (4 sparsities C3 + random encoder) colapsam num cluster de 21.68–22.20% — apenas ~2 p.p. acima de chance (20%), com ICs sobrepostos. ProtoNet **retreinado** em CUB chega a 34.31% (28×28 gray) / 49.84% (84×84 RGB). Três achados centrais:
+
+1. **k-WTA effect collapse:** o spread entre k=8 e k=64 cai de **3.78 p.p. in-domain (Omniglot)** para **0.52 p.p. cross-domain (CUB)** — ruído. A esparsidade que importava in-domain some sob transfer extremo.
+2. **Anti-transfer:** encoder treinado em fonte distante é estatisticamente indistinguível de random encoder cross-domain (+0.18 p.p., ICs sobrepostos). Consistente com STARTUP (Phoo & Hariharan 2021).
+3. **Bottleneck decomposition:** treino na target (+12.22 p.p.) e resolução/cor adequadas (+15.53 p.p.) são os dois gargalos reais e ~aditivos; sparsity contribui zero. Contraintuitivo: Pixel kNN (22.81%) supera todos os encoders.
+
+**Paper Marco 2-A** ("When Sparsity Stops Mattering: k-WTA Effect Collapse Under Extreme Domain Shift", `paper_marco2a/`) em draft: Intro+Background (#58), Methods+Experiments com Table 1 + Table 2 (#59), **3 figuras 300 DPI (#60)**. Restantes: Discussion (#61), Conclusion+abstract (#62), LaTeX (#63), peer review interno (#64-65), admin de decisão (#66). Achado negativo bem caracterizado, workshop-scope.
+
+---
 
 **Fase 1 — Fundação concluída** (30 sessões). Project Hebb teve 2 experimentos:
 - **Experimento 01 (one-shot Omniglot):** ✅ atingiu metas numéricas via Caminho C (ProtoNet + k-WTA esparso). Vira paper de workshop.
@@ -200,6 +212,26 @@ project-hebb/
     ├── linkedin_post_short.md # Post LinkedIn versão curta PT-BR (~750 chars)
     ├── generate_figures.py   # Script reusable das figuras
     └── figs/                 # fig1_sparsity_curve, fig2_validation (PNG+PDF 300 DPI)
+├── experiment_03_crossdomain/ # Cross-domain few-shot Omniglot→CUB-200 (Marco 2-A, #52-#57)
+│   ├── PLAN.md               # Pergunta científica, critério literal, plano #52-#66
+│   ├── PAPERS.md             # Lit review cross-domain (5 papers core)
+│   ├── WEEKLY-1.md           # 7+ condições caracterizadas, IC95% bootstrap (#52-#57)
+│   ├── cub_data.py           # Dataloader CUB-200 + cache 28×28 gray / 84×84 RGB
+│   ├── episodes.py           # Sampler N-way K-shot cross-domain
+│   ├── eval_crossdomain.py   # Eval C3/ProtoNet Omniglot-frozen → CUB
+│   ├── eval_pixel_knn.py     # Pixel kNN cross-domain (sanity floor)
+│   ├── eval_random_encoder.py# Random encoder + k-WTA (sanity floor)
+│   ├── train_cub_protonet.py # ProtoNet retreinado em CUB (baseline a bater)
+│   ├── train_encoders.py     # Sweep k-WTA source-trained (k=8,16,32,64)
+│   └── smoke_test.py         # Smoke test do pipeline
+└── paper_marco2a/            # Workshop paper Marco 2-A (cross-domain k-WTA collapse)
+    ├── README.md, outline.md # Overview + estrutura detalhada
+    ├── intro.md, background.md          # Sections 1-2 (draft #58)
+    ├── methods.md, experiments.md       # Sections 3-4 + Table 1/2 (draft #59)
+    ├── discussion.md, conclusion.md     # Sections 5-6 (placeholders #61-#62)
+    ├── refs.bib             # Bibliography (~18 entradas)
+    ├── generate_figures.py  # Script reproduzível das 3 figuras (#60)
+    └── figs/                # fig1_crossdomain_bars, fig2_effect_collapse, fig3_bottleneck_waterfall (PNG+PDF 300 DPI)
 ```
 
 Pastas em `.gitignore`: `data/`, `checkpoints/`, `logs/`, `wandb/`, `.venv/`.
