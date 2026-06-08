@@ -60,13 +60,13 @@ The k-winner-take-all (k-WTA) operation imposes sparsity on learned representati
 \section{Introduction}
 \label{sec:intro}
 
-Sparse coding is a hallmark of cortical computation: only a small fraction of neurons respond actively to each input, and this sparsity is functionally relevant for energy efficiency and representation separation~\citep{olshausen1996emergence,ahmad2019dense}. In mainstream deep learning, however, learned representations remain predominantly dense---post-ReLU activations typically have 30--50\% density, and no architectural constraint enforces additional sparsity. Recent work has begun to characterize when sparsity-inspired mechanisms are compatible with modern methods. \citet{pinho2026kwta} showed that explicit k-WTA sparse coding applied to the embedding of a Prototypical Network~\citep{snell2017prototypical} preserves few-shot accuracy on Omniglot~\citep{lake2015human}: 75\% of activations zeroed costs only 1.45 percentage points (93.10\% vs.\ 94.55\% for the full ProtoNet baseline), and even 87.5\% sparsity retains 90.77\%. That result establishes a positive in-domain claim about k-WTA tolerance.
+Sparse coding is a hallmark of cortical computation: only a small fraction of neurons respond actively to each input, and this sparsity is functionally relevant for energy efficiency and representation separation~\citep{olshausen1996emergence,ahmad2019dense}. In mainstream deep learning, however, learned representations remain predominantly dense---post-ReLU activations typically have 30--50\% density, and no architectural constraint enforces additional sparsity. Recent work has begun to characterize when sparsity-inspired mechanisms are compatible with modern methods. \citet{pinho2026kwta} showed that explicit k-WTA sparse coding applied to the embedding of a Prototypical Network~\citep{snell2017prototypical} preserves few-shot accuracy on Omniglot~\citep{lake2015human}: 75\% of activations zeroed costs only 1.45 p.p.\ (93.10\% vs.\ 94.55\% for the full ProtoNet baseline), and even 87.5\% sparsity retains 90.77\%. That result establishes a positive in-domain claim about k-WTA tolerance.
 
 A natural next question follows immediately: \emph{does the effect persist cross-domain?} Few-shot learning research has increasingly emphasized cross-domain robustness~\citep{triantafillou2020meta,tseng2020cross,chen2019closer}, motivated by the observation that meta-learning methods often degrade sharply when source and target domains differ~\citep{phoo2021self}. If sparse coding is a general principle of efficient representation, the expectation is that k-WTA should preserve at least \emph{some} of its in-domain benefit when an Omniglot-trained encoder is applied to a different visual domain. If, conversely, the effect of k-WTA is tied to in-domain regularities, the sparsity-accuracy curve documented on Omniglot should flatten or disappear under domain shift.
 
 This paper presents a controlled empirical study addressing that question. We take the same CNN-4 ProtoNet encoder studied in~\citet{pinho2026kwta}, train it episodically on Omniglot at four sparsity levels ($k = 8, 16, 32, 64$, corresponding to 87.5\%, 75\%, 50\%, and 0\% sparsity over the 64-D embedding), freeze the weights, and evaluate cross-domain on CUB-200-2011~\citep{wah2011caltech}. The Omniglot $\rightarrow$ CUB transfer is intentionally adversarial: binary character strokes against natural RGB textures of bird species, a setting that fits the ``extreme task differences'' regime described by~\citet{phoo2021self}. To distinguish hypotheses about the source of any residual cross-domain signal, we include a Pixel kNN sanity floor (no encoder, raw pixel distances) and a Random encoder + k-WTA control (CNN-4 architecture, untrained Kaiming initialization, k-WTA applied). To establish a baseline for what is achievable with target-domain training, we also retrain ProtoNet directly on the CUB-200 train split at two resolutions: $28 \times 28$ grayscale (architecturally comparable with the source-trained encoders) and $84 \times 84$ RGB (with adaptive pooling preserving the 64-D embedding; this matches resolutions standard in cross-domain few-shot literature).
 
-\textbf{Main empirical findings.} (i) The four sparsity levels tested cross-domain converge tightly within a 0.52 percentage point range (k=8: 21.68\%; k=16: 22.09\%; k=32: 22.20\%; k=64 / vanilla: 22.13\%), with all 95\% confidence intervals overlapping. The 3.78 p.p.\ in-domain spread documented in~\citet{pinho2026kwta} \emph{collapses} cross-domain. (ii) An encoder with random untrained weights followed by k-WTA $k=16$ reaches 21.91\%---statistically indistinguishable from the trained encoders, indicating that source-domain training contributes essentially no transferable signal in this setting. (iii) Pixel kNN, with no encoder at all, reaches 22.81\%, with a confidence interval that does not overlap any of the trained encoders, indicating that successive max-poolings in CNN-4 destroy more cross-domain information than they extract. (iv) ProtoNet retrained directly on CUB at $28 \times 28$ grayscale reaches 34.31\%, and at $84 \times 84$ RGB reaches 49.84\%---establishing that target-domain training (+12.22 p.p.\ over source-trained) and adequate input resolution (+15.53 p.p.\ over the 28-pixel grayscale baseline) are the operative bottlenecks, neither of which sparsity addresses.
+\textbf{Main empirical findings.} (i) The four sparsity levels tested cross-domain converge tightly within a 0.52 p.p.\ range (k=8: 21.68\%; k=16: 22.09\%; k=32: 22.20\%; k=64 / vanilla: 22.13\%), with all 95\% confidence intervals overlapping. The 3.78 p.p.\ in-domain spread documented in~\citet{pinho2026kwta} \emph{collapses} cross-domain. (ii) An encoder with random untrained weights followed by k-WTA $k=16$ reaches 21.91\%---statistically indistinguishable from the trained encoders, indicating that source-domain training contributes essentially no transferable signal in this setting. (iii) Pixel kNN, with no encoder at all, reaches 22.81\%, with a confidence interval that does not overlap any of the trained encoders, indicating that successive max-poolings in CNN-4 destroy more cross-domain information than they extract. (iv) ProtoNet retrained directly on CUB at $28 \times 28$ grayscale reaches 34.31\%, and at $84 \times 84$ RGB reaches 49.84\%---establishing that target-domain training (+12.22 p.p.\ over source-trained) and adequate input resolution (+15.53 p.p.\ over the 28-pixel grayscale baseline) are the operative bottlenecks, neither of which sparsity addresses.
 
 The contribution of this work is deliberately empirical and characterizational, not methodological:
 
@@ -93,7 +93,7 @@ The Omniglot$\to$CUB-200 single-source transfer studied here is, to our knowledg
 
 The k-winner-take-all (k-WTA) operation is a generalization of classical winner-take-all competition~\citep{maass2000computational}: given a vector of activations, only the $k$ largest values are preserved and the remaining $n-k$ are zeroed. The operation has direct biological motivation: cortical circuits exhibit sparse activity patterns~\citep{olshausen1996emergence}, and lateral inhibition produces approximate winner-take-all dynamics in many neural systems. In machine learning, k-WTA has appeared in Hierarchical Temporal Memory~\citep{ahmad2019dense} and in Modern Hopfield Networks~\citep{ramsauer2021hopfield}, where sparsity supports exponential capacity and pattern separation.
 
-Within Prototypical Networks specifically, \citet{pinho2026kwta} applied k-WTA to the 64-dimensional final embedding of a CNN-4 ProtoNet, varying $k$ across $\{32, 16, 8\}$ (corresponding to 50\%, 75\%, 87.5\% sparsity). On Omniglot 5-way 1-shot, the accuracy curve was nearly flat between 0\% and 75\% sparsity (94.55\% to 93.10\%, a drop of 1.45 p.p.), with a steeper decline at 87.5\% sparsity (90.77\%). A control with random encoder weights and the same k-WTA operation reached 37.60\%, confirming that the in-domain result depends on training under the sparsity constraint, not on the k-WTA structure applied to arbitrary features. The present paper takes those exact source-trained encoders as inputs and asks whether the in-domain effect survives transfer.
+Within Prototypical Networks specifically, \citet{pinho2026kwta} applied k-WTA to the 64-dimensional final embedding of a CNN-4 ProtoNet, varying $k$ across $\{64, 32, 16, 8\}$ (corresponding to 0\%, 50\%, 75\%, 87.5\% sparsity). On Omniglot 5-way 1-shot, the accuracy curve was nearly flat between 0\% and 75\% sparsity (94.55\% at 0\%, 93.35\% at 50\%, 93.10\% at 75\%, a drop of 1.45 p.p.), with a steeper decline at 87.5\% sparsity (90.77\%). A control with random encoder weights and the same k-WTA operation reached 37.60\%, confirming that the in-domain result depends on training under the sparsity constraint, not on the k-WTA structure applied to arbitrary features. The present paper takes those exact source-trained encoders as inputs and asks whether the in-domain effect survives transfer.
 
 \subsection{Datasets: Omniglot and CUB-200-2011}
 
@@ -115,7 +115,7 @@ We use the standard CNN-4 ProtoEncoder of \citet{snell2017prototypical}: four se
 
 The $k$-winner-take-all operation~\citep{maass2000computational} retains the $k$ largest entries of an activation vector and zeros the rest:
 \begin{equation}
-\text{kWTA}_k(z)_i = \begin{cases} z_i & \text{if } i \in \arg\text{top-}k(z) \\ 0 & \text{otherwise} \end{cases}
+\text{k-WTA}_k(z)_i = \begin{cases} z_i & \text{if } i \in \arg\text{top-}k(z) \\ 0 & \text{otherwise} \end{cases}
 \label{eq:kwta}
 \end{equation}
 The operation is applied per-example (not over batches), and the gradient flows through the $k$ active channels via standard backpropagation. We apply k-WTA at both training and evaluation time. When $k \geq \dim(z) = 64$, the operation is a no-op and the encoder is equivalent to the vanilla ProtoNet baseline; we use this as the $k=64$ control.
@@ -164,12 +164,12 @@ All experiments run on a single workstation with an Intel Core i9 CPU and an NVI
 \subsection{Cross-Domain Results}
 \label{subsec:xdomain-results}
 
-Table~\ref{tab:main} reports 5-way 1-shot accuracy on the CUB-200 test split for the seven characterized conditions, with a chance baseline of 20.00\%.
+Table~\ref{tab:main} reports 5-way 1-shot accuracy on the CUB-200 test split for the eight characterized conditions, with a chance baseline of 20.00\%.
 
-\begin{table}[h]
+\begin{table}[tbp]
 \centering
 \small
-\caption{Cross-domain 5-way 1-shot accuracy on CUB-200 test split, 5 seeds $\times$ 1000 episodes each. ``Inter-seed std'' is the standard deviation of the five per-seed means. CIs are 95\% bootstrap intervals on the per-seed means. ``Frozen'' means the encoder weights are not updated for CUB.}
+\caption{Cross-domain 5-way 1-shot accuracy on CUB-200 test split, 5 seeds $\times$ 1000 episodes each. ``Inter-seed std'' is the standard deviation of the five per-seed means. CIs are 95\% bootstrap intervals on the per-seed means. ``Omniglot frozen'' marks encoders whose weights are not updated for CUB.}
 \label{tab:main}
 \begin{tabular}{lrrrr}
 \toprule
@@ -189,9 +189,9 @@ Chance                                                    & ---            & 20.
 \end{tabular}
 \end{table}
 
-The five conditions using the $(1, 28, 28)$ input through some form of CNN-4 forward pass (the four source-trained sparsities plus the random-encoder control) cluster tightly between 21.68\% and 22.20\%, with overlapping 95\% CIs. Pixel kNN, with no encoder at all, reaches 22.81\%, with a CI that does not overlap any of the encoder-based conditions. ProtoNet retrained directly on CUB at the same $28 \times 28$ grayscale resolution reaches 34.31\%, an absolute improvement of $+12.22$ percentage points over the best source-trained encoder ($k=32$) under the same input pipeline. Increasing the input to $84 \times 84$ RGB raises the retrained baseline to 49.84\%, a further $+15.53$ p.p.
+The five conditions using the $(1, 28, 28)$ input through some form of CNN-4 forward pass (the four source-trained sparsities plus the random-encoder control) cluster tightly between 21.68\% and 22.20\%, with overlapping 95\% CIs. Pixel kNN, with no encoder at all, reaches 22.81\%, with a CI that does not overlap any of the encoder-based conditions. ProtoNet retrained directly on CUB at the same $28 \times 28$ grayscale resolution reaches 34.31\%, an absolute improvement of $+12.22$ p.p.\ over the $k=16$ source-trained encoder under the same input pipeline. Increasing the input to $84 \times 84$ RGB raises the retrained baseline to 49.84\%, a further $+15.53$ p.p.
 
-\begin{figure}[h]
+\begin{figure}[tbp]
 \centering
 \includegraphics[width=0.92\linewidth]{figs/fig1_crossdomain_bars.pdf}
 \caption{Cross-domain 5-way 1-shot accuracy on CUB-200 for all eight conditions of Table~\ref{tab:main}, with the chance line at 20\%. The shaded band marks the five CNN-forward conditions (four source-trained sparsities plus the random encoder), which collapse into a 0.52 p.p.\ spread. Retrained-on-CUB baselines (green) sit well above; Pixel kNN (orange) exceeds every learned encoder.}
@@ -201,9 +201,9 @@ The five conditions using the $(1, 28, 28)$ input through some form of CNN-4 for
 \subsection{In-Domain vs.\ Cross-Domain Effect}
 \label{subsec:effect-collapse}
 
-Table~\ref{tab:effect-collapse} compares the same four sparsity levels on Omniglot (in-domain numbers from \citet{pinho2026kwta}) and on CUB-200 cross-domain. The drop in accuracy from in-domain to cross-domain is approximately 70 percentage points across all $k$. Critically, the spread \emph{across} sparsity levels collapses from 3.78 p.p.\ in-domain to 0.52 p.p.\ cross-domain.
+Table~\ref{tab:effect-collapse} compares the same four sparsity levels on Omniglot (in-domain numbers from \citet{pinho2026kwta}) and on CUB-200 cross-domain. The drop in accuracy from in-domain to cross-domain is approximately 70 p.p.\ across all $k$. Critically, the spread \emph{across} sparsity levels collapses from 3.78 p.p.\ in-domain to 0.52 p.p.\ cross-domain.
 
-\begin{table}[h]
+\begin{table}[tbp]
 \centering
 \small
 \caption{In-domain (Omniglot) vs.\ cross-domain (CUB-200) 5-way 1-shot accuracy at four sparsity levels. In-domain numbers from \citet{pinho2026kwta}; cross-domain from this work. The bottom row reports the spread (max $-$ min) across the four $k$ values within each domain.}
@@ -217,14 +217,14 @@ $k$ & Sparsity & Omniglot 5w1s & CUB 5w1s & $\Delta$ in $\to$ cross \\
 32  & 50\%          & 93.35\%         & 22.20\%       & $-71.15$ p.p. \\
 64  & 0\% (vanilla) & 94.55\%         & 22.13\%       & $-72.42$ p.p. \\
 \midrule
-\multicolumn{2}{l}{Spread $k=8$ vs $k=64$} & 3.78 p.p. & 0.52 p.p. & --- \\
+\multicolumn{2}{l}{Spread (max $-$ min)} & 3.78 p.p. & 0.52 p.p. & --- \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 The in-domain spread of 3.78 p.p.\ between $k=8$ and $k=64$ is the empirical signature of k-WTA's effect on ProtoNet documented in \citet{pinho2026kwta}: the cost of imposing 87.5\% sparsity is a measurable accuracy drop of approximately 4 p.p. relative to the unconstrained encoder. Cross-domain, the analogous spread is 0.52 p.p., entirely contained within the overlap of per-condition 95\% confidence intervals. The effect that mattered in-domain becomes statistical noise under transfer.
 
-\begin{figure}[h]
+\begin{figure}[tbp]
 \centering
 \includegraphics[width=0.95\linewidth]{figs/fig2_effect_collapse.pdf}
 \caption{k-WTA effect collapse across sparsity levels. \textbf{Left:} in-domain (Omniglot), accuracy rises with $k$ over a 3.78 p.p.\ spread. \textbf{Right:} cross-domain (CUB-200), the same sweep is flat at $\sim$22\% within a 0.52 p.p.\ spread, just above chance. Both panels share an 8 p.p.\ vertical span.}
@@ -244,7 +244,7 @@ Successive comparisons isolate where the gap between random-weight and high-perf
 
 The two large contributors---target-domain training and adequate input fidelity---are of comparable magnitude and roughly additive. Sparsity contributes none.
 
-\begin{figure}[h]
+\begin{figure}[tbp]
 \centering
 \includegraphics[width=0.92\linewidth]{figs/fig3_bottleneck_waterfall.pdf}
 \caption{Bottleneck decomposition as a waterfall. From the random-encoder floor, training on the source (Omniglot, $k=16$) adds a negligible $+0.18$ p.p.; switching training to the target (CUB, $28 \times 28$) adds $+12.22$ p.p.; raising input fidelity to $84 \times 84$ RGB adds $+15.53$ p.p. Sparsity does not appear: the two operative contributors are target training and input fidelity.}
@@ -254,7 +254,7 @@ The two large contributors---target-domain training and adequate input fidelity-
 \subsection{Anti-Transfer Evidence}
 \label{subsec:anti-transfer}
 
-The 0.18 p.p.\ gap between random and source-trained encoders is statistically indistinguishable from zero: the 95\% CI of the random encoder ([21.76, 22.03]) is contained within the CI of the source-trained $k=16$ encoder ([21.84, 22.34]). Five thousand episodes of episodic training on Omniglot produce no detectable transferable signal in this regime. We refer to this pattern as \emph{anti-transfer}: an encoder trained on a sufficiently distant source is at best equivalent to an untrained one, and---as the next subsection shows---may underperform a representation that involves no encoder at all. The pattern is consistent with the diagnoses of \citet{phoo2021self}: source-domain training, however thorough, is insufficient under extreme task differences, and self-training on the target domain is required to bridge the gap.
+The 0.18 p.p.\ gap between random and source-trained encoders is statistically indistinguishable from zero: the 95\% CI of the random encoder ([21.76, 22.03]) overlaps the CI of the source-trained $k=16$ encoder ([21.84, 22.34]), and the difference is well within seed-to-seed variation. Five thousand episodes of episodic training on Omniglot produce no detectable transferable signal in this regime. We refer to this pattern as \emph{anti-transfer}: an encoder trained on a sufficiently distant source is at best equivalent to an untrained one, and---as the next subsection shows---may underperform a representation that involves no encoder at all. The pattern is consistent with the diagnoses of \citet{phoo2021self}: source-domain training, however thorough, is insufficient under extreme task differences, and self-training on the target domain is required to bridge the gap.
 
 \subsection{Pixel kNN Dominates Encoded Representations}
 \label{subsec:pixel-dominates}
@@ -299,7 +299,7 @@ Three directions follow directly. First, varying source--target distance---e.g.\
 \section{Conclusion}
 \label{sec:conclusion}
 
-We characterized the cross-domain behavior of k-winner-take-all sparsity by transferring CNN-4 Prototypical Network encoders trained on Omniglot, at four sparsity levels, to CUB-200-2011, evaluated over five seeds and 1000 episodes each with bootstrap confidence intervals. The in-domain sparsity-accuracy spread of 3.78 percentage points reported by \citet{pinho2026kwta} collapses to 0.52 p.p.\ under this extreme domain shift, entirely within the overlap of per-condition confidence intervals. A decomposition of the residual gap shows that target-domain training (+12.22 p.p.) and adequate input resolution (+15.53 p.p.) are the operative bottlenecks, while sparsity contributes none; a source-trained encoder is statistically indistinguishable from a random-weight control, and both are outperformed by a representation-free Pixel kNN baseline.
+We characterized the cross-domain behavior of k-winner-take-all sparsity by transferring CNN-4 Prototypical Network encoders trained on Omniglot, at four sparsity levels, to CUB-200-2011, evaluated over five seeds and 1000 episodes each with bootstrap confidence intervals. The in-domain sparsity-accuracy spread of 3.78 p.p.\ reported by \citet{pinho2026kwta} collapses to 0.52 p.p.\ under this extreme domain shift, entirely within the overlap of per-condition confidence intervals. A decomposition of the residual gap shows that target-domain training (+12.22 p.p.) and adequate input resolution (+15.53 p.p.) are the operative bottlenecks, while sparsity contributes none; a source-trained encoder is statistically indistinguishable from a random-weight control, and both are outperformed by a representation-free Pixel kNN baseline.
 
 The practical implication is narrow but precise: bio-inspired sparsity that is demonstrably compatible in-domain neither helps nor hurts under extreme domain shift, because the operation is applied to a representation that carries no transferable signal. Whether the collapse softens with a closer source, intermediate-layer sparsity, or target-domain self-training remains open.
 

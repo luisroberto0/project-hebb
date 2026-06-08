@@ -38,7 +38,7 @@ Decisão fica pra Luis após draft completo. Candidatos prováveis:
 | #61 | Discussion | ✅ |
 | #62 | Conclusion + abstract | ✅ |
 | #63 | LaTeX consolidação + bibliography final | ✅ |
-| #64-65 | Peer review interno + revisão | pendente |
+| #64-65 | Peer review interno + correções seguras | ✅ |
 | #66 | Admin obrigatória — decide próximo passo | pendente |
 
 ## Files
@@ -54,6 +54,7 @@ Decisão fica pra Luis após draft completo. Candidatos prováveis:
 - `refs.bib` — Bibliography (BibTeX, 15 entradas, ✅ final #63)
 - `main.tex` — LaTeX consolidado, 6 seções + abstract + 3 figuras (✅ #63, validado estruturalmente)
 - `latex_status.md` — estado da compilação + instruções Overleaf (#63)
+- `peer_review.md` — peer review interno: correções aplicadas + decisões de julgamento pendentes (#64–65)
 - `generate_figures.py` — script reproduzível das 3 figuras (✅ #60)
 - `figs/` — fig1_crossdomain_bars, fig2_effect_collapse, fig3_bottleneck_waterfall (PNG+PDF 300 DPI, ✅ #60)
 

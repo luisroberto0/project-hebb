@@ -16,12 +16,12 @@ All experiments run on a single workstation with an Intel Core i9 CPU and an NVI
 \subsection{Cross-Domain Results}
 \label{subsec:xdomain-results}
 
-Table~\ref{tab:main} reports 5-way 1-shot accuracy on the CUB-200 test split for the seven characterized conditions, with a chance baseline of 20.00\%.
+Table~\ref{tab:main} reports 5-way 1-shot accuracy on the CUB-200 test split for the eight characterized conditions, with a chance baseline of 20.00\%.
 
-\begin{table}[h]
+\begin{table}[tbp]
 \centering
 \small
-\caption{Cross-domain 5-way 1-shot accuracy on CUB-200 test split, 5 seeds $\times$ 1000 episodes each. ``Inter-seed std'' is the standard deviation of the five per-seed means. CIs are 95\% bootstrap intervals on the per-seed means. ``Frozen'' means the encoder weights are not updated for CUB.}
+\caption{Cross-domain 5-way 1-shot accuracy on CUB-200 test split, 5 seeds $\times$ 1000 episodes each. ``Inter-seed std'' is the standard deviation of the five per-seed means. CIs are 95\% bootstrap intervals on the per-seed means. ``Omniglot frozen'' marks encoders whose weights are not updated for CUB.}
 \label{tab:main}
 \begin{tabular}{lrrrr}
 \toprule
@@ -41,14 +41,14 @@ Chance                                                    & ---            & 20.
 \end{tabular}
 \end{table}
 
-The five conditions using the $(1, 28, 28)$ input through some form of CNN-4 forward pass (the four source-trained sparsities plus the random-encoder control) cluster tightly between 21.68\% and 22.20\%, with overlapping 95\% CIs. Pixel kNN, with no encoder at all, reaches 22.81\%, with a CI that does not overlap any of the encoder-based conditions. ProtoNet retrained directly on CUB at the same $28 \times 28$ grayscale resolution reaches 34.31\%, an absolute improvement of $+12.22$ percentage points over the best source-trained encoder ($k=32$) under the same input pipeline. Increasing the input to $84 \times 84$ RGB raises the retrained baseline to 49.84\%, a further $+15.53$ p.p.
+The five conditions using the $(1, 28, 28)$ input through some form of CNN-4 forward pass (the four source-trained sparsities plus the random-encoder control) cluster tightly between 21.68\% and 22.20\%, with overlapping 95\% CIs. Pixel kNN, with no encoder at all, reaches 22.81\%, with a CI that does not overlap any of the encoder-based conditions. ProtoNet retrained directly on CUB at the same $28 \times 28$ grayscale resolution reaches 34.31\%, an absolute improvement of $+12.22$ p.p.\ over the $k=16$ source-trained encoder under the same input pipeline. Increasing the input to $84 \times 84$ RGB raises the retrained baseline to 49.84\%, a further $+15.53$ p.p.
 
 \subsection{In-Domain vs.\ Cross-Domain Effect}
 \label{subsec:effect-collapse}
 
-Table~\ref{tab:effect-collapse} compares the same four sparsity levels on Omniglot (in-domain numbers from \citet{pinho2026kwta}) and on CUB-200 cross-domain. The drop in accuracy from in-domain to cross-domain is approximately 70 percentage points across all $k$. Critically, the spread \emph{across} sparsity levels collapses from 3.78 p.p.\ in-domain to 0.52 p.p.\ cross-domain.
+Table~\ref{tab:effect-collapse} compares the same four sparsity levels on Omniglot (in-domain numbers from \citet{pinho2026kwta}) and on CUB-200 cross-domain. The drop in accuracy from in-domain to cross-domain is approximately 70 p.p.\ across all $k$. Critically, the spread \emph{across} sparsity levels collapses from 3.78 p.p.\ in-domain to 0.52 p.p.\ cross-domain.
 
-\begin{table}[h]
+\begin{table}[tbp]
 \centering
 \small
 \caption{In-domain (Omniglot) vs.\ cross-domain (CUB-200) 5-way 1-shot accuracy at four sparsity levels. In-domain numbers from \citet{pinho2026kwta}; cross-domain from this work. The bottom row reports the spread (max $-$ min) across the four $k$ values within each domain.}
@@ -62,7 +62,7 @@ $k$ & Sparsity & Omniglot 5w1s & CUB 5w1s & $\Delta$ in $\to$ cross \\
 32  & 50\%          & 93.35\%         & 22.20\%       & $-71.15$ p.p. \\
 64  & 0\% (vanilla) & 94.55\%         & 22.13\%       & $-72.42$ p.p. \\
 \midrule
-\multicolumn{2}{l}{Spread $k=8$ vs $k=64$} & 3.78 p.p. & 0.52 p.p. & --- \\
+\multicolumn{2}{l}{Spread (max $-$ min)} & 3.78 p.p. & 0.52 p.p. & --- \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -85,7 +85,7 @@ The two large contributors---target-domain training and adequate input fidelity-
 \subsection{Anti-Transfer Evidence}
 \label{subsec:anti-transfer}
 
-The 0.18 p.p.\ gap between random and source-trained encoders is statistically indistinguishable from zero: the 95\% CI of the random encoder ([21.76, 22.03]) is contained within the CI of the source-trained $k=16$ encoder ([21.84, 22.34]). Five thousand episodes of episodic training on Omniglot produce no detectable transferable signal in this regime. We refer to this pattern as \emph{anti-transfer}: an encoder trained on a sufficiently distant source is at best equivalent to an untrained one, and---as the next subsection shows---may underperform a representation that involves no encoder at all. The pattern is consistent with the diagnoses of \citet{phoo2021self}: source-domain training, however thorough, is insufficient under extreme task differences, and self-training on the target domain is required to bridge the gap.
+The 0.18 p.p.\ gap between random and source-trained encoders is statistically indistinguishable from zero: the 95\% CI of the random encoder ([21.76, 22.03]) overlaps the CI of the source-trained $k=16$ encoder ([21.84, 22.34]), and the difference is well within seed-to-seed variation. Five thousand episodes of episodic training on Omniglot produce no detectable transferable signal in this regime. We refer to this pattern as \emph{anti-transfer}: an encoder trained on a sufficiently distant source is at best equivalent to an untrained one, and---as the next subsection shows---may underperform a representation that involves no encoder at all. The pattern is consistent with the diagnoses of \citet{phoo2021self}: source-domain training, however thorough, is insufficient under extreme task differences, and self-training on the target domain is required to bridge the gap.
 
 \subsection{Pixel kNN Dominates Encoded Representations}
 \label{subsec:pixel-dominates}

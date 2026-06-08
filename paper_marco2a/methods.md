@@ -18,7 +18,7 @@ We use the standard CNN-4 ProtoEncoder of \citet{snell2017prototypical}: four se
 
 The $k$-winner-take-all operation~\citep{maass2000computational} retains the $k$ largest entries of an activation vector and zeros the rest:
 \begin{equation}
-\text{kWTA}_k(z)_i = \begin{cases} z_i & \text{if } i \in \arg\text{top-}k(z) \\ 0 & \text{otherwise} \end{cases}
+\text{k-WTA}_k(z)_i = \begin{cases} z_i & \text{if } i \in \arg\text{top-}k(z) \\ 0 & \text{otherwise} \end{cases}
 \label{eq:kwta}
 \end{equation}
 The operation is applied per-example (not over batches), and the gradient flows through the $k$ active channels via standard backpropagation. We apply k-WTA at both training and evaluation time. When $k \geq \dim(z) = 64$, the operation is a no-op and the encoder is equivalent to the vanilla ProtoNet baseline; we use this as the $k=64$ control.
