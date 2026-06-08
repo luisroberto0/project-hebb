@@ -35,7 +35,7 @@ Decisão fica pra Luis após draft completo. Candidatos prováveis:
 | #58 | Outline + Intro + Background drafted | ✅ |
 | #59 | Methods + Experiments (Table 1 + Table 2) | ✅ |
 | #60 | Figures (3 × 300 DPI PNG+PDF) | ✅ |
-| #61 | Discussion | pendente |
+| #61 | Discussion | ✅ |
 | #62 | Conclusion + abstract + refinement | pendente |
 | #63 | LaTeX consolidação + bibliography final | pendente |
 | #64-65 | Peer review interno + revisão | pendente |
@@ -48,7 +48,7 @@ Decisão fica pra Luis após draft completo. Candidatos prováveis:
 - `background.md` — Section 2: Background (✅ draft #58)
 - `methods.md` — Section 3: Method (✅ draft #59, ~640 palavras)
 - `experiments.md` — Section 4: Experiments (✅ draft #59, ~890 palavras, Table 1 + Table 2)
-- `discussion.md` — Section 5: Discussion (placeholder, draft #61)
+- `discussion.md` — Section 5: Discussion (✅ draft #61, ~840 palavras, §5.1–5.6)
 - `conclusion.md` — Section 6: Conclusion (placeholder, draft #62)
 - `refs.bib` — Bibliography (BibTeX, ~18 entradas)
 - `main.tex` — LaTeX consolidado (a criar #63)
