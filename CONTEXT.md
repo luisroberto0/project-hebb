@@ -114,6 +114,21 @@ Reabertura imediata pós-#66 (decisão do Luis via /goal "Eficiência radical"):
 
 Próximo marco (2-B.2 energia neuromórfica / eixo B-C / Marco 2-C temporal / encerrar projeto) **em aberto** — decisão do Luis. 3 das 4 capacidades pós-LLM com achado negativo documentado; 1 (temporal) não atacada.
 
+### 1.6 Refino #71 (2026-06-09) — Marco 2-C ativo (raciocínio temporal)
+
+Reabertura pós-#70 (decisão do Luis): atacar a **4ª e última capacidade pós-LLM — raciocínio temporal** (§1 linha 14). Única não atacada; **domínio nativo da SNN** (vantagem estrutural real).
+
+**Eixo B:** SHD (Spiking Heidelberg Digits, Cramer/Zenke 2020). SNN feedforward + recorrente vs **baseline cego ao timing** (histograma de spikes por canal → MLP). `SNN − cego` = contribuição do timing; `recorrente − feedforward` = contribuição da dinâmica recorrente. **Critério:** SNN recorrente − cego ≥ 10 p.p. **E** SNN recorrente ≥ 65% (5 seeds, IC95%).
+
+**Predição:** provável Sucesso/Mediano — **possível primeiro marco positivo** do projeto. Incógnita: magnitude da margem (o cego preserva o espectro médio, informativo). Se o timing não agregar nem aqui → achado negativo mais forte do projeto. Limite ~10 sessões (#71-#80). Detalhes: `experiment_05_temporal/PLAN.md` + STRATEGY "Reabertura Marco 2-C — sessão #71".
+
+**Status das capacidades pós-LLM (§1):**
+- one-shot Omniglot (C3) ✅ in-domain (LinkedIn pendente, separado)
+- one-shot inédito (cross-domain) ❌ Marco 2-A (#66)
+- continual learning ❌ Marco 1 (#30)
+- eficiência radical ❌ Marco 2-B (#70)
+- 🟡 **raciocínio temporal** — Marco 2-C ATIVO (#71-#80)
+
 ---
 
 ## 2. Princípio Operacional

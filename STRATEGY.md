@@ -1199,3 +1199,19 @@ Nenhuma config satisfaz acc −2pp **E** SynOps ≥5× **E** latência CPU ≤ d
 ### Próximo passo — EM ABERTO (decisão do Luis)
 
 Marco 2-B.2 (energia neuromórfica estimada, proxy Loihi) / eixo B (treino sem backprop) / eixo C (dados event-based) / **Marco 2-C** (raciocínio temporal — a última capacidade não atacada) / encerrar o projeto. Project Hebb volta a estado de manutenção. **3 das 4 capacidades pós-LLM agora têm achado negativo documentado; 1 (temporal) não atacada.**
+
+---
+
+## Reabertura Marco 2-C — sessão #71 (2026-06-09)
+
+**Decisão do Luis:** atacar a **4ª e última capacidade pós-LLM — raciocínio temporal** (CONTEXT §1 linha 14). Única não atacada, e o **domínio nativo da SNN** (vantagem estrutural real, ao contrário de eficiência/cross-domain).
+
+**Eixo escolhido (de 3):** **B — benchmark neuromórfico real (SHD, Spiking Heidelberg Digits, Cramer/Zenke 2020).** Eixos A (timing sintético) e C (memória temporal) ficam como alternativas.
+
+**Pergunta científica:** SNN recorrente (LIF) classifica SHD substancialmente acima de um baseline cego ao timing (histograma de spikes por canal → MLP)? `SNN − cego` isola a contribuição do timing; `recorrente − feedforward` isola a dinâmica recorrente.
+
+**Decisões de scope (#71):** treinar SNN feedforward **E** recorrente (mapeia timing + recorrência); baseline cego = histograma por canal → MLP (forte, não espantalho). **Critério literal:** SNN recorrente − cego ≥ 10 p.p. **E** SNN recorrente ≥ 65% (5 seeds, IC95%). 3 casos exaustivos.
+
+**Predição:** provável Sucesso ou Mediano — **possível primeiro marco positivo** do projeto (domínio nativo). A incógnita real é a magnitude da margem do timing (o baseline cego preserva o espectro médio, informativo pra fala). Se o timing **não** agregar nem aqui, é o achado negativo mais forte do projeto (bio-inspiração não agrega nem no domínio nativo).
+
+**Limite hard:** ~10 sessões (#71-#80). Admin em #80. Detalhes: `experiment_05_temporal/PLAN.md`.
