@@ -27,7 +27,7 @@ MAX_T = 1.4   # s — SHD spikes vão até ~1.4 s
 class SHDDataset(Dataset):
     """Carrega spikes esparsos na memória (SHD é pequeno); binning denso lazy no __getitem__."""
 
-    def __init__(self, split: str, n_bins: int = 100):
+    def __init__(self, split: str, n_bins: int = 100, coding: str = "rate"):
         path = os.path.join(DATA_DIR, f"shd_{split}.h5")
         with h5py.File(path, "r") as f:
             # vlen datasets -> materializa como listas de arrays
@@ -35,6 +35,7 @@ class SHDDataset(Dataset):
             self.units = [np.asarray(u, dtype=np.int64) for u in f["spikes"]["units"]]
             self.labels = np.asarray(f["labels"][:], dtype=np.int64)
         self.n_bins = n_bins
+        self.coding = coding  # "rate" (contagem por bin) | "latency" (time-to-first-spike)
 
     def __len__(self):
         return len(self.labels)
@@ -45,8 +46,12 @@ class SHDDataset(Dataset):
         if t.size:
             b = np.clip((t / MAX_T * self.n_bins).astype(np.int64), 0, self.n_bins - 1)
             uu = np.clip(u, 0, N_UNITS - 1)
-            # acumula contagem de spikes por (bin, unit)
-            np.add.at(x.numpy(), (b, uu), 1.0)
+            if self.coding == "rate":
+                np.add.at(x.numpy(), (b, uu), 1.0)  # contagem de spikes por (bin, unit)
+            else:  # latency: 1 spike por canal, no bin do PRIMEIRO spike (time-to-first-spike)
+                order = np.argsort(t, kind="stable")
+                uo, first = np.unique(uu[order], return_index=True)
+                x.numpy()[b[order][first], uo] = 1.0
         return x, int(self.labels[i])
 
 
