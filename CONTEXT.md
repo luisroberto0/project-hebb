@@ -93,6 +93,23 @@ Project Hebb sai de estado de manutenção; entra em estado de exploração com 
 
 **Atualização #66 (2026-06-08):** Marco 2-A **encerrado** — critério refutado conforme predição registrada em #52. Paper de achado negativo (`paper_marco2a/`) draft-completo + peer review interno + ajustes de rigor incorporados, **arquivado sem publicar** (decisão admin Luis #66, mais conservadora que a do paper C3 pós-#36). Próximo marco (2-B eficiência radical / 2-C raciocínio temporal / encerrar projeto) **em aberto** — decisão do Luis. Project Hebb volta a estado de manutenção. Ver `STRATEGY.md` "Fechamento Marco 2-A — sessão #66".
 
+### 1.5 Refino #67 (2026-06-08) — Marco 2-B ativo (eficiência radical)
+
+Reabertura imediata pós-#66 (decisão do Luis via /goal "Eficiência radical"): atacar a **3ª capacidade pós-LLM — eficiência radical** (§1 linha 13: rodar em CPU comum). É a mais nativamente neuromórfica ainda não testada.
+
+**Eixo:** inferência event-driven. SNN-LIF + **k-WTA temporal** (≤k spikes/timestep, conecta com a expertise k-WTA do C3) vs MLP denso em Fashion-MNIST. **Métrica dupla:** SynOps (teórico/neuromórfico) **E** latência CPU single-thread (real/von Neumann). **Critério literal:** acc dentro de −2 p.p. **E** SynOps ≥5× menores **E** latência CPU ≤ denso (5 seeds, IC95%).
+
+**Predição:** Sucesso falha; Mediano provável — vantagem de SynOps (se houver, via k-WTA agressivo) não se realiza em latência CPU sem runtime event-driven. Achado defensável sobre os limites da eficiência neuromórfica em hardware von Neumann.
+
+**Nota honesta:** surrogate-gradient é backprop; este marco mede eficiência de **inferência**, não treino-sem-backprop (eixo B, marco futuro). Limite hard ~10 sessões (#67-#76). Detalhes: `experiment_04_efficiency/PLAN.md` + `STRATEGY.md` "Reabertura Marco 2-B — sessão #67".
+
+**Status das capacidades pós-LLM (§1):**
+- one-shot Omniglot (C3) ✅ in-domain (LinkedIn pendente, separado)
+- one-shot inédito (cross-domain) ❌ Marco 2-A encerrado (#66, achado negativo)
+- continual learning ❌ Marco 1 encerrado (#30)
+- 🟡 **eficiência radical** — Marco 2-B ATIVO (#67-#76)
+- raciocínio temporal via timing 🔵 não atacado
+
 ---
 
 ## 2. Princípio Operacional

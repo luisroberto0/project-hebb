@@ -1142,3 +1142,21 @@ C3 está **−12 a −28 p.p. ABAIXO** de ProtoNet retreinado → critério **RE
 ### Próximo passo — EM ABERTO (decisão do Luis)
 
 #66 (admin) decidiu encerrar o 2-A; a escolha do **próximo marco não foi tomada** nesta sessão. Opções registradas: **Marco 2-B** (eficiência radical), **Marco 2-C** (raciocínio temporal/SNN), ou **encerrar o projeto**. Project Hebb **volta a estado de manutenção** pós-#66 até reabertura via sessão admin. Padrão consolidado: reabertura formal antes de novo marco, com critério literal e limite hard de sessões.
+
+---
+
+## Reabertura Marco 2-B — sessão #67 (2026-06-08)
+
+**Decisão do Luis (via /goal "Eficiência radical"):** reabrir imediatamente atacando a **3ª capacidade pós-LLM — eficiência radical** (CONTEXT.md §1 linha 13: "rodar em CPU comum, não em clusters de GPU"). A mais nativamente neuromórfica ainda não testada.
+
+**Eixo escolhido (de 3 apresentados):** **A — inferência event-driven (SynOps).** Eixos B (treino sem backprop) e C (dados event-based) ficam como marcos/extensões futuros.
+
+**Pergunta científica:** SNN-LIF classifica Fashion-MNIST com acc comparável (−2 p.p.) ao MLP denso fazendo menos trabalho na inferência — e isso se materializa em CPU comum, ou fica só em SynOps teórico? k-WTA temporal (≤k spikes/timestep, conecta com C3) inverte o trade-off?
+
+**Métrica dupla (decisão do Luis):** SynOps teórico **E** latência CPU single-thread real. **Critério literal:** acc dentro de −2 p.p. **E** SynOps ≥5× menores **E** latência CPU ≤ denso (5 seeds, IC95% bootstrap).
+
+**Predição registrada:** Sucesso **falha**; Mediano provável — a esparsidade rate-coded com T~25 dá ~2-3× *pior* em SynOps (overhead de timesteps domina); só k-WTA temporal agressivo poderia chegar a 5×, e a latência CPU em runtime denso tende a ser pior. Achado provável: eficiência neuromórfica é real em SynOps mas exige co-design HW/runtime pra se realizar em von Neumann.
+
+**Limite hard:** ~10 sessões (#67-#76). Admin obrigatória em #76. Cancelável se evidência clara antes. Detalhes: `experiment_04_efficiency/PLAN.md`.
+
+**Decisões de scope registradas (#67):** k-WTA temporal incluído como variável central; régua dupla SynOps+latência; Fashion-MNIST (MNIST sanity). Surrogate-gradient (BPTT) é backprop — este marco mede eficiência de *inferência*, não treino-sem-backprop (eixo B futuro); reconhecido explicitamente.
