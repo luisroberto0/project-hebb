@@ -1,0 +1,11 @@
+Sweep formal temporal — SHD, 5 seeds, 15 epochs, bins=100, device=cuda
+
+BlindMLP (cego)    acc=51.56 ±0.77  CI95[50.78, 52.09]  seeds=[51.9, 51.8, 50.1, 52.3, 51.7]
+SNN feedforward    acc=61.02 ±0.85  CI95[60.27, 61.77]  seeds=[62.1, 60.1, 61.1, 61.8, 60.0]
+SNN recorrente     acc=71.27 ±0.45  CI95[70.91, 71.70]  seeds=[71.2, 71.3, 72.0, 70.6, 71.2]
+
+=== Critério: SNN recorrente − cego ≥ 10 p.p. E SNN recorrente ≥ 65% ===
+  timing (rec − cego):    +19.71 p.p.   (criterio >=10)
+  recorrencia (rec − ff): +10.26 p.p.
+  SNN recorrente:         71.27%            (criterio >=65)
+  -> SUCESSO

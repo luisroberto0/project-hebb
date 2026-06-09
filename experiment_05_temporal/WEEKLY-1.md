@@ -47,6 +47,27 @@ A BN acumulava running mean/var misturando os 100 timesteps; no eval aplicava st
 - **Esperado-por-construção parcial:** SHD foi desenhado para exigir timing, então um positivo aqui é menos surpreendente que um negativo seria. O valor é a *magnitude* quantitativa (+21 p.p. timing, +7 p.p. recorrência) e o fato de ser o 1º marco onde o mecanismo neuro-inspirado genuinamente agrega.
 - surrogate-gradient é backprop — mede se a *dinâmica temporal* (recorrência LIF) explora o timing, não treino-sem-backprop.
 
-### Próximo
+## #72b — sweep formal (5 seeds, IC95% bootstrap, SHD completo, 15 epochs) CONFIRMA: SUCESSO
 
-Sweep formal 5 seeds (rodando). Se confirmar (timing ≥10 p.p. E rec ≥65% com IC95%), **Marco 2-C = Sucesso** — decisão de #80 (publicar 1º positivo / estender). Se a margem encolher com seeds, reavaliar.
+| Modelo | acc (5 seeds) | CI95% | seeds |
+|---|---|---|---|
+| BlindMLP (cego) | 51.56% ±0.77 | [50.78, 52.09] | 51.9/51.8/50.1/52.3/51.7 |
+| SNN feedforward | 61.02% ±0.85 | [60.27, 61.77] | 62.1/60.1/61.1/61.8/60.0 |
+| **SNN recorrente** | **71.27% ±0.45** | **[70.91, 71.70]** | 71.2/71.3/72.0/70.6/71.2 |
+
+- **timing (rec − cego): +19.71 p.p.** (critério ≥10) ✓✓ — os ICs das três condições **não se sobrepõem** (cego [50.78,52.09] / ff [60.27,61.77] / rec [70.91,71.70]); diferenças estatisticamente robustas.
+- **recorrência (rec − ff): +10.26 p.p.** — a dinâmica recorrente agrega claramente, além do spiking feedforward.
+- **SNN recorrente: 71.27%** (critério ≥65) ✓ — dentro da faixa da literatura (Cramer ~71–83%).
+
+→ **VEREDICTO: SUCESSO.** Critério literal atingido com 5 seeds e ICs apertados. **Primeiro marco POSITIVO do Project Hebb** após 3 achados negativos (continual #30, cross-domain #66, eficiência #70).
+
+### Interpretação honesta (o que o Sucesso significa e o que não significa)
+
+- **Significa:** o timing dos spikes carrega +19.7 p.p. de informação sobre o histograma (espectro médio); a recorrência LIF agrega +10.3 p.p. sobre feedforward. O mecanismo neuro-inspirado (dinâmica temporal) genuinamente agrega — quantificado e robusto.
+- **NÃO significa "raciocínio" abstrato:** o critério mede *classificação que explora timing*, não inferência temporal abstrata. Chamar de "raciocínio temporal" é a moldura do CONTEXT §1; o achado concreto é "classificação SNN explora estrutura temporal do áudio".
+- **Esperado-por-construção parcial:** SHD foi desenhado para exigir timing. O valor é a *magnitude* (+19.7 / +10.3 p.p.) e o contraste com os 3 marcos negativos — não que "a SNN venceu" (esperado num benchmark temporal).
+- surrogate-gradient é backprop: mede a *dinâmica temporal* (recorrência), não treino-sem-backprop.
+
+### Decisão pendente (Luis, admin)
+
+Critério atingido (Sucesso). Caminhos (decisão de rumo do Luis): publicar o 1º positivo (paper/post) / estender (mais bins, latency coding, SSC) / fechar o marco como Sucesso e consolidar o projeto (4 capacidades exploradas: 3 ❌ + 1 ✅). Confirmação formal completa; o que falta é a moldura do achado.

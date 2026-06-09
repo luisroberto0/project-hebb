@@ -71,7 +71,8 @@ def main():
     txt = "\n".join(out)
     with open(os.path.join(os.path.dirname(__file__), "results_temporal.txt"), "w", encoding="utf-8") as f:
         f.write(txt + "\n")
-    print("\n" + txt.split("=== Critério")[-1])
+    # print ASCII-safe (console Windows cp1252 nao aceita U+2212)
+    print(f"\nVERDICT: {verdict} | timing(rec-cego)={timing:+.2f}pp | recur(rec-ff)={recur:+.2f}pp | rec={rec:.2f}%")
     print("Salvo em results_temporal.txt")
 
 

@@ -1215,3 +1215,21 @@ Marco 2-B.2 (energia neuromórfica estimada, proxy Loihi) / eixo B (treino sem b
 **Predição:** provável Sucesso ou Mediano — **possível primeiro marco positivo** do projeto (domínio nativo). A incógnita real é a magnitude da margem do timing (o baseline cego preserva o espectro médio, informativo pra fala). Se o timing **não** agregar nem aqui, é o achado negativo mais forte do projeto (bio-inspiração não agrega nem no domínio nativo).
 
 **Limite hard:** ~10 sessões (#71-#80). Admin em #80. Detalhes: `experiment_05_temporal/PLAN.md`.
+
+### Resultado #72 (2026-06-09) — SUCESSO (1º marco positivo do projeto)
+
+Sweep formal (5 seeds, IC95% bootstrap, SHD completo, 15 epochs):
+
+| Modelo | acc | CI95% |
+|---|---|---|
+| BlindMLP (cego) | 51.56% ±0.77 | [50.78, 52.09] |
+| SNN feedforward | 61.02% ±0.85 | [60.27, 61.77] |
+| SNN recorrente | 71.27% ±0.45 | [70.91, 71.70] |
+
+**timing (rec−cego) +19.71 p.p.** (≥10 ✓), **recorrência (rec−ff) +10.26 p.p.**, **rec 71.27%** (≥65 ✓). ICs das 3 condições não se sobrepõem. **Critério literal atingido → SUCESSO.** Primeiro marco positivo após 3 negativos (continual #30, cross-domain #66, eficiência #70).
+
+**Debugging (WEEKLY-1.md):** SNN travava em ~chance por running-stats da BatchNorm (misturava os 100 timesteps no eval); `track_running_stats=False` destravou 13%→71%. Diagnóstico ranqueado (CLAUDE.md), não chute.
+
+**Honestidade:** SHD é temporal por construção — positivo menos surpreendente que um negativo seria; o achado é a *magnitude* (+19.7/+10.3 p.p.) e o contraste com os 3 marcos negativos. "Raciocínio" é a moldura do CONTEXT §1; o concreto é "classificação SNN explora estrutura temporal do áudio". surrogate-gradient é backprop (mede a dinâmica temporal, não treino-sem-backprop).
+
+**Decisão pendente (Luis, admin):** publicar o 1º positivo (paper/post) / estender (SSC, latency coding, mais bins) / fechar como Sucesso e consolidar o projeto. Status das 4 capacidades pós-LLM: **3 ❌ + 1 ✅** — exploração completa.
