@@ -93,7 +93,7 @@ Project Hebb sai de estado de manutenção; entra em estado de exploração com 
 
 **Atualização #66 (2026-06-08):** Marco 2-A **encerrado** — critério refutado conforme predição registrada em #52. Paper de achado negativo (`paper_marco2a/`) draft-completo + peer review interno + ajustes de rigor incorporados, **arquivado sem publicar** (decisão admin Luis #66, mais conservadora que a do paper C3 pós-#36). Próximo marco (2-B eficiência radical / 2-C raciocínio temporal / encerrar projeto) **em aberto** — decisão do Luis. Project Hebb volta a estado de manutenção. Ver `STRATEGY.md` "Fechamento Marco 2-A — sessão #66".
 
-### 1.5 Refino #67 (2026-06-08) — Marco 2-B ativo (eficiência radical)
+### 1.5 Refino #67-#70 (2026-06-08) — Marco 2-B (eficiência radical) — ENCERRADO #70 (achado negativo)
 
 Reabertura imediata pós-#66 (decisão do Luis via /goal "Eficiência radical"): atacar a **3ª capacidade pós-LLM — eficiência radical** (§1 linha 13: rodar em CPU comum). É a mais nativamente neuromórfica ainda não testada.
 
@@ -103,12 +103,16 @@ Reabertura imediata pós-#66 (decisão do Luis via /goal "Eficiência radical"):
 
 **Nota honesta:** surrogate-gradient é backprop; este marco mede eficiência de **inferência**, não treino-sem-backprop (eixo B, marco futuro). Limite hard ~10 sessões (#67-#76). Detalhes: `experiment_04_efficiency/PLAN.md` + `STRATEGY.md` "Reabertura Marco 2-B — sessão #67".
 
+**Atualização #70 (2026-06-08):** Marco 2-B **encerrado** — eixo A respondido com **Falha decisiva, confirmada formalmente** (sweep 5 seeds, IC95%, Fashion-MNIST). Nenhuma config SNN atinge acc −2pp E SynOps ≥5× E latência CPU ≤ denso. Achados: k-WTA só ataca SynOps na entrada; trade-off acc↔SynOps íngreme; latência CPU 80–327× pior sempre; inferência event-driven (sparse) é AINDA mais lenta que runtime denso (overhead > matmul BLAS). **Eficiência radical via SNN não se realiza em CPU von Neumann** — é co-design HW-algoritmo (silício neuromórfico), consistente com Merolla/Davies. Achado negativo arquivado. Ver `STRATEGY.md` "Fechamento Marco 2-B — sessão #70" + `experiment_04_efficiency/WEEKLY-1.md`.
+
 **Status das capacidades pós-LLM (§1):**
 - one-shot Omniglot (C3) ✅ in-domain (LinkedIn pendente, separado)
 - one-shot inédito (cross-domain) ❌ Marco 2-A encerrado (#66, achado negativo)
 - continual learning ❌ Marco 1 encerrado (#30)
-- 🟡 **eficiência radical** — Marco 2-B ATIVO (#67-#76)
-- raciocínio temporal via timing 🔵 não atacado
+- eficiência radical ❌ **Marco 2-B encerrado (#70, achado negativo)**
+- raciocínio temporal via timing 🔵 não atacado (**4ª e última capacidade pós-LLM**)
+
+Próximo marco (2-B.2 energia neuromórfica / eixo B-C / Marco 2-C temporal / encerrar projeto) **em aberto** — decisão do Luis. 3 das 4 capacidades pós-LLM com achado negativo documentado; 1 (temporal) não atacada.
 
 ---
 

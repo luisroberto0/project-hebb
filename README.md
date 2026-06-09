@@ -7,9 +7,13 @@ Pesquisa em arquiteturas neurais bio-inspiradas: plasticidade local diferenciáv
 
 ---
 
-## Status (atualizado em 2026-06-08, pós-sessão #66)
+## Status (atualizado em 2026-06-08, pós-sessão #70)
 
-**Marco 2-A — cross-domain few-shot (ativo, paper em draft).** Após o fechamento do Marco 1 (#30) e a decisão pós-#36 de publicar C3 via LinkedIn, o projeto reabriu em #52 (2026-05-14) para atacar uma sub-capacidade pós-LLM específica: **one-shot inédito** em domínio visual radicalmente diferente do treino. Pergunta: o encoder C3 (CNN-4 + k-WTA k=16) treinado em Omniglot e **congelado** bate ProtoNet retreinado em CUB-200 por ≥5 p.p. cross-domain? Critério literal, limite hard de 15 sessões (#52-#66).
+**Marco 2-B — eficiência radical (encerrado #70, achado negativo).** Reaberto em #67 (decisão do Luis via /goal) para atacar a **3ª capacidade pós-LLM — eficiência radical** (CONTEXT §1: rodar em CPU comum). Eixo: inferência event-driven — SNN-LIF + k-WTA temporal vs MLP denso em Fashion-MNIST, métrica dupla **SynOps** (teórico) + **latência CPU** (real). **Resultado (#70, sweep 5 seeds, IC95% bootstrap):** Falha decisiva — nenhuma config SNN atinge acc dentro de −2 p.p. (denso 87.16% vs melhor SNN 84.82%) **E** SynOps ≥5× menores **E** latência CPU ≤ denso. Achados: k-WTA só ataca SynOps na entrada (não na hidden); trade-off acc↔SynOps íngreme (4.79× menos SynOps custa −14.6 p.p.); **latência CPU 80–327× pior sempre**; inferência event-driven (sparse) é até mais lenta que o runtime denso (overhead de indexação > matmul BLAS). **Conclusão:** eficiência radical via SNN **não se realiza em CPU von Neumann** — é co-design hardware-algoritmo (silício neuromórfico), consistente com Merolla/Davies. Arquivado em `experiment_04_efficiency/`. **3 das 4 capacidades pós-LLM agora têm achado negativo documentado; 1 (raciocínio temporal) não atacada.** Próximo marco em aberto (decisão do Luis).
+
+---
+
+**Marco 2-A — cross-domain few-shot (encerrado #66, paper arquivado).** Após o fechamento do Marco 1 (#30) e a decisão pós-#36 de publicar C3 via LinkedIn, o projeto reabriu em #52 (2026-05-14) para atacar uma sub-capacidade pós-LLM específica: **one-shot inédito** em domínio visual radicalmente diferente do treino. Pergunta: o encoder C3 (CNN-4 + k-WTA k=16) treinado em Omniglot e **congelado** bate ProtoNet retreinado em CUB-200 por ≥5 p.p. cross-domain? Critério literal, limite hard de 15 sessões (#52-#66).
 
 **Resultado (#52-#57, 5 seeds, IC95% bootstrap):** critério **refutado conforme previsto**. As cinco condições CNN-forward (4 sparsities C3 + random encoder) colapsam num cluster de 21.68–22.20% — apenas ~2 p.p. acima de chance (20%), com ICs sobrepostos. ProtoNet **retreinado** em CUB chega a 34.31% (28×28 gray) / 49.84% (84×84 RGB). Três achados centrais:
 

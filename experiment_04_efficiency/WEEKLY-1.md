@@ -70,6 +70,24 @@ O caminho que restaria pra um Sucesso era a **inferência event-driven real** (r
 
 **Achado contraintuitivo e decisivo:** a inferência event-driven é **mais lenta que o próprio runtime denso** da SNN, e ~84× mais lenta que o MLP. Causa: o overhead de indexação esparsa (`nonzero`, `index_select` de colunas, loop Python sobre T) supera o custo de um único matmul BLAS denso (vetorizado, cache-friendly) para matrizes pequenas. A economia de SynOps **não vira velocidade** — o co-design de runtime via sparse PyTorch em CPU **piora**, não resolve.
 
+## #70 — sweep formal (5 seeds, IC95% bootstrap, treino completo) CONFIRMA
+
+Fashion-MNIST completo, 5 epochs, 5 seeds (`sweep_formal.py`). Confirma o smoke com rigor estatístico:
+
+| Config | acc (5 seeds) | SynOps vs denso | latência CPU | critério |
+|---|---|---|---|---|
+| DenseMLP | **87.16% ±0.33** CI[86.86, 87.41] | 1× (203k MACs) | 0.020 ms | ref |
+| SNN vanilla T=25 | 84.82% ±0.72 CI[84.18, 85.42] | 0.14× (**7× pior**) | 6.54 ms (327×) | FALHA |
+| SNN vanilla T=10 | 83.86% ±0.64 CI[83.32, 84.45] | 0.35× (2.9× pior) | 2.66 ms (133×) | FALHA |
+| SNN kWTAin T=10 ki=64 | 79.72% ±0.42 CI[79.34, 80.05] | 1.23× menos | 3.25 ms (162×) | FALHA |
+| SNN kWTAin T=5 ki=32 | 72.56% ±0.29 CI[72.32, 72.80] | **4.79× menos** | 1.64 ms (82×) | FALHA |
+
+**Análise formal:**
+- Com treino completo, o denso chega a **87.16%**. Nenhuma SNN fica dentro de −2 p.p.: a melhor (T=25) é **−2.34 p.p.**, já fora da tolerância — e custa 7× mais SynOps.
+- O melhor SynOps (4.79×, quase os 5×) custa **−14.6 p.p.** de acurácia (72.56%). O trade-off acc↔SynOps é confirmado, com IC95% apertados (±0.3–0.7, não é ruído).
+- Latência CPU **80–327× pior** em todas. Sempre.
+- **As 4 configs falham os 3 componentes do critério simultaneamente.** Não existe config única com acc −2pp **E** SynOps ≥5× **E** latência ≤ denso. O smoke não era artefato de subtreino — o padrão sobrevive ao treino completo e multi-seed.
+
 ## Veredicto FINAL (não mais preliminar)
 
 | Componente do critério | Resultado |
@@ -79,16 +97,14 @@ O caminho que restaria pra um Sucesso era a **inferência event-driven real** (r
 
 → **FALHA decisiva** do critério literal (predição #67 confirmada e fortalecida). **Eficiência radical via SNN não se realiza em CPU von Neumann comum** — nem com runtime denso, nem com sparse/event-driven. A vantagem de SynOps é real apenas como contagem teórica; sua materialização exige **silício neuromórfico dedicado** (Loihi/TrueNorth), onde a esparsidade event-driven é nativa em hardware, não emulada sobre BLAS denso.
 
-**Caveat de robustez:** smoke (2-3 epochs, quick, 1 seed) para acurácia/SynOps; o probe de latência usa pesos random (válido — latência independe do treino). O veredicto de **latência** é estrutural e à prova de mais-treino. O veredicto de **SynOps** (trade-off com acc) merece confirmação formal (5 seeds, sweep) se o marco prosseguir, mas o sinal é inequívoco.
+**Robustez:** confirmado formalmente em **#70** (5 seeds, IC95% bootstrap, treino completo Fashion-MNIST) — o veredicto não depende mais de smoke. ICs apertados; o trade-off acc↔SynOps e a penalidade de latência CPU sobrevivem ao treino completo e multi-seed.
 
 ## No espírito do projeto
 
 Achado negativo **completo e à prova de objeção** — alto valor pela disciplina do projeto ("falhas bem documentadas valem mais que sucessos superficiais"). A tese pós-LLM de "eficiência radical em CPU comum" via SNN **não se sustenta em hardware von Neumann**: a eficiência neuromórfica é uma propriedade de *co-design hardware-algoritmo*, não do algoritmo isolado num framework de propósito geral.
 
-## Decisão pendente (Luis, admin)
+## Fechamento (#70)
 
-Eixo A respondido decisivamente (Falha). Caminhos possíveis, decisão de rumo do Luis:
-- **Aceitar o achado** e encerrar Marco 2-B (achado negativo documentado), ou
-- **Marco 2-B.2:** estimativa de energia em hardware neuromórfico (proxy SynOps × E_AC vs MACs × E_MAC com fatores Loihi) — caracteriza onde a vantagem existiria, sem hardware real, ou
-- **Eixo B/C** (treino sem backprop / dados event-based), ou
-- Pivot pra outra capacidade (Marco 2-C raciocínio temporal) ou encerrar projeto.
+Luis (#69 admin) optou por **confirmar formalmente e depois fechar**. Confirmação feita (#70). **Marco 2-B encerrado** — eixo A (eficiência radical via SNN em CPU) respondido com **Falha decisiva, estatisticamente confirmada**. Achado negativo arquivado como documentado/reproduzível (`efficiency_bench.py`, `latency_probe.py`, `sweep_formal.py`, `PAPERS.md`). Registro: STRATEGY.md "Fechamento Marco 2-B — sessão #70", CONTEXT.md §1.5 (🟡→❌).
+
+**Próximo passo — EM ABERTO (decisão do Luis):** Marco 2-B.2 (energia neuromórfica estimada), eixo B/C (treino sem backprop / dados event-based), Marco 2-C (raciocínio temporal — a 4ª e última capacidade não atacada), ou encerrar o projeto. Project Hebb volta a manutenção.

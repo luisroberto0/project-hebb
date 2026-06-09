@@ -1,8 +1,11 @@
 # Experimento 04 — Eficiência radical: inferência event-driven (Marco 2-B)
 
-> **Status:** kickoff/scoping em sessão #67 (2026-06-08). Design aprovado nas decisões-chave; spec pendente de revisão do Luis antes do plano de implementação.
-> **Eixo escolhido:** A — inferência event-driven (SynOps + latência CPU). Eixos B (treino sem backprop) e C (dados event-based) ficam como marcos/extensões futuros.
-> **Limite hard:** ~10 sessões (#67-#76). Admin obrigatória no fim. Cancelável se evidência clara antes.
+> **Status:** **ENCERRADO em #70 (2026-06-08).** Eixo A respondido com **Falha decisiva, confirmada formalmente** (sweep 5 seeds, IC95%, Fashion-MNIST). Eficiência radical via SNN NÃO se realiza em CPU von Neumann.
+> **Resultado (#70):** denso 87.16% / melhor SNN 84.82% (−2.34 p.p.); SynOps 7× a 0.21× (melhor caso 4.79× menos custa −14.6 p.p. acc); latência CPU 80–327× pior sempre; inferência event-driven (sparse) ainda mais lenta que runtime denso. Nenhuma config bate acc −2pp E SynOps ≥5× E latência ≤ denso.
+> **Achado:** eficiência neuromórfica é co-design HW-algoritmo (silício dedicado), não do algoritmo em CPU. Detalhes: `WEEKLY-1.md` + `STRATEGY.md` "Fechamento Marco 2-B — sessão #70".
+> _(Plano original abaixo, preservado para histórico. Eixos B/C/2-B.2 ficam como possíveis extensões futuras.)_
+>
+> **Limite hard original:** ~10 sessões (#67-#76) — fechado antecipadamente em #70 (evidência inequívoca).
 
 ---
 

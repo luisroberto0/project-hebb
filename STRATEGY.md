@@ -1160,3 +1160,42 @@ C3 está **−12 a −28 p.p. ABAIXO** de ProtoNet retreinado → critério **RE
 **Limite hard:** ~10 sessões (#67-#76). Admin obrigatória em #76. Cancelável se evidência clara antes. Detalhes: `experiment_04_efficiency/PLAN.md`.
 
 **Decisões de scope registradas (#67):** k-WTA temporal incluído como variável central; régua dupla SynOps+latência; Fashion-MNIST (MNIST sanity). Surrogate-gradient (BPTT) é backprop — este marco mede eficiência de *inferência*, não treino-sem-backprop (eixo B futuro); reconhecido explicitamente.
+
+---
+
+## Fechamento Marco 2-B — sessão #70 (2026-06-08)
+
+**Decisão admin (Luis):** confirmar formalmente e **encerrar**. Eixo A (eficiência radical via SNN em CPU) respondido com **Falha decisiva, estatisticamente confirmada** (sweep #70: 5 seeds, IC95% bootstrap, Fashion-MNIST completo).
+
+### Resultado vs critério literal
+
+| Config | acc (5 seeds) | SynOps vs denso | latência CPU |
+|---|---|---|---|
+| DenseMLP | 87.16% ±0.33 | 1× (203k MACs) | 0.020 ms |
+| SNN vanilla T=25 | 84.82% ±0.72 | 0.14× (**7× pior**) | 327× pior |
+| SNN vanilla T=10 | 83.86% ±0.64 | 0.35× (2.9× pior) | 133× pior |
+| SNN kWTAin T=10 ki=64 | 79.72% ±0.42 | 1.23× menos | 162× pior |
+| SNN kWTAin T=5 ki=32 | 72.56% ±0.29 | 4.79× menos | 82× pior |
+
+Nenhuma config satisfaz acc −2pp **E** SynOps ≥5× **E** latência CPU ≤ denso → **FALHA** em todas. Trade-off acc↔SynOps definitivo (4.79× menos SynOps custa −14.6 p.p.); latência CPU sempre 80–327× pior.
+
+### Achados (negativo defensável, à prova de objeção)
+
+1. k-WTA na **hidden** não move SynOps (gargalo = fc1 input×256); só k-WTA na **entrada** move.
+2. Trade-off de Pareto íngreme: SynOps↓ exige esparsidade↑ exige acc↓.
+3. Latência CPU 80–327× pior sempre — a esparsidade não vira velocidade em runtime denso.
+4. Inferência **event-driven (sparse)** é AINDA mais lenta (84×) que o runtime denso — overhead de indexação esparsa > matmul BLAS.
+
+**Conclusão:** eficiência radical via SNN **não se realiza em CPU von Neumann**; é propriedade de **co-design hardware-algoritmo** (silício neuromórfico), consistente com a literatura (Merolla/Davies, `experiment_04_efficiency/PAPERS.md`).
+
+### Status das 4 capacidades pós-LLM (CONTEXT.md §1)
+
+- one-shot Omniglot (C3) ✅ in-domain (LinkedIn pendente, separado)
+- one-shot inédito (cross-domain) ❌ Marco 2-A encerrado (#66)
+- continual learning ❌ Marco 1 encerrado (#30)
+- eficiência radical ❌ **Marco 2-B encerrado (#70, achado negativo)**
+- raciocínio temporal via timing 🔵 não atacado (**4ª e última capacidade pós-LLM**)
+
+### Próximo passo — EM ABERTO (decisão do Luis)
+
+Marco 2-B.2 (energia neuromórfica estimada, proxy Loihi) / eixo B (treino sem backprop) / eixo C (dados event-based) / **Marco 2-C** (raciocínio temporal — a última capacidade não atacada) / encerrar o projeto. Project Hebb volta a estado de manutenção. **3 das 4 capacidades pós-LLM agora têm achado negativo documentado; 1 (temporal) não atacada.**
