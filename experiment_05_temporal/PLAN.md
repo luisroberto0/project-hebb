@@ -42,7 +42,9 @@ Diferente dos 3 marcos anteriores, aqui há chance real de positivo (domínio na
 
 ## Dataset: SHD (Spiking Heidelberg Digits)
 
-Cramer, Stradmann, Schemmel & Zenke 2020 ("The Heidelberg spiking data sets..."). ~10.420 amostras de dígitos falados 0–9 em inglês e alemão (**20 classes**), convertidos em spikes por um modelo de cóclea artificial (**700 canais** de input × ~1 s). Splits train/test oficiais (test = falantes held-out). Formato HDF5; acesso via `tonic` (biblioteca padrão de datasets neuromórficos) ou download direto do Zenke lab. **#72 começa com download + dataloader + smoke (1 batch).**
+Cramer, Stradmann, Schemmel & Zenke 2020 ("The Heidelberg spiking data sets..."). ~10.420 amostras de dígitos falados 0–9 em inglês e alemão (**20 classes**), convertidos em spikes por um modelo de cóclea artificial (**700 canais** de input × ~1 s). Splits train/test oficiais (test = falantes held-out).
+
+**Acesso (decidido #71):** download direto dos HDF5 (`shd_train.h5` / `shd_test.h5`) do Zenke lab (zenkelab.org/datasets) + leitura com **`h5py`** (instalado #71, v3.16). **`tonic` foi descartado** — não builda no ambiente: a dependência `expelliarmus` (decoder C++/Cython) falha o build de wheel (Python 3.13 / Windows sem toolchain). A estrutura HDF5 do SHD é simples (grupos `spikes` com `times`/`units` + `labels`), então um dataloader minimal com h5py basta — sem dependência de tonic. **#72: download + dataloader (h5py) + smoke (1 batch).**
 
 ---
 
@@ -108,7 +110,7 @@ Critério não-negociável. Régua sujeita a refino numérico após lit review (
 
 | Risco | Mitigação |
 |---|---|
-| SHD indisponível / formato | `tonic` (padrão); fallback download HDF5 direto Zenke lab. Validar nº amostras/classes em #72. |
+| SHD download / formato | `tonic` descartado (build de `expelliarmus` falha); usar download HDF5 direto + `h5py` (✓ instalado #71). Estrutura: grupos `spikes`(`times`,`units`) + `labels`. Validar nº amostras/classes em #72. |
 | VRAM estoura (BPTT recorrente, seq longa) | Binning temporal (100 bins), truncated BPTT, batch menor, `empty_cache`. |
 | Baseline cego fraco infla a margem | Treinar o MLP cego com o mesmo esforço da SNN; reportar o cego com rigor. |
 | Achado "esperado por construção" (SHD é temporal) | A nuance espectro-médio aperta a margem; reportar a magnitude exata + recorrente-vs-feedforward isola o mecanismo. |
