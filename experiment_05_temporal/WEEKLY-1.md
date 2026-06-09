@@ -68,6 +68,30 @@ A BN acumulava running mean/var misturando os 100 timesteps; no eval aplicava st
 - **Esperado-por-construção parcial:** SHD foi desenhado para exigir timing. O valor é a *magnitude* (+19.7 / +10.3 p.p.) e o contraste com os 3 marcos negativos — não que "a SNN venceu" (esperado num benchmark temporal).
 - surrogate-gradient é backprop: mede a *dinâmica temporal* (recorrência), não treino-sem-backprop.
 
-### Decisão pendente (Luis, admin)
+### #73 — extensão: sweep de resolução temporal (a vantagem é mesmo o timing?)
 
-Critério atingido (Sucesso). Caminhos (decisão de rumo do Luis): publicar o 1º positivo (paper/post) / estender (mais bins, latency coding, SSC) / fechar o marco como Sucesso e consolidar o projeto (4 capacidades exploradas: 3 ❌ + 1 ✅). Confirmação formal completa; o que falta é a moldura do achado.
+Teste mecanístico da ressalva "SHD é temporal por construção". SNN recorrente, 3 seeds, 8 epochs, variando o nº de bins. Baseline cego (invariante a bins, soma total): 49.41%.
+
+| bins | SNN-rec acc | margem sobre cego |
+|---|---|---|
+| 1 | 58.92% ±0.70 | +9.51 |
+| 4 | 63.06% | +13.65 |
+| 8 | 63.49% | +14.08 |
+| 16 | 67.29% | +17.87 |
+| 32 | 68.45% | +19.04 |
+| 64 | 68.54% | +19.13 |
+| 100 | 69.10% ±0.81 | +19.68 |
+
+**A acurácia cresce monotonicamente com a resolução temporal** (58.92 → 69.10), saturando ~32–100 bins. Mais resolução temporal ⇒ mais acurácia: o timing carrega informação.
+
+**Nuance honesta (predição parcialmente refutada — e isso é valioso):** a predição era bins=1 ≈ cego (margem ~0). Em vez disso, **bins=1 mantém +9.51 p.p.** sobre o cego. Causa: em bins=1 a SNN ainda usa LIF + BatchNorm (vs ReLU do cego) — esse +9.5 p.p. é **arquitetural, não timing**.
+
+**Decomposição limpa (a extensão valeu por isto):**
+- **Timing puro** (mesma SNN recorrente, bins 1→100, só muda a resolução): **+10.18 p.p.** — controla a arquitetura, isola o timing genuíno.
+- Confound arquitetural (SNN-1step vs MLP, bins=1 vs cego): +9.51 p.p.
+
+Ou seja, dos ~+19.7 p.p. da vantagem total da SNN recorrente sobre o cego (#72), **~+10 p.p. são timing genuíno e ~+9.5 p.p. são arquitetura** — a margem "timing" do #72 estava inflada pelo confound arquitetural. O critério literal (margem total ≥10 p.p., rec ≥65%) **permanece atingido**, mas a atribuição fica honesta: o timing genuinamente agrega ~+10 p.p., quantificado e controlado. Achado mais forte e mais defensável que o #72 isolado.
+
+## Decisão pendente (Luis, admin)
+
+Marco 2-C = **Sucesso refinado**: timing genuíno +10.18 p.p. (controlado), vantagem total +19.7 p.p., rec 71.27% (formal #72). Caminhos (decisão de rumo do Luis): mais extensões (latency coding, k-WTA temporal, SSC) / publicar (1º positivo + os 3 negativos = narrativa completa, com a decomposição honesta timing-vs-arquitetura) / fechar e consolidar o projeto (4 capacidades: 3 ❌ + 1 ✅).

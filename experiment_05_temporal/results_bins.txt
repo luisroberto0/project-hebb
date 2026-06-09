@@ -1,0 +1,15 @@
+Sweep bins (resolucao temporal) — SHD, 3 seeds, 8 epochs, device=cuda
+
+baseline cego (sem timing, referencia): 49.41% ±0.89
+
+bins | SNN recorrente acc (mean±std) | margem sobre cego
+   1 | 58.92 ±0.70 | +9.51 p.p.
+   4 | 63.06 ±1.06 | +13.65 p.p.
+   8 | 63.49 ±1.85 | +14.08 p.p.
+  16 | 67.29 ±0.62 | +17.87 p.p.
+  32 | 68.45 ±1.49 | +19.04 p.p.
+  64 | 68.54 ±0.85 | +19.13 p.p.
+ 100 | 69.10 ±0.81 | +19.68 p.p.
+
+Predicao: acc cresce com bins; em bins=1 (histograma) SNN_rec ~ cego (margem ~0).
+bins=1 margem=+9.51  bins=100 margem=+19.68
