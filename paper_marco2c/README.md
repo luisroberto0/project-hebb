@@ -51,9 +51,10 @@ Decisão de Luis pós-draft. Candidatos: NeurIPS/ICLR workshop bio-plausible/neu
 | kickoff | refs.bib (5 entradas) | ✅ |
 | kickoff | Figuras (barras SHD, curva bins, curva k-WTA — 300 DPI) | ✅ |
 | kickoff | LaTeX consolidação (`main.tex`) + validação estrutural | ✅ |
-| próxima | Peer review interno + decisão de venue (Luis) | pendente |
+| kickoff | Peer review interno adversarial (4 lentes) + correções aplicadas | ✅ (`peer_review.md`) |
+| **próxima** | **Decisão de venue (Luis)** + opcional: 3 seeds SSC / GRU baseline | pendente |
 
-**Draft COMPLETO** (6 seções + abstract + 3 figuras + `main.tex`, ~3300 palavras). Validação estrutural OK (5 cites no .bib, refs/labels resolvem, 14/14 ambientes, 3 figuras). Compila via Overleaf (upload `main.tex` + `refs.bib` + `figs/`) ou `pdflatex+bibtex` local. Falta: peer review + decisão de venue.
+**Draft REVISADO** (6 seções + abstract + 3 figuras + `main.tex`, peer-reviewed). O peer review pegou uma falha metodológica real (bins=1 desativa a recorrência → o +10.18 é upper bound, não atribuição limpa); **corrigida**, junto com 8 safe fixes e 5 suavizações de overclaim. Veredicto: publicável como workshop paper. Validação estrutural OK (5 cites, 9 refs/labels, 13/13 ambientes, 193/193 braces, 3 figuras). Compila via Overleaf. **Único pendente: decisão de venue (do Luis).**
 
 ## Tom
 
