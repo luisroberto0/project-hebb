@@ -124,16 +124,32 @@ k-WTA por timestep na hidden da SNN recorrente (≤k spikes ativos/timestep, de 
 
 **Narrativa de k-WTA fechada (3 papers):** tolerante in-domain espacial (C3, −1.45 p.p. @75%) ≈ tolerante in-domain temporal (2-C, −1.50 p.p. @75%); **colapsa** cross-domain (Marco 2-A, effect collapse) e em esparsidade temporal extrema (2-C, k≤8). A esparsidade k-WTA é compatível in-domain em qualquer eixo, mas frágil sob shift de domínio ou compressão extrema.
 
-## Síntese — caracterização do timing (Marco 2-C, #72–#75)
+## #76 — extensão: generalização para SSC (Spiking Speech Commands)
+
+SSC: dataset irmão (Cramer/Zenke), 35 classes (~75k), mais difícil. Subset balanceado (75k estouraria RAM). chance 2.86%.
+
+| run | cego | SNN-ff | SNN-rec | timing (rec−cego) |
+|---|---|---|---|---|
+| 8 ep, 400/classe | 19.32% | 6.83% | 14.05% | −5.27 p.p. |
+| 25 ep, 500/classe | 21.72% | 9.82% | 22.42% | +0.70 p.p. |
+
+**Resultado: INCONCLUSIVO / generalização frágil no regime testado.** Com mais treino a SNN-rec subiu (14% → 22.4%) e ultrapassou o cego, e a margem cresceu (−5.27 → +0.70 p.p.) — mas fica **muito abaixo** dos +19.7 p.p. do SHD.
+
+**Caveat de subtreino (decisivo):** as SNNs estão muito abaixo da literatura SSC (recorrente ~50–70% com dataset completo); ff em ~10% confirma subtreino. A margem **cresce com epochs** (−5.27 → +0.70), logo o regime testado (subset 17.5k de 75k, epochs limitados) é **insuficiente** para concluir. Resposta definitiva exigiria SSC completo até convergência — caro (BPTT recorrente, 35 classes), fora do escopo desta passada.
+
+**Honestidade:** o Sucesso do Marco 2-C está estabelecido no **SHD** (#72, robusto, 5 seeds); a generalização para SSC é **inconclusiva** — a vantagem de timing não se reproduz com subset/epochs limitados, embora a tendência (margem crescente) seja ambígua. Isto **endurece a ressalva** sem invalidar o achado: o positivo é demonstrado em 1 benchmark (SHD); robustez a um benchmark temporal mais difícil fica em aberto.
+
+## Síntese — caracterização do timing (Marco 2-C, #72–#76)
 
 | Frente | Achado |
 |---|---|
-| #72 Sucesso (formal, 5 seeds) | timing total **+19.7 p.p.**, SNN-rec **71.27%** |
-| #73 sweep de bins | timing genuíno **+10.18 p.p.** (controlando arquitetura; acc cresce com resolução temporal) |
-| #74 latency coding | SNN extrai **50.68%** só do onset timing; contagem completa adiciona +18 p.p. |
-| #75 k-WTA temporal | esparsidade temporal tolerante até 75% (**−1.50 p.p.**, paralelo ao C3); colapsa em >96% |
+| #72 Sucesso (formal, 5 seeds, SHD) | timing total **+19.7 p.p.**, SNN-rec **71.27%** |
+| #73 sweep de bins | timing genuíno **+10.18 p.p.** (controlando arquitetura) |
+| #74 latency coding | SNN extrai **50.68%** só do onset timing |
+| #75 k-WTA temporal | esparsidade tolerante até 75% (**−1.50 p.p.**, paralelo ao C3); colapsa em >96% |
+| #76 generalização SSC | **inconclusiva** — margem +0.70 p.p. (vs +19.7 SHD), mas SNNs subtreinadas/subset |
 
-O raciocínio temporal **agrega em múltiplas frentes** (resolução temporal, timing do onset, robustez à esparsificação), quantificado e com atribuição honesta (parte da vantagem bruta é arquitetural, isolada em #73). Achado positivo robusto e bem-caracterizado — o 1º do projeto — e o k-WTA temporal liga elegantemente aos papers C3 e Marco 2-A.
+**Veredicto honesto:** Marco 2-C = **Sucesso no SHD, bem-caracterizado** (timing genuíno ~+10 p.p. controlado, robusto à esparsificação, paralelo ao C3). É o 1º achado positivo do projeto. A generalização para um benchmark temporal mais difícil (SSC) **não foi estabelecida** nesta passada — o achado é forte mas não confirmado como universal. Honestidade metodológica: reporto o limite, não inflo o positivo.
 
 ## Decisão pendente (Luis, admin)
 

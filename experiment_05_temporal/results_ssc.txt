@@ -1,0 +1,9 @@
+SSC (Spiking Speech Commands) — 3 seeds, 25 epochs, subset 500/classe train, bins=100, device=cuda
+train=17500 test=7000 classes=35 (chance=2.86%)
+
+BlindMLP (cego)  acc=21.72 ±0.81
+SNN feedforward  acc=9.82 ±0.10
+SNN recorrente   acc=22.42 ±0.54
+
+timing (rec-cego)=+0.70pp | recorrencia (rec-ff)=+12.60pp | rec=22.42%
+-> NAO GENERALIZA (margem <10pp)
