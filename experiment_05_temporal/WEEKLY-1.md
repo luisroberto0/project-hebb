@@ -106,15 +106,34 @@ rate = contagem por bin; latency = 1 spike por canal, no bin do 1º spike (onset
 
 **Nuance honesta:** o cego-latency (23.51%) é baseline fraco — sob latency o `bag_of_spikes` vira presença binária quase-saturada (546/700 canais), pouco discriminativa; a margem +27 está inflada. Número honesto = absoluto: **50.68% de padrões de latência pura**, bem acima de chance.
 
-## Síntese — caracterização do timing (Marco 2-C, #72–#74)
+## #75 — extensão: k-WTA temporal — a esparsificação preserva o timing?
+
+k-WTA por timestep na hidden da SNN recorrente (≤k spikes ativos/timestep, de 256). Fecha a narrativa de k-WTA do projeto. 3 seeds, 8 epochs. Baseline cego 49.41%.
+
+| k (de 256) | sparsity | SNN-rec acc | vs denso |
+|---|---|---|---|
+| denso | 0% | 69.10% | — |
+| 128 | 50% | 69.60% | +0.50 |
+| 64 | 75% | 67.59% | **−1.50** |
+| 32 | 87.5% | 62.71% | −6.39 |
+| 16 | 93.8% | 55.54% | −13.56 |
+| 8 | 96.9% | 48.98% | −20.11 (≈ cego) |
+| 4 | 98.4% | 42.64% | −26.46 |
+
+**Achado — paralelo quase exato com o C3 in-domain:** o k-WTA temporal é tolerante até **75% de sparsity** (k=64: −1.50 p.p.) — praticamente idêntico ao k-WTA espacial in-domain do C3 (75% = −1.45 p.p.). A esparsidade é tolerada in-domain em **ambos os eixos** (espaço e tempo) com o mesmo custo. Degradação acelera além de 87.5% (como no C3). **Colapso em esparsidade extrema:** k≤8 (>96%) → SNN converge para o baseline cego (48.98% ≈ 49.41%); o timing exige uma capacidade mínima de spikes/timestep.
+
+**Narrativa de k-WTA fechada (3 papers):** tolerante in-domain espacial (C3, −1.45 p.p. @75%) ≈ tolerante in-domain temporal (2-C, −1.50 p.p. @75%); **colapsa** cross-domain (Marco 2-A, effect collapse) e em esparsidade temporal extrema (2-C, k≤8). A esparsidade k-WTA é compatível in-domain em qualquer eixo, mas frágil sob shift de domínio ou compressão extrema.
+
+## Síntese — caracterização do timing (Marco 2-C, #72–#75)
 
 | Frente | Achado |
 |---|---|
 | #72 Sucesso (formal, 5 seeds) | timing total **+19.7 p.p.**, SNN-rec **71.27%** |
 | #73 sweep de bins | timing genuíno **+10.18 p.p.** (controlando arquitetura; acc cresce com resolução temporal) |
 | #74 latency coding | SNN extrai **50.68%** só do onset timing; contagem completa adiciona +18 p.p. |
+| #75 k-WTA temporal | esparsidade temporal tolerante até 75% (**−1.50 p.p.**, paralelo ao C3); colapsa em >96% |
 
-O raciocínio temporal **agrega em múltiplas frentes** (resolução temporal, timing do onset), quantificado e com atribuição honesta (parte da vantagem bruta é arquitetural, isolada em #73). Achado positivo robusto e bem-caracterizado — o 1º do projeto.
+O raciocínio temporal **agrega em múltiplas frentes** (resolução temporal, timing do onset, robustez à esparsificação), quantificado e com atribuição honesta (parte da vantagem bruta é arquitetural, isolada em #73). Achado positivo robusto e bem-caracterizado — o 1º do projeto — e o k-WTA temporal liga elegantemente aos papers C3 e Marco 2-A.
 
 ## Decisão pendente (Luis, admin)
 

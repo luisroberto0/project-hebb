@@ -1,0 +1,15 @@
+k-WTA temporal — SHD, 3 seeds, 8 epochs, bins=100, hidden=256, device=cuda
+
+baseline cego (referencia): 49.41%
+
+k (de 256) | sparsity | SNN-rec acc | margem sobre cego
+ denso | 0% (denso) | 69.10 ±0.81 | +19.68 p.p.
+   128 |      50.0% | 69.60 ±0.95 | +20.19 p.p.  (vs denso +0.50)
+    64 |      75.0% | 67.59 ±0.93 | +18.18 p.p.  (vs denso -1.50)
+    32 |      87.5% | 62.71 ±2.10 | +13.30 p.p.  (vs denso -6.39)
+    16 |      93.8% | 55.54 ±0.43 | +6.12 p.p.  (vs denso -13.56)
+     8 |      96.9% | 48.98 ±0.97 | -0.43 p.p.  (vs denso -20.11)
+     4 |      98.4% | 42.64 ±1.75 | -6.77 p.p.  (vs denso -26.46)
+
+Predicao: se o timing e robusto a esparsificacao (como C3 in-domain), acc se mantem
+ate k pequeno; se exige muitos neuronios ativos, cai cedo.
