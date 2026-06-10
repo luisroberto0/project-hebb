@@ -44,11 +44,16 @@ Decisão de Luis pós-draft. Candidatos: NeurIPS/ICLR workshop bio-plausible/neu
 
 | Sessão | Conteúdo | Status |
 |---|---|---|
-| kickoff | README + outline + abstract + intro | ✅ (este commit) |
-| próxima | Background + Method | pendente |
-| próxima | Experiments (6 frentes + tabelas/figuras) | pendente |
-| próxima | Discussion + Conclusion | pendente |
-| próxima | LaTeX consolidação | pendente |
+| kickoff | README + outline + abstract + intro | ✅ |
+| kickoff | Background + Method | ✅ |
+| kickoff | Experiments (5 subseções + 4 tabelas) | ✅ |
+| kickoff | Discussion + Conclusion | ✅ |
+| kickoff | refs.bib (5 entradas) | ✅ |
+| próxima | Figuras (barras SHD, curva bins, curva k-WTA) | pendente |
+| próxima | LaTeX consolidação (main.tex) + validação | pendente |
+| próxima | Peer review interno + decisão de venue (Luis) | pendente |
+
+**Draft de texto COMPLETO** (6 seções + abstract, ~3300 palavras). Falta: figuras + LaTeX + revisão.
 
 ## Tom
 
