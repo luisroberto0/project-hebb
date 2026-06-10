@@ -139,7 +139,22 @@ SSC: dataset irmão (Cramer/Zenke), 35 classes (~75k), mais difícil. Subset bal
 
 **Honestidade:** o Sucesso do Marco 2-C está estabelecido no **SHD** (#72, robusto, 5 seeds); a generalização para SSC é **inconclusiva** — a vantagem de timing não se reproduz com subset/epochs limitados, embora a tendência (margem crescente) seja ambígua. Isto **endurece a ressalva** sem invalidar o achado: o positivo é demonstrado em 1 benchmark (SHD); robustez a um benchmark temporal mais difícil fica em aberto.
 
-## Síntese — caracterização do timing (Marco 2-C, #72–#76)
+## #77 — SSC completo (resolver a generalização)
+
+Dataset SSC inteiro via lazy loading (train 75466 / test 20382), 35 epochs, 1 seed. chance 2.86%.
+
+| | cego | SNN-rec | timing (rec−cego) |
+|---|---|---|---|
+| subset 17.5k, 25ep (#76) | 21.72% | 22.42% | +0.70 |
+| completo 75k, 35ep (#77) | 25.63% | 30.83% | **+5.20 p.p.** |
+
+**Resultado: generalização FRACA mas POSITIVA.** Com o dataset completo a margem subiu de +0.70 → +5.20 p.p. — confirma que o subset (#76) era subtreino. O timing **agrega** em SSC (rec 30.83% ≈ 11× chance), mas com magnitude **~4× menor** que no SHD (+19.7).
+
+**Caveats honestos:** as acurácias ainda estão baixas (cego 25.63%, rec 30.83%) vs literatura SSC (~50–70% recorrente) → subtreino residual (1 seed, 35 epochs; SSC exige mais epochs/tuning/augmentation). A margem pode ainda crescer com convergência total. Mas o sinal é claro: o achado "timing agrega" generaliza **qualitativamente** (positivo em SHD e SSC); a **magnitude é dataset-específica** (forte no SHD, fraca no SSC).
+
+**Veredicto da generalização:** parcial — nem universal (não reproduz +19.7), nem nulo (+5.20 é positivo e ~11× chance). O timing é informativo em ambos os benchmarks temporais; o *quanto* depende do dataset.
+
+## Síntese — caracterização do timing (Marco 2-C, #72–#77)
 
 | Frente | Achado |
 |---|---|
@@ -147,9 +162,9 @@ SSC: dataset irmão (Cramer/Zenke), 35 classes (~75k), mais difícil. Subset bal
 | #73 sweep de bins | timing genuíno **+10.18 p.p.** (controlando arquitetura) |
 | #74 latency coding | SNN extrai **50.68%** só do onset timing |
 | #75 k-WTA temporal | esparsidade tolerante até 75% (**−1.50 p.p.**, paralelo ao C3); colapsa em >96% |
-| #76 generalização SSC | **inconclusiva** — margem +0.70 p.p. (vs +19.7 SHD), mas SNNs subtreinadas/subset |
+| #76–#77 generalização SSC | **fraca mas positiva** — timing +5.20 p.p. no SSC completo (vs +19.7 SHD); magnitude dataset-específica |
 
-**Veredicto honesto:** Marco 2-C = **Sucesso no SHD, bem-caracterizado** (timing genuíno ~+10 p.p. controlado, robusto à esparsificação, paralelo ao C3). É o 1º achado positivo do projeto. A generalização para um benchmark temporal mais difícil (SSC) **não foi estabelecida** nesta passada — o achado é forte mas não confirmado como universal. Honestidade metodológica: reporto o limite, não inflo o positivo.
+**Veredicto honesto:** Marco 2-C = **Sucesso no SHD, bem-caracterizado** (timing genuíno ~+10 p.p. controlado, robusto à esparsificação até 75%, paralelo ao C3). É o 1º achado positivo do projeto. A generalização para SSC (#77, dataset completo) é **fraca mas positiva** (+5.20 p.p.) — o timing agrega em ambos os benchmarks, mas a magnitude é dataset-específica (forte no SHD, fraca no SSC). O achado é real e transversal qualitativamente, **modesto** quantitativamente fora do SHD. Honestidade metodológica: reporto a magnitude exata e o limite, não inflo o positivo.
 
 ## Decisão pendente (Luis, admin)
 

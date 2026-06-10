@@ -1,0 +1,7 @@
+SSC COMPLETO — 1 seed(s), 35 epochs, bins=100, train=75466 test=20382, device=cuda (chance=2.86%)
+
+BlindMLP (cego)  acc=25.63 ±0.00
+SNN recorrente   acc=30.83 ±0.00
+
+timing (rec-cego)=+5.20pp | rec=30.83%
+-> GENERALIZACAO FRACA (margem 3-10pp)
