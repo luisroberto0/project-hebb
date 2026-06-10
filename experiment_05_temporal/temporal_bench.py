@@ -57,11 +57,15 @@ class SNN_FF(nn.Module):
 
 
 class SNN_Rec(nn.Module):
-    """SNN recorrente — recorrência all-to-all na hidden. Explora a DINÂMICA temporal."""
-    def __init__(self, gain=1.0):
+    """SNN recorrente — recorrência all-to-all na hidden. Explora a DINÂMICA temporal.
+
+    k_wta: se não-None, k-WTA temporal — só os k neurônios de maior membrana disparam por
+    timestep (esparsifica os spikes da hidden no tempo). Conecta com o k-WTA do paper C3.
+    """
+    def __init__(self, gain=1.0, k_wta=None):
         super().__init__()
         sg = surrogate.fast_sigmoid()
-        self.gain = gain
+        self.gain = gain; self.k_wta = k_wta
         self.fc1 = nn.Linear(N_UNITS, HID); self.bn1 = nn.BatchNorm1d(HID, track_running_stats=False)
         self.rec = nn.Linear(HID, HID, bias=False)
         self.lif1 = snn.Leaky(beta=BETA, spike_grad=sg)
@@ -75,6 +79,9 @@ class SNN_Rec(nn.Module):
         for t in range(x.size(1)):
             cur1 = self.bn1(self.fc1(self.gain * x[:, t])) + self.rec(s1)
             s1, m1 = self.lif1(cur1, m1)
+            if self.k_wta is not None:  # k-WTA temporal: <=k spikes ativos por timestep
+                idx = m1.topk(self.k_wta, dim=1).indices
+                s1 = s1 * torch.zeros_like(s1).scatter_(1, idx, 1.0)
             out = out + self.fc2(s1)
         return out
 
