@@ -92,6 +92,30 @@ Teste mecanístico da ressalva "SHD é temporal por construção". SNN recorrent
 
 Ou seja, dos ~+19.7 p.p. da vantagem total da SNN recorrente sobre o cego (#72), **~+10 p.p. são timing genuíno e ~+9.5 p.p. são arquitetura** — a margem "timing" do #72 estava inflada pelo confound arquitetural. O critério literal (margem total ≥10 p.p., rec ≥65%) **permanece atingido**, mas a atribuição fica honesta: o timing genuinamente agrega ~+10 p.p., quantificado e controlado. Achado mais forte e mais defensável que o #72 isolado.
 
+## #74 — extensão: latency coding (time-to-first-spike) — a SNN explora timing fino?
+
+rate = contagem por bin; latency = 1 spike por canal, no bin do 1º spike (onset). 3 seeds, 8 epochs.
+
+| coding | cego | SNN-rec | margem |
+|---|---|---|---|
+| rate | 49.41% | 69.10% | +19.68 p.p. |
+| latency | 23.51% | 50.68% | +27.16 p.p. |
+
+1. **A SNN explora o timing do onset:** com APENAS 1 spike por canal (a latência pura), a SNN-rec atinge **50.68%** — muito acima de chance (5%) e do cego-latency (23.51%, mesmos canais sem timing). Prova que a SNN extrai informação da **latência do 1º spike**, não só de quais canais ativam.
+2. **Mas a contagem completa (rate) agrega mais:** SNN-rate 69.10% > SNN-latency 50.68% por **+18.42 p.p.** A dinâmica de spikes completa carrega informação além do onset.
+
+**Nuance honesta:** o cego-latency (23.51%) é baseline fraco — sob latency o `bag_of_spikes` vira presença binária quase-saturada (546/700 canais), pouco discriminativa; a margem +27 está inflada. Número honesto = absoluto: **50.68% de padrões de latência pura**, bem acima de chance.
+
+## Síntese — caracterização do timing (Marco 2-C, #72–#74)
+
+| Frente | Achado |
+|---|---|
+| #72 Sucesso (formal, 5 seeds) | timing total **+19.7 p.p.**, SNN-rec **71.27%** |
+| #73 sweep de bins | timing genuíno **+10.18 p.p.** (controlando arquitetura; acc cresce com resolução temporal) |
+| #74 latency coding | SNN extrai **50.68%** só do onset timing; contagem completa adiciona +18 p.p. |
+
+O raciocínio temporal **agrega em múltiplas frentes** (resolução temporal, timing do onset), quantificado e com atribuição honesta (parte da vantagem bruta é arquitetural, isolada em #73). Achado positivo robusto e bem-caracterizado — o 1º do projeto.
+
 ## Decisão pendente (Luis, admin)
 
-Marco 2-C = **Sucesso refinado**: timing genuíno +10.18 p.p. (controlado), vantagem total +19.7 p.p., rec 71.27% (formal #72). Caminhos (decisão de rumo do Luis): mais extensões (latency coding, k-WTA temporal, SSC) / publicar (1º positivo + os 3 negativos = narrativa completa, com a decomposição honesta timing-vs-arquitetura) / fechar e consolidar o projeto (4 capacidades: 3 ❌ + 1 ✅).
+Marco 2-C = **Sucesso bem-caracterizado**. Caminhos (decisão de rumo do Luis): mais extensões (k-WTA temporal, SSC) / publicar (1º positivo + 3 negativos = narrativa completa) / fechar e consolidar o projeto (4 capacidades: 3 ❌ + 1 ✅).

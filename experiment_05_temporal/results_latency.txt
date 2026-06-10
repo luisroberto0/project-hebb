@@ -1,0 +1,8 @@
+Latency vs rate coding — SHD, 3 seeds, 8 epochs, bins=100, device=cuda
+
+[rate]  cego 49.41±0.89  |  SNN-rec 69.10±0.81  |  margem +19.68 p.p.
+[latency]  cego 23.51±1.19  |  SNN-rec 50.68±0.66  |  margem +27.16 p.p.
+
+SNN-rec: rate 69.10% vs latency 50.68%  (delta -18.42 p.p.)
+Interpretacao: se latency preserva a acc/margem, o timing fino (onset) carrega a info;
+se cai muito, a contagem de spikes (rate) era o que importava.
