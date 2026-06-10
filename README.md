@@ -1,15 +1,15 @@
 # Project Hebb
 
-Pesquisa em arquiteturas neurais bio-inspiradas: plasticidade local diferenciável, codificação esparsa, e few-shot learning. Estudo empírico em direção a arquiteturas cognitivas pós-LLM, usando Omniglot como benchmark. Workshop paper em preparação.
+Pesquisa em arquiteturas neurais bio-inspiradas: plasticidade local, codificação esparsa (k-WTA), dinâmica spiking. Estudo empírico **dos limites** da bio-inspiração como caminho pós-LLM, ao longo de 4 capacidades (one-shot, continual learning, eficiência radical, raciocínio temporal) e múltiplos benchmarks (Omniglot, CUB-200, Fashion-MNIST, SHD/SSC). Síntese honesta da jornada em [`SYNTHESIS.md`](SYNTHESIS.md).
 
 > *"Não tente construir a mente. Construa um neurônio que funcione diferente."*
 > — Luis Roberto Pinho da Silva Junior, Project Hebb (2026)
 
 ---
 
-## Status (atualizado em 2026-06-09, pós-sessão #72)
+## Status (atualizado em 2026-06-10, pós-sessão #78)
 
-**Marco 2-C — raciocínio temporal (#72): SUCESSO — primeiro marco positivo do projeto.** Reaberto em #71 para atacar a 4ª e última capacidade pós-LLM (raciocínio temporal via timing de spikes), o **domínio nativo da SNN**. Eixo: SHD (Spiking Heidelberg Digits, Cramer/Zenke 2020) — SNN feedforward + recorrente vs **baseline cego ao timing** (histograma de spikes por canal → MLP). **Resultado (#72, sweep formal 5 seeds, IC95% bootstrap):** cego 51.56% / SNN-ff 61.02% / **SNN-recorrente 71.27%**. **timing (rec − cego) = +19.71 p.p.** (critério ≥10), **recorrência (rec − ff) = +10.26 p.p.**, SNN recorrente ≥65% — os ICs das três condições não se sobrepõem. **Critério literal atingido → SUCESSO.** Pela primeira vez nos quatro marcos, o mecanismo neuro-inspirado (dinâmica temporal recorrente) **genuinamente agrega**: o timing dos spikes carrega informação que o histograma (espectro médio) não captura. *Honestidade:* SHD foi desenhado para exigir timing, então o positivo é menos surpreendente que um negativo seria — o valor está na magnitude (+19.7/+10.3 p.p.) e no contraste com os 3 marcos negativos. **Status das 4 capacidades pós-LLM: 3 ❌ + 1 ✅ — exploração completa.** Decisão de rumo (publicar / estender / consolidar) em aberto. `experiment_05_temporal/`.
+**Marco 2-C — raciocínio temporal (#72–#78): timing genuíno, mas NÃO uma vantagem do spiking.** A 4ª e última capacidade pós-LLM, atacada no domínio nativo da SNN (SHD, Cramer/Zenke 2020): SNN recorrente vs **baseline cego ao timing** (histograma de spikes por canal → MLP). **#72 (sweep formal, 5 seeds, IC95%):** cego 51.56% / SNN-ff 61.02% / **SNN-rec 71.27%** — timing (rec−cego) **+19.71 p.p.**, critério literal atingido; parecia o 1º marco positivo. Caracterizado em 6 frentes: decomposição timing-genuíno/arquitetura (#73, +10.18 p.p. — mas *upper bound*, pois em bins=1 a recorrência é inerte), latency coding (#74, 50.68% só do onset), k-WTA temporal tolerante a 75% (#75, −1.50 p.p., paralelo ao C3 espacial), generalização SSC fraca/dataset-específica (#76–77b, +4–5 p.p.). **A virada (#78, controle pedido pelo peer review):** um **GRU não-spiking** no mesmo input atinge **79.64% — supera a SNN (69.10%) por +10.5 p.p.** O timing é **genérico de recorrência, não do spiking**, e a SNN é uma forma *inferior* de explorá-lo. **O único positivo aparente foi desinflado:** a SNN explora timing genuíno, mas não há vantagem competitiva da bio-inspiração — o 2-C junta-se de fato aos 3 negativos. **Status das 4 capacidades pós-LLM: nenhuma deu vantagem competitiva à abordagem neuro-inspirada no regime testável.** Paper `paper_marco2c/` (draft-completo, peer-reviewed, GRU integrado); decisão de enquadramento/venue + rumo do projeto em aberto (do Luis). Ver `SYNTHESIS.md` (capstone da jornada) + `experiment_05_temporal/`.
 
 ---
 
