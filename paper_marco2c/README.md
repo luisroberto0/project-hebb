@@ -49,7 +49,7 @@ Decisão de Luis pós-draft. Candidatos: NeurIPS/ICLR workshop bio-plausible/neu
 | kickoff | Experiments (5 subseções + 4 tabelas) | ✅ |
 | kickoff | Discussion + Conclusion | ✅ |
 | kickoff | refs.bib (5 entradas) | ✅ |
-| próxima | Figuras (barras SHD, curva bins, curva k-WTA) | pendente |
+| kickoff | Figuras (barras SHD, curva bins, curva k-WTA — 300 DPI) | ✅ |
 | próxima | LaTeX consolidação (main.tex) + validação | pendente |
 | próxima | Peer review interno + decisão de venue (Luis) | pendente |
 
