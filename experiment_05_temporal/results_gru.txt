@@ -1,0 +1,9 @@
+GRU baseline (nao-spiking) — 3 seeds, 8 epochs, bins=100, SHD
+
+GRU (nao-spiking)  acc=79.64 +/-1.42
+[ref] timing-blind (cego)  49.41
+[ref] SNN recorrente       69.10
+
+GRU - cego = +30.23pp (timing recuperado por recorrencia generica)
+GRU - SNN  = +10.54pp
+-> timing e GENERICO de recorrencia (GRU iguala/supera a SNN): NAO spiking-especifico

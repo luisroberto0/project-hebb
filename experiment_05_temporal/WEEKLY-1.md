@@ -155,18 +155,33 @@ Dataset SSC inteiro via lazy loading (train 75466 / test 20382), 35 epochs, 1 se
 
 **Veredicto da generalização:** parcial — nem universal (não reproduz +19.7), nem nulo (+5.20 é positivo e ~11× chance). O timing é informativo em ambos os benchmarks temporais; o *quanto* depende do dataset.
 
-## Síntese — caracterização do timing (Marco 2-C, #72–#77)
+## #78 — controle do peer review: GRU não-spiking (o timing é spiking-específico?)
+
+O peer review do paper apontou o controle que mais falta: um **baseline recorrente não-spiking** no mesmo input (T,700), para separar "timing" de "spiking". Rodado (3 seeds, 8 epochs, mesmo budget do sweep).
+
+| Modelo (SHD) | acc |
+|---|---|
+| timing-blind (cego) | 49.41% |
+| SNN recorrente | 69.10% |
+| **GRU (não-spiking)** | **79.64% ±1.42** |
+
+**Resultado: o timing NÃO é spiking-específico — e a SNN é inferior.** O GRU supera a SNN por **+10.54 p.p.** e recupera +30.23 p.p. de timing sobre o cego (vs ~+20 da SNN). Um RNN convencional explora o timing muito melhor que a SNN no mesmo orçamento.
+
+**Implicação (importante):** o "achado positivo" do 2-C fica **fortemente qualificado**. A SNN explora timing genuíno (#73), mas (a) isso é genérico de recorrência, não do spiking, e (b) a SNN é uma forma *sub-ótima* de fazê-lo. Isto **alinha o 2-C com os 3 negativos**: a abordagem bio-inspirada não supera — aqui, fica ~10 p.p. atrás de — um método convencional. O controle que o review pediu **virou a leitura do único positivo**.
+
+## Síntese — caracterização do timing (Marco 2-C, #72–#78)
 
 | Frente | Achado |
 |---|---|
 | #72 Sucesso (formal, 5 seeds, SHD) | timing total **+19.7 p.p.**, SNN-rec **71.27%** |
-| #73 sweep de bins | timing genuíno **+10.18 p.p.** (controlando arquitetura) |
+| #73 sweep de bins | timing genuíno **+10.18 p.p.** (upper bound — em bins=1 a recorrência é inerte) |
 | #74 latency coding | SNN extrai **50.68%** só do onset timing |
 | #75 k-WTA temporal | esparsidade tolerante até 75% (**−1.50 p.p.**, paralelo ao C3); colapsa em >96% |
-| #76–#77 generalização SSC | **fraca mas positiva** — timing +5.20 p.p. no SSC completo (vs +19.7 SHD); magnitude dataset-específica |
+| #76–#77 generalização SSC | **fraca** — timing +5.20 p.p. (vs +19.7 SHD); dataset-específica |
+| **#78 GRU não-spiking** | **GRU 79.64% > SNN 69.10%** — timing genérico de recorrência; SNN é INFERIOR (−10.5 p.p.) |
 
-**Veredicto honesto:** Marco 2-C = **Sucesso no SHD, bem-caracterizado** (timing genuíno ~+10 p.p. controlado, robusto à esparsificação até 75%, paralelo ao C3). É o 1º achado positivo do projeto. A generalização para SSC (#77, dataset completo) é **fraca mas positiva** (+5.20 p.p.) — o timing agrega em ambos os benchmarks, mas a magnitude é dataset-específica (forte no SHD, fraca no SSC). O achado é real e transversal qualitativamente, **modesto** quantitativamente fora do SHD. Honestidade metodológica: reporto a magnitude exata e o limite, não inflo o positivo.
+**Veredicto honesto (revisado pós-#78):** o Marco 2-C explora timing genuíno no SHD, **mas o controle GRU mostra que isso não é uma vantagem do spiking** — uma RNN convencional faz melhor. O "1º positivo do projeto" fica **fortemente qualificado**: timing é real e recuperável, a SNN o recupera parcialmente, mas é sub-ótima vs métodos convencionais. Na prática, o 2-C **junta-se aos 3 negativos** na conclusão de fundo: a bio-inspiração não entrega vantagem competitiva no regime testável. Honestidade: o positivo não foi inflado, e o controle adversarial o desinflou ainda mais.
 
 ## Decisão pendente (Luis, admin)
 
-Marco 2-C = **Sucesso bem-caracterizado**. Caminhos (decisão de rumo do Luis): mais extensões (k-WTA temporal, SSC) / publicar (1º positivo + 3 negativos = narrativa completa) / fechar e consolidar o projeto (4 capacidades: 3 ❌ + 1 ✅).
+Pós-#78, o paper 2-C precisa de uma **decisão de enquadramento** (do Luis): publicar como *caracterização honesta com resultado essencialmente negativo* (SNN explora timing mas perde para GRU) / reframar / arquivar como o 2-A. E a decisão de rumo do projeto (4 capacidades agora efetivamente **4 ❌ ou 3.5 ❌**) — publicar a jornada / fechar / pivotar.
