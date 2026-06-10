@@ -20,9 +20,9 @@ A régua honesta tem duas camadas: (a) atingir a capacidade numericamente, e (b)
 | One-shot inédito (cross-domain) | 2-A (#52–66) | ❌ k-WTA effect collapse; C3 cross-domain ~22% vs retreinado 34–50% | ❌ anti-transfer; encoder ≈ random |
 | Aprendizado contínuo | 1 (#21–30) | ❌ bio-inspirado ≤ ProtoNet naive (80.65%) | ❌ ProtoNet já é robusto; mecanismos não agregam |
 | Eficiência radical | 2-B (#67–70) | ❌ SNN não eficiente em CPU (latência 80–327× pior) | ❌ vantagem só em SynOps teórico, não realizada em von Neumann |
-| Raciocínio temporal | 2-C (#71–77b) | ✅ **positivo modesto** — SHD timing +19.7 p.p. (rec 71.27%) | ✅ a dinâmica recorrente explora o timing (único caso) |
+| Raciocínio temporal | 2-C (#71–78) | ⚠️ timing genuíno no SHD, **mas GRU não-spiking supera a SNN (+10.5 p.p.)** | ❌ timing é genérico de recorrência, não do spiking; SNN inferior a RNN convencional |
 
-**Placar honesto:** das 4 capacidades, **3 com achado negativo rigoroso** + **1 positivo modesto** (temporal). O único "positivo numérico" extra (one-shot in-domain, C3) usa backprop — não satisfaz a camada (b).
+**Placar honesto (revisado pós-#78):** das 4 capacidades, **3 com achado negativo rigoroso** + **1 que parecia positivo mas foi desinflado** pelo controle GRU (a SNN explora timing, mas pior que um RNN convencional). O one-shot in-domain (C3) é positivo numérico mas usa backprop. **Líquido: nenhuma das 4 capacidades deu vantagem competitiva à abordagem bio-inspirada no regime testável.**
 
 ---
 
@@ -40,14 +40,15 @@ Encoder C3 (Omniglot, congelado) transferido para CUB-200 colapsa: todas as spar
 ### Eficiência radical (Marco 2-B) — ❌
 SNN-LIF + k-WTA temporal vs MLP denso em Fashion-MNIST, métrica dupla (SynOps + latência CPU). Nenhuma config atinge acc −2 p.p. **E** SynOps ≥5× menores **E** latência ≤ denso. Trade-off acc↔SynOps íngreme; **latência CPU 80–327× pior sempre**; inferência event-driven (sparse) é até *mais* lenta que o runtime denso (overhead de indexação > matmul BLAS). Conclusão: a eficiência neuromórfica é **co-design hardware-algoritmo** (silício dedicado), não se realiza em von Neumann. Encerrado (#70).
 
-### Raciocínio temporal (Marco 2-C) — ✅ positivo modesto
-SNN recorrente em SHD (Spiking Heidelberg Digits): **71.27%** vs baseline cego ao timing 51.56% = **+19.7 p.p.** (5 seeds, IC95%). Caracterizado em 6 frentes:
-- **#73 resolução temporal:** timing *genuíno* **+10.18 p.p.** (controlando arquitetura — ~metade do +19.7 bruto era LIF+BN, não timing).
+### Raciocínio temporal (Marco 2-C) — ⚠️ timing real, mas SNN perde para GRU
+SNN recorrente em SHD (Spiking Heidelberg Digits): **71.27%** vs baseline cego ao timing 51.56% = **+19.7 p.p.** (5 seeds, IC95%). Caracterizado em 7 frentes:
+- **#73 resolução temporal:** timing *genuíno* **+10.18 p.p.** — mas *upper bound*: em bins=1 a recorrência é inerte, então mistura timing com a recorrência ficando operativa (achado do peer review).
 - **#74 latency coding:** a SNN extrai 50.68% só do *onset* (1 spike/canal).
-- **#75 k-WTA temporal:** tolerante até **75% de sparsity (−1.50 p.p.)** — paralelo quase exato ao C3 espacial in-domain.
-- **#76–77b generalização SSC:** **fraca, positiva, estável** (+4–5 p.p. vs +19.7 no SHD) — não era subtreino (platôou com 60 epochs). Magnitude dataset-específica.
+- **#75 k-WTA temporal:** tolerante até **75% de sparsity (−1.50 p.p.)** — paralelo numérico ao C3 espacial in-domain (coincidência sugestiva, 2 pontos).
+- **#76–77b generalização SSC:** **fraca** (+4–5 p.p. vs +19.7 no SHD), dataset-específica.
+- **#78 controle GRU (decisivo):** um **GRU não-spiking** no mesmo input atinge **79.64% > SNN 69.10%** (+10.5 p.p.). O timing é **genérico de recorrência, não do spiking**; a SNN é uma forma **inferior** de explorá-lo.
 
-**Único marco onde o mecanismo bio-inspirado (dinâmica recorrente) genuinamente agrega.** Mas modesto: a SNN faz ~30% em SSC onde redes convencionais fazem >90%.
+**O que parecia o único marco positivo foi desinflado pelo controle adversarial:** a SNN explora timing genuíno, mas (a) isso não é uma vantagem do spiking, e (b) um RNN convencional faz melhor. Não há vantagem competitiva da bio-inspiração — o 2-C junta-se de fato aos 3 negativos.
 
 ---
 

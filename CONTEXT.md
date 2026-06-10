@@ -127,9 +127,11 @@ Reabertura pós-#70 (decisão do Luis): atacar a **4ª e última capacidade pós
 - one-shot inédito (cross-domain) ❌ Marco 2-A (#66)
 - continual learning ❌ Marco 1 (#30)
 - eficiência radical ❌ Marco 2-B (#70)
-- ✅ **raciocínio temporal** — **Marco 2-C SUCESSO no SHD (#72)** — 1º marco positivo (generalização p/ SSC fraca mas positiva: timing +5.20 p.p. vs +19.7 SHD, #77)
+- ⚠️ **raciocínio temporal** — **Marco 2-C: timing genuíno no SHD, mas NÃO spiking-específico (#72→#78)** — a SNN explora timing, MAS um GRU não-spiking a supera em +10.5 p.p.; o "1º positivo" fica qualificado e, na tese pós-LLM, junta-se aos negativos
 
-**Atualização #72 (2026-06-09) — SUCESSO:** sweep formal (5 seeds, IC95%, SHD) — cego 51.56% / SNN-ff 61.02% / **SNN-rec 71.27%**. timing (rec−cego) **+19.71 p.p.** (≥10 ✓), recorrência (rec−ff) +10.26 p.p., rec ≥65% ✓. ICs não-sobrepostos. **Critério atingido → primeiro marco POSITIVO do projeto.** A SNN recorrente explora o timing dos spikes (informação que o histograma/espectro-médio não captura). Honestidade: SHD é temporal por construção (positivo esperado); o valor é a magnitude + contraste com 3 marcos negativos; "raciocínio" é a moldura — o concreto é "classificação SNN explora timing". Decisão de rumo (publicar/estender/consolidar) pendente do Luis. Ver `STRATEGY.md` "Resultado #72" + `experiment_05_temporal/WEEKLY-1.md`.
+**Atualização #72 (2026-06-09):** sweep formal (5 seeds, IC95%, SHD) — cego 51.56% / SNN-ff 61.02% / **SNN-rec 71.27%**. timing (rec−cego) **+19.71 p.p.**, rec ≥65%. Critério literal atingido → parecia o primeiro marco positivo.
+
+**Atualização #78 (2026-06-10) — QUALIFICAÇÃO (controle do peer review):** um **GRU não-spiking** no mesmo input (T,700), mesmo budget, atinge **79.64%** vs SNN-rec 69.10% — **+10.5 p.p. acima da SNN**. Implicações: (1) o timing é **genérico de recorrência, não do spiking**; (2) a SNN é uma forma **inferior** de explorá-lo. O achado de timing é real (a SNN explora informação que o histograma perde), mas **não é uma vantagem da abordagem bio-inspirada** — um RNN convencional faz melhor. Na tese pós-LLM, o 2-C **junta-se aos 3 negativos**: nenhuma das 4 capacidades deu vantagem competitiva à bio-inspiração no regime testável. Honestidade: o controle adversarial desinflou o único positivo. Paper `paper_marco2c/` integra isso; decisão de enquadramento/venue (negative-result honesto / arquivar) pendente do Luis. Ver `experiment_05_temporal/WEEKLY-1.md` #78.
 
 ---
 
