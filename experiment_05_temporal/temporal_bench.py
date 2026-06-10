@@ -25,9 +25,9 @@ BETA = 0.9
 
 class BlindMLP(nn.Module):
     """Baseline CEGO ao timing: histograma de spikes por canal -> MLP. Ignora a ordem temporal."""
-    def __init__(self):
+    def __init__(self, n_classes=N_CLASSES):
         super().__init__()
-        self.net = nn.Sequential(nn.Linear(N_UNITS, HID), nn.ReLU(), nn.Linear(HID, N_CLASSES))
+        self.net = nn.Sequential(nn.Linear(N_UNITS, HID), nn.ReLU(), nn.Linear(HID, n_classes))
 
     def forward(self, x):  # x: (B, T, U)
         return self.net(bag_of_spikes(x))
@@ -39,13 +39,13 @@ class SNN_FF(nn.Module):
     gain escala a corrente de entrada (diag #72: corrente crua ~0.04 << threshold 1.0,
     hidden sub-ativada 3.7% -> gradiente fraco). BatchNorm1d na fc1 estabiliza a escala.
     """
-    def __init__(self, gain=1.0):
+    def __init__(self, gain=1.0, n_classes=N_CLASSES):
         super().__init__()
         sg = surrogate.fast_sigmoid()
         self.gain = gain
         self.fc1 = nn.Linear(N_UNITS, HID); self.bn1 = nn.BatchNorm1d(HID, track_running_stats=False)
         self.lif1 = snn.Leaky(beta=BETA, spike_grad=sg)
-        self.fc2 = nn.Linear(HID, N_CLASSES)  # readout integrador (logits contínuos)
+        self.fc2 = nn.Linear(HID, n_classes)  # readout integrador (logits contínuos)
 
     def forward(self, x):  # (B, T, U)
         m1 = self.lif1.init_leaky()
@@ -62,14 +62,14 @@ class SNN_Rec(nn.Module):
     k_wta: se não-None, k-WTA temporal — só os k neurônios de maior membrana disparam por
     timestep (esparsifica os spikes da hidden no tempo). Conecta com o k-WTA do paper C3.
     """
-    def __init__(self, gain=1.0, k_wta=None):
+    def __init__(self, gain=1.0, k_wta=None, n_classes=N_CLASSES):
         super().__init__()
         sg = surrogate.fast_sigmoid()
         self.gain = gain; self.k_wta = k_wta
         self.fc1 = nn.Linear(N_UNITS, HID); self.bn1 = nn.BatchNorm1d(HID, track_running_stats=False)
         self.rec = nn.Linear(HID, HID, bias=False)
         self.lif1 = snn.Leaky(beta=BETA, spike_grad=sg)
-        self.fc2 = nn.Linear(HID, N_CLASSES)  # readout integrador (logits contínuos)
+        self.fc2 = nn.Linear(HID, n_classes)  # readout integrador (logits contínuos)
 
     def forward(self, x):  # (B, T, U)
         B = x.size(0)

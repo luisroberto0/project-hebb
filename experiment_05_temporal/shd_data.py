@@ -27,15 +27,28 @@ MAX_T = 1.4   # s — SHD spikes vão até ~1.4 s
 class SHDDataset(Dataset):
     """Carrega spikes esparsos na memória (SHD é pequeno); binning denso lazy no __getitem__."""
 
-    def __init__(self, split: str, n_bins: int = 100, coding: str = "rate"):
-        path = os.path.join(DATA_DIR, f"shd_{split}.h5")
+    def __init__(self, split: str, n_bins: int = 100, coding: str = "rate",
+                 dataset: str = "shd", max_per_class: int | None = None):
+        path = os.path.join(DATA_DIR, f"{dataset}_{split}.h5")
         with h5py.File(path, "r") as f:
-            # vlen datasets -> materializa como listas de arrays
-            self.times = [np.asarray(t, dtype=np.float32) for t in f["spikes"]["times"]]
-            self.units = [np.asarray(u, dtype=np.int64) for u in f["spikes"]["units"]]
-            self.labels = np.asarray(f["labels"][:], dtype=np.int64)
+            labels_all = np.asarray(f["labels"][:], dtype=np.int64)
+            if max_per_class is not None:
+                # subset balanceado (SSC é grande: ~75k -> usa N por classe)
+                sel = []
+                for c in np.unique(labels_all):
+                    sel.extend(np.where(labels_all == c)[0][:max_per_class].tolist())
+                sel = sorted(sel)
+                td, ud = f["spikes"]["times"], f["spikes"]["units"]
+                self.times = [np.asarray(td[i], dtype=np.float32) for i in sel]
+                self.units = [np.asarray(ud[i], dtype=np.int64) for i in sel]
+                self.labels = labels_all[sel]
+            else:
+                self.times = [np.asarray(t, dtype=np.float32) for t in f["spikes"]["times"]]
+                self.units = [np.asarray(u, dtype=np.int64) for u in f["spikes"]["units"]]
+                self.labels = labels_all
         self.n_bins = n_bins
         self.coding = coding  # "rate" (contagem por bin) | "latency" (time-to-first-spike)
+        self.n_classes = int(labels_all.max()) + 1
 
     def __len__(self):
         return len(self.labels)
