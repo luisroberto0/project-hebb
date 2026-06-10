@@ -1,0 +1,248 @@
+% =============================================================================
+% paper_marco2c/main.tex
+% Disentangling Timing from Architecture in Recurrent Spiking Networks:
+% A Characterization on Spiking Heidelberg Digits
+% Author: Luis Roberto Pinho da Silva Junior (Independent research)
+%
+% Status: LaTeX consolidado no kickoff. 6 seções + abstract + 3 figuras + refs.
+% Compilar via Overleaf (upload main.tex + refs.bib + figs/) ou pdflatex+bibtex local.
+% =============================================================================
+
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{authblk}
+\usepackage[round]{natbib}
+\bibliographystyle{plainnat}
+
+\hypersetup{colorlinks=true, citecolor=blue, linkcolor=black, urlcolor=blue}
+
+\title{Disentangling Timing from Architecture in Recurrent Spiking Networks:\\A Characterization on Spiking Heidelberg Digits}
+\author[1]{Luis Roberto Pinho da Silva Junior}
+\affil[1]{Independent research \\ \url{https://github.com/luisroberto0/project-hebb}}
+\date{2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Recurrent spiking neural networks (SNNs) are routinely reported to exploit temporal structure, but the measured advantage over a non-temporal baseline conflates two effects: information genuinely carried by spike \emph{timing}, and architectural differences (LIF dynamics, normalization) unrelated to timing. We characterize a recurrent LIF network on the Spiking Heidelberg Digits (SHD) dataset, separating the two. The recurrent SNN reaches 71.27\% versus 51.56\% for a timing-blind baseline (a per-channel spike histogram followed by an MLP), a gap of 19.7 percentage points. By sweeping the temporal resolution, we attribute \textbf{+10.18 p.p.\ to genuine timing} (the same network as it goes from 1 to 100 time bins) and \textasciitilde+9.5 p.p.\ to architecture (a single-bin SNN still beats the MLP). The network recovers 50.68\% from onset timing alone (one spike per channel). Temporal k-WTA sparsity is tolerated up to 75\% at a cost of 1.50 p.p.---nearly identical to the 1.45 p.p.\ tolerance reported for \emph{spatial} k-WTA in-domain on Prototypical Networks. The effect is dataset-specific: on the harder Spiking Speech Commands it is weak but stable (+4--5 p.p.). We claim no superiority over conventional methods and no new mechanism; we quantify, with controls, how much timing helps and where its benefit ends.
+\end{abstract}
+
+% =============================================================================
+\section{Introduction}
+\label{sec:intro}
+
+Spiking neural networks (SNNs) process information as discrete events in time, and a recurring claim is that they exploit the \emph{timing} of those events---that the moment a unit fires, not merely whether it fires, carries information~\citep{maass1997networks}. On temporal benchmarks such as the Spiking Heidelberg Digits (SHD)~\citep{cramer2020heidelberg}, recurrent SNNs reach accuracies well above non-temporal baselines, and this gap is often attributed to timing. We argue that the attribution is, as usually measured, confounded.
+
+The advantage of a recurrent SNN over a non-temporal baseline mixes two distinct effects. The first is information genuinely carried by spike timing: if the same network is given finer temporal resolution and improves, that improvement is attributable to timing. The second is architectural: an SNN uses LIF dynamics, often batch normalization, and a different readout than a plain multilayer perceptron (MLP), and these differences can move accuracy regardless of any temporal structure. A network given only a single time step---which destroys all timing---can still differ from an MLP for purely architectural reasons. Reporting the raw gap therefore \emph{overstates} how much timing helps.
+
+This paper characterizes a recurrent LIF network on SHD with that confound controlled. Our baseline is deliberately \emph{timing-blind}: we sum each input channel's spikes over the entire trial (a per-channel histogram) and classify the resulting vector with an MLP. This preserves \emph{which} channels fired---the average spectral content---while destroying \emph{when}. The difference between the recurrent SNN and this baseline isolates the contribution of timing, controlling for the spectral information both representations share.
+
+\textbf{Main findings.} (i) On SHD (5 seeds, bootstrap 95\% CIs), the recurrent SNN reaches 71.27\% versus 51.56\% for the timing-blind baseline---a raw gap of 19.7 p.p. (ii) Sweeping the number of time bins from 1 to 100 shows accuracy rising monotonically; the \emph{same} network improves by 10.18 p.p.\ as resolution increases, which we read as the \textbf{genuine timing contribution}. The residual (a single-bin SNN still beats the MLP by $\sim$9.5 p.p.) is architectural, not temporal. (iii) Under latency coding (one spike per channel, at the time of its first event), the network still reaches 50.68\%---far above chance and above a presence-only baseline---showing it reads onset timing, not merely which channels activate. (iv) Temporal k-WTA, which keeps only the $k$ most-active hidden units per time step, tolerates 75\% sparsity at a cost of 1.50 p.p.; this nearly matches the 1.45 p.p.\ tolerance of \emph{spatial} k-WTA reported in-domain for Prototypical Networks~\citep{pinho2026kwta}, and collapses only under extreme ($>$96\%) sparsity. (v) The effect is dataset-specific: on the larger, harder Spiking Speech Commands the timing margin is weak but stable ($+4$--$5$ p.p., not an artifact of undertraining).
+
+The contribution of this work is characterizational, not methodological:
+\begin{enumerate}
+    \item We \textbf{disentangle timing from architecture} by sweeping temporal resolution, attributing +10.18 p.p.\ to genuine timing and the rest to the SNN architecture.
+    \item We corroborate the timing contribution with \textbf{latency coding} (50.68\% from onsets alone) and a monotonic resolution--accuracy curve.
+    \item We show \textbf{temporal k-WTA sparsity is tolerated to 75\%}, a quantitative parallel to spatial k-WTA tolerance in metric learning.
+    \item We \textbf{measure the generalization limit}: the effect is strong on SHD and weak-but-stable on SSC.
+\end{enumerate}
+
+We make no claim of superiority over conventional methods---a convolutional or transformer model on a spectrogram exceeds 90\% on these benchmarks, well above the SNN. We make no claim of a new learning mechanism: training is by surrogate-gradient backpropagation. The value is a controlled, honest measurement of how much spike timing contributes, and where that contribution ends.
+
+% =============================================================================
+\section{Background}
+\label{sec:background}
+
+\subsection{Spiking Networks and Surrogate-Gradient Training}
+A spiking neuron integrates input over time and emits a discrete spike when its membrane potential crosses a threshold, after which the potential resets. We use the leaky integrate-and-fire (LIF) neuron: $u_t = \beta u_{t-1} + I_t$, with a spike when $u_t > \vartheta$ and a reset thereafter. The spike function is non-differentiable, so end-to-end training uses a \emph{surrogate gradient}---a smooth function substituted for the derivative of the threshold during backpropagation through time~\citep{neftci2019surrogate}. We use the fast-sigmoid surrogate. We emphasize at the outset that surrogate-gradient training \emph{is} backpropagation; this work characterizes what the temporal dynamics compute, not a backprop-free learning rule.
+
+A recurrent SNN adds lateral connections in the hidden layer, so the state at one time step feeds the next, giving the network an explicit mechanism to integrate information across time. We contrast a feedforward SNN (temporal input, no recurrence) and a recurrent SNN against a non-spiking baseline.
+
+\subsection{The Spiking Heidelberg Datasets}
+The Spiking Heidelberg Digits (SHD) and Spiking Speech Commands (SSC) datasets~\citep{cramer2020heidelberg} convert spoken audio into spike trains through a model of the inner ear: each utterance becomes events across 700 input channels (frequency-like cochlear bands) over roughly one second. SHD contains spoken digits 0--9 in English and German (20 classes, $\sim$10{,}000 samples, speaker-held-out test split). SSC is larger and harder: 35 command words, $\sim$100{,}000 samples. Because the information is intrinsically temporal, these benchmarks are standard for evaluating whether a model exploits timing. Reported recurrent-SNN accuracies on SHD lie in the 70--83\% range; feedforward SNNs are lower (48--66\%).
+
+\subsection{k-WTA and Sparse Coding}
+The $k$-winner-take-all (k-WTA) operation keeps the $k$ largest entries of an activation vector and zeros the rest~\citep{maass2000computational}. It has direct biological motivation---cortical activity is sparse---and appears across cortex-inspired models. In a companion study on Prototypical Networks~\citep{pinho2026kwta}, k-WTA applied to a \emph{spatial} embedding was shown to be tolerated in-domain: 75\% sparsity cost only 1.45 percentage points on Omniglot few-shot classification. Here we apply k-WTA along the \emph{temporal} axis (limiting how many hidden units may fire per time step) and ask whether the same tolerance holds. The parallel matters: it tests whether the compatibility of k-WTA sparsity with a trained representation is a property of the axis (spatial) or a more general phenomenon.
+
+\subsection{Why a Timing-Blind Baseline}
+To isolate the contribution of timing we need a baseline that has access to everything \emph{except} timing. We use the per-channel spike histogram: for each of the 700 channels, the total number of spikes over the trial, classified by an MLP. This representation preserves \emph{which} channels were active and how much---the average spectral envelope, which is itself discriminative for speech---while discarding \emph{when} each spike occurred. The gap between a temporal model and this baseline therefore measures the value of timing \emph{controlling for} the spectral information both share. This is a stronger control than comparing against chance: on SHD the timing-blind baseline already reaches $\sim$51\%, far above the 5\% chance level, precisely because the spectral envelope carries much of the signal. What the SNN must add, to justify its temporal machinery, is information that survives only in the timing.
+
+% =============================================================================
+\section{Method}
+\label{sec:method}
+
+\subsection{Models}
+All three models map a sample to logits over the classes; they differ only in how they use time.
+\textbf{Timing-blind baseline (BlindMLP).} The input spike tensor $(T, 700)$ is summed over time to a 700-dimensional per-channel histogram, then passed through an MLP ($700 \to 256 \to C$, ReLU). It has no access to temporal order.
+\textbf{Feedforward SNN.} A LIF layer ($700 \to 256$) processes the input one time step at a time, followed by an integrating readout ($256 \to C$); no recurrence.
+\textbf{Recurrent SNN.} As above, with an all-to-all recurrent connection in the hidden layer: $I_t = \mathrm{BN}(W_{\text{in}} x_t) + W_{\text{rec}} s_{t-1}$, where $s_{t-1}$ is the previous hidden spike vector. This is the model that can integrate timing across the trial.
+
+Hidden size 256, LIF decay $\beta = 0.9$, fast-sigmoid surrogate. The readout is an \emph{integrator}: logits are the sum over time of a linear projection of the hidden spikes, $\sum_t W_{\text{out}} s_t$. We found a spiking output layer trained poorly (the output rarely fired, starving the loss of gradient); the linear integrating readout gives continuous, well-conditioned logits.
+
+\subsection{A Reproducible Training Detail: BatchNorm Statistics}
+Without normalization the input current sat far below threshold (hidden firing rate $\sim$3.7\%) and training was slow. Adding BatchNorm on the hidden pre-activation fixed the scale, but introduced a subtle failure: with default running statistics, accuracy trained to $>$70\% yet \emph{tested} near chance (13\%). The cause is that a single BatchNorm, applied at every one of the 100 time steps, accumulates running mean/variance that mix all time steps; at evaluation those pooled statistics are wrong for any individual step. Setting \texttt{track\_running\_stats=False} (using batch statistics at test time as well) resolves it, lifting test accuracy from 13\% to 71\%. We report this because it is an easy, silent trap when batch-normalizing a per-time-step SNN.
+
+\subsection{Input Encodings}
+\textbf{Rate.} Each $(T,700)$ tensor counts spikes per (time-bin, channel). Time is binned into $T$ bins (default $T=100$) over the $\sim$1.4\,s trial.
+\textbf{Latency (time-to-first-spike).} For each channel, a single spike is placed in the bin of its \emph{first} event; later spikes are discarded. This keeps only onset timing (one spike per active channel) and lets us test whether onset timing alone is informative.
+
+\subsection{Temporal k-WTA}
+At each time step, after computing hidden spikes, we keep only the $k$ units with the largest membrane potential and zero the rest, enforcing at most $k$ active hidden spikes per step. Sweeping $k \in \{128, 64, 32, 16, 8, 4\}$ over a hidden size of 256 spans 50\%--98.4\% temporal sparsity.
+
+\subsection{Datasets and Evaluation}
+We use the official SHD train/test split (speaker-held-out test). Spikes are read from the published HDF5 files. The main result uses 5 seeds with 95\% bootstrap confidence intervals over the per-seed accuracies. The resolution, latency, and k-WTA characterizations use 3 seeds. For the SSC generalization (Section~\ref{subsec:ssc}) we train on the full $\sim$75{,}000-sample training set via lazy HDF5 loading. Training uses Adam ($10^{-3}$) and cross-entropy on the integrated logits. All experiments run on a single RTX 4070 laptop GPU; we note that the recurrent loop over 100 time steps leaves the GPU largely idle, a practical signature of how poorly the sequential-temporal computation maps onto dense parallel hardware.
+
+% =============================================================================
+\section{Experiments}
+\label{sec:experiments}
+
+\subsection{Main Result on SHD}
+\label{subsec:main}
+Table~\ref{tab:shd} reports 5-seed accuracy on the SHD test split.
+
+\begin{table}[tbp]
+\centering\small
+\caption{SHD test accuracy, 5 seeds, 95\% bootstrap CIs. Chance is 5\%.}
+\label{tab:shd}
+\begin{tabular}{lrr}
+\toprule
+Model & Accuracy & 95\% CI \\
+\midrule
+Timing-blind baseline (histogram + MLP) & 51.56\% $\pm$0.77 & [50.78, 52.09] \\
+SNN feedforward                         & 61.02\% $\pm$0.85 & [60.27, 61.77] \\
+SNN recurrent                           & 71.27\% $\pm$0.45 & [70.91, 71.70] \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The recurrent SNN exceeds the timing-blind baseline by \textbf{19.71 p.p.}, and the feedforward SNN by 10.26 p.p.; the three per-condition CIs do not overlap. Taken at face value, this 19.7 p.p.\ gap is the ``timing advantage.'' The rest of this section shows that roughly half of it is not timing.
+
+\begin{figure}[tbp]
+\centering
+\includegraphics[width=0.72\linewidth]{figs/fig1_shd_conditions.pdf}
+\caption{SHD test accuracy for the three conditions (5 seeds, 95\% CIs). The raw gap between the timing-blind baseline and the recurrent SNN is 19.7 p.p.; Section~\ref{subsec:bins} shows about half is architectural rather than temporal.}
+\label{fig:conditions}
+\end{figure}
+
+\subsection{Disentangling Timing from Architecture}
+\label{subsec:bins}
+We sweep the number of time bins $T$ for the recurrent SNN, holding everything else fixed. At $T=1$ the input collapses to the per-channel histogram---the same information the blind baseline sees---so any advantage at $T=1$ is \emph{architectural}, not temporal. As $T$ grows, the \emph{same network} gains access to finer timing.
+
+\begin{table}[tbp]
+\centering\small
+\caption{Recurrent SNN accuracy vs.\ temporal resolution (3 seeds). Timing-blind baseline: 49.41\%.}
+\label{tab:bins}
+\begin{tabular}{rrr}
+\toprule
+Time bins & Accuracy & vs.\ baseline \\
+\midrule
+1   & 58.92\% & +9.51 \\
+4   & 63.06\% & +13.65 \\
+16  & 67.29\% & +17.87 \\
+32  & 68.45\% & +19.04 \\
+100 & 69.10\% & +19.68 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Accuracy rises monotonically with resolution (Table~\ref{tab:bins}, Figure~\ref{fig:resolution}). The decomposition is direct: from $T=1$ to $T=100$ the same network improves by \textbf{+10.18 p.p.}, which is attributable to timing alone (architecture is held fixed). The residual \textbf{+9.51 p.p.}\ at $T=1$ is the architectural advantage of the LIF+BatchNorm network over the MLP, with no timing involved. Thus of the 19.7 p.p.\ raw gap, only about half is genuine timing; reporting the raw gap overstates the temporal contribution roughly twofold.
+
+\begin{figure}[tbp]
+\centering
+\includegraphics[width=0.8\linewidth]{figs/fig2_resolution.pdf}
+\caption{Recurrent SNN accuracy vs.\ temporal resolution. The same network improves by +10.18 p.p.\ from 1 to 100 bins (genuine timing); the +9.5 p.p.\ at a single bin, over the timing-blind baseline, is architectural.}
+\label{fig:resolution}
+\end{figure}
+
+\subsection{Onset Timing Alone Is Informative}
+\label{subsec:latency}
+Under latency coding, each channel contributes a single spike at its first-event time (Table~\ref{tab:latency}).
+
+\begin{table}[tbp]
+\centering\small
+\caption{Rate vs.\ latency coding (3 seeds).}
+\label{tab:latency}
+\begin{tabular}{lrr}
+\toprule
+Coding & Timing-blind & SNN recurrent \\
+\midrule
+rate    & 49.41\% & 69.10\% \\
+latency & 23.51\% & 50.68\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+With one spike per channel---pure onset timing---the recurrent SNN still reaches \textbf{50.68\%}, far above chance (5\%) and above the latency-coded blind baseline (23.51\%, which retains only binary channel presence and is therefore weak). This shows the network reads onset \emph{timing}, not merely which channels activate. At the same time, full rate coding (69.10\%) beats latency (50.68\%) by 18.4 p.p.: the complete spike count carries substantial information beyond the onset. Timing helps, but it is not the whole story.
+
+\subsection{Temporal k-WTA Tolerance Parallels the Spatial Case}
+\label{subsec:kwta}
+We apply k-WTA per time step on the hidden layer (Table~\ref{tab:kwta}, Figure~\ref{fig:kwta}).
+
+\begin{table}[tbp]
+\centering\small
+\caption{Recurrent SNN under temporal k-WTA (3 seeds). Hidden size 256.}
+\label{tab:kwta}
+\begin{tabular}{rrr}
+\toprule
+$k$ & Sparsity & Accuracy (vs.\ dense) \\
+\midrule
+dense & 0\%    & 69.10\% \\
+128 & 50\%     & 69.60\% (+0.50) \\
+64  & 75\%     & 67.59\% ($-$1.50) \\
+32  & 87.5\%   & 62.71\% ($-$6.39) \\
+16  & 93.8\%   & 55.54\% ($-$13.56) \\
+8   & 96.9\%   & 48.98\% ($-$20.11) \\
+4   & 98.4\%   & 42.64\% ($-$26.46) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Temporal k-WTA is tolerated up to 75\% sparsity ($k=64$) at a cost of only \textbf{1.50 p.p.}---almost exactly the 1.45 p.p.\ cost of 75\% \emph{spatial} k-WTA reported in-domain for Prototypical Networks~\citep{pinho2026kwta}. Degradation accelerates past 87.5\% and collapses beyond 96\% ($k \le 8$), where accuracy returns to the timing-blind baseline: with too few active units per step, the temporal representation has insufficient capacity. The quantitative match across two different axes (spatial embedding vs.\ temporal hidden activity) suggests k-WTA compatibility with a trained representation is a general in-domain property, not specific to the spatial case.
+
+\begin{figure}[tbp]
+\centering
+\includegraphics[width=0.8\linewidth]{figs/fig3_kwta_temporal.pdf}
+\caption{Recurrent SNN under temporal k-WTA. Sparsity is tolerated to 75\% ($-$1.50 p.p., matching the spatial case) and collapses to the timing-blind baseline beyond 96\%.}
+\label{fig:kwta}
+\end{figure}
+
+\subsection{Generalization to SSC Is Weak but Stable}
+\label{subsec:ssc}
+We repeat the main comparison on the harder SSC (35 classes; full $\sim$75k training set). The recurrent SNN reaches 30.83\% versus 25.63\% for the blind baseline, a timing margin of \textbf{+5.20 p.p.} (35 epochs). Training longer (60 epochs) does not grow the margin---it plateaus at +3.95 p.p., with the SNN slightly overfitting---so the modest margin is the model's ceiling on SSC, not undertraining. The timing effect therefore \emph{generalizes qualitatively} (positive on both datasets) but is \emph{dataset-specific in magnitude}: strong on SHD ($\sim$+20 p.p.), weak on SSC ($\sim$+5 p.p.). We note the SNN's absolute SSC accuracy ($\sim$30\%) is well below both the SHD result and the literature ($\sim$50--70\% with heavier preprocessing and augmentation), bounding these conclusions to our simple pipeline.
+
+% =============================================================================
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{Why Disentangling Timing from Architecture Matters}
+The headline number for a temporal model is usually its gap over a non-temporal baseline, and that gap is read as the value of timing. Our resolution sweep shows the reading is inflated: half of the 19.7 p.p.\ gap on SHD survives even when the network is given a \emph{single} time bin, i.e.\ no timing at all. That residual is the LIF+normalization architecture out-performing an MLP on the same static histogram. The genuinely temporal contribution---the part that appears only as resolution increases---is +10.18 p.p., about half the raw figure. The control is cheap (vary the number of bins) and we suggest it as a default when claiming a timing benefit: report the single-bin accuracy alongside the full-resolution one, so the architectural and temporal components are visible separately. Two further probes corroborate the temporal component rather than relying on it alone: accuracy rises monotonically with resolution, and onset-only (latency) coding already recovers 50.68\%.
+
+\subsection{k-WTA Is Compatible In-Domain on Either Axis}
+The temporal k-WTA result lines up almost exactly with the spatial k-WTA result from the companion Prototypical-Network study: 75\% sparsity costs 1.50 p.p.\ here and 1.45 p.p.\ there. Despite acting on entirely different quantities---which hidden units may fire \emph{per time step} versus which embedding coordinates survive---the tolerance is the same to within noise, and both degrade sharply only at extreme sparsity. This suggests that the compatibility of k-WTA with a trained representation is not a peculiarity of the spatial embedding but a more general in-domain property: a network trained under a sparsity constraint learns to concentrate the signal into the surviving units, on whichever axis the constraint is imposed. (In the companion work, the same spatial k-WTA \emph{collapses} under domain shift; whether temporal k-WTA is similarly fragile across, say, SHD$\to$SSC is left open.)
+
+\subsection{Why the Effect Is Weaker on SSC}
+The timing margin shrinks from $\sim$20 p.p.\ on SHD to $\sim$5 p.p.\ on SSC, and this is not undertraining: more epochs plateau the margin. Several factors plausibly contribute---SSC has 35 classes versus 20, more speaker variability, and a relatively stronger spectral baseline---but our setup also reaches only $\sim$30\% absolute, well below literature pipelines. We therefore frame this as a measured \emph{limit}, not a mechanism: the timing benefit demonstrated cleanly on SHD does not transfer at the same magnitude to a harder benchmark under a simple pipeline. Reporting it is the honest counterweight to the positive SHD result.
+
+\subsection{Limitations}
+The study is deliberately narrow. (i) Two datasets from one source (SHD/SSC); no claim about other temporal benchmarks. (ii) Training is surrogate-gradient backpropagation through time---this characterizes the temporal \emph{dynamics}, not a local or backprop-free rule. (iii) We do not compare against conventional sequence models (RNNs, transformers); on a spectrogram those exceed 90\% on these tasks, so the SNN is not competitive in absolute accuracy, and we make no efficiency claim here. (iv) Everything runs on a GPU emulating the spiking dynamics with a Python time loop; the energy advantage that motivates spiking hardware is not measured and would require neuromorphic silicon. (v) A single recurrent architecture and hidden size; no architecture search.
+
+\subsection{What We Do Not Conclude}
+We do not conclude that spiking networks are a better way to process audio, nor that timing is the dominant cue (rate coding beats latency by 18 p.p.), nor that this is a path to capabilities conventional networks lack. We conclude only what we measured: spike timing carries information recoverable by a recurrent SNN, worth about +10 p.p.\ over architecture on SHD, corroborated by latency coding and the resolution curve, compatible with up to 75\% temporal sparsity, and modest and dataset-specific in magnitude.
+
+% =============================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+We characterized how much a recurrent spiking network exploits spike timing on the Spiking Heidelberg Digits, with the architectural confound controlled. Against a timing-blind baseline (a per-channel spike histogram), the recurrent SNN gains 19.7 percentage points; but by sweeping temporal resolution we attribute only +10.18 p.p.\ to genuine timing and the remainder to the spiking architecture itself---roughly halving the naive figure. Latency coding (50.68\% from onsets alone) and a monotonic resolution--accuracy curve corroborate the temporal contribution. Temporal k-WTA sparsity is tolerated up to 75\% at a cost of 1.50 p.p., almost identical to the spatial k-WTA tolerance reported in-domain for Prototypical Networks---evidence that k-WTA compatibility is a general in-domain property across axes. The effect is strong on SHD and weak-but-stable on the harder Spiking Speech Commands (+4--5 p.p.), bounding its generality. The contribution is a controlled, honest measurement: how much timing helps, corroborated by independent probes, and where its benefit ends---not a new method, and not superiority over conventional models.
+
+% =============================================================================
+\bibliography{refs}
+
+\end{document}

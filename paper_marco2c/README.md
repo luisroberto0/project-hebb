@@ -50,10 +50,10 @@ Decisão de Luis pós-draft. Candidatos: NeurIPS/ICLR workshop bio-plausible/neu
 | kickoff | Discussion + Conclusion | ✅ |
 | kickoff | refs.bib (5 entradas) | ✅ |
 | kickoff | Figuras (barras SHD, curva bins, curva k-WTA — 300 DPI) | ✅ |
-| próxima | LaTeX consolidação (main.tex) + validação | pendente |
+| kickoff | LaTeX consolidação (`main.tex`) + validação estrutural | ✅ |
 | próxima | Peer review interno + decisão de venue (Luis) | pendente |
 
-**Draft de texto COMPLETO** (6 seções + abstract, ~3300 palavras). Falta: figuras + LaTeX + revisão.
+**Draft COMPLETO** (6 seções + abstract + 3 figuras + `main.tex`, ~3300 palavras). Validação estrutural OK (5 cites no .bib, refs/labels resolvem, 14/14 ambientes, 3 figuras). Compila via Overleaf (upload `main.tex` + `refs.bib` + `figs/`) ou `pdflatex+bibtex` local. Falta: peer review + decisão de venue.
 
 ## Tom
 
