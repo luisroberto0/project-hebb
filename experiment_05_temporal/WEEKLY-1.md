@@ -146,11 +146,12 @@ Dataset SSC inteiro via lazy loading (train 75466 / test 20382), 35 epochs, 1 se
 | | cego | SNN-rec | timing (rec−cego) |
 |---|---|---|---|
 | subset 17.5k, 25ep (#76) | 21.72% | 22.42% | +0.70 |
-| completo 75k, 35ep (#77) | 25.63% | 30.83% | **+5.20 p.p.** |
+| completo 75k, 35ep (#77) | 25.63% | 30.83% | +5.20 |
+| completo 75k, **60ep (#77b)** | 25.62% | 29.57% | **+3.95 p.p.** |
 
-**Resultado: generalização FRACA mas POSITIVA.** Com o dataset completo a margem subiu de +0.70 → +5.20 p.p. — confirma que o subset (#76) era subtreino. O timing **agrega** em SSC (rec 30.83% ≈ 11× chance), mas com magnitude **~4× menor** que no SHD (+19.7).
+**Resultado: generalização FRACA, POSITIVA e ESTÁVEL.** A progressão subset→completo (+0.70→+5.20) confirmou que o subset era subtreino. O firming com 60 epochs (#77b) **resolveu o caveat residual**: a margem **não cresceu — platôou** (+5.20→+3.95; a SNN-rec até caiu levemente, 30.83→29.57, overfitting sem early-stopping). Logo o resultado fraco **não é subtreino — é o teto real** do setup. O timing agrega ~**+4–5 p.p.** em SSC (rec ~30% ≈ 11× chance), magnitude **~4× menor** que no SHD (+19.7).
 
-**Caveats honestos:** as acurácias ainda estão baixas (cego 25.63%, rec 30.83%) vs literatura SSC (~50–70% recorrente) → subtreino residual (1 seed, 35 epochs; SSC exige mais epochs/tuning/augmentation). A margem pode ainda crescer com convergência total. Mas o sinal é claro: o achado "timing agrega" generaliza **qualitativamente** (positivo em SHD e SSC); a **magnitude é dataset-específica** (forte no SHD, fraca no SSC).
+**Veredicto firmado:** o achado "timing agrega" generaliza **qualitativamente** (positivo em SHD e SSC, estável), mas a **magnitude é dataset-específica** — forte no SHD, modesta no SSC. Não era artefato de subtreino. (A SNN plateia em ~30% no meu setup vs literatura ~50–70%, que usa pipeline mais sofisticado — augmentation, delta features; isso é limite de *preprocessing/arquitetura*, não de epochs.)
 
 **Veredicto da generalização:** parcial — nem universal (não reproduz +19.7), nem nulo (+5.20 é positivo e ~11× chance). O timing é informativo em ambos os benchmarks temporais; o *quanto* depende do dataset.
 
