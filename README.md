@@ -158,6 +158,7 @@ Ordem de leitura para entender o estado em <10 minutos:
 | [`STRATEGY.md`](STRATEGY.md) | Estratégia de pesquisa: decisões pós-#10, #13, #15, #20, #25, #27, **#30 (Fechamento Marco 1 + Plano paper C3)**. |
 | [`experiment_01_oneshot/`](experiment_01_oneshot/) | Experimento 01 (one-shot). PLAN.md + WEEKLY-1.md (sanity MNIST), WEEKLY-2.md (família C, sessões #15-#20). C3b é o resultado publicável. |
 | [`experiment_02_continual/`](experiment_02_continual/) | Experimento 02 (continual learning). PLAN.md marcado ENCERRADO. WEEKLY-1.md (sessões #22-#29). PAPERS.md (lit review CL). |
+| [`SYNTHESIS.md`](SYNTHESIS.md) | **Capstone da jornada pós-LLM:** 5 marcos (3 ❌ + 1 ✅ modesto), narrativa transversal de k-WTA, avaliação honesta. Leia para o panorama completo. |
 | [`CLAUDE.md`](CLAUDE.md) | Guia operacional pra futuras sessões Claude Code. |
 
 ---
