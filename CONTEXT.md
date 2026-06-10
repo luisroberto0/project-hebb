@@ -127,7 +127,7 @@ Reabertura pós-#70 (decisão do Luis): atacar a **4ª e última capacidade pós
 - one-shot inédito (cross-domain) ❌ Marco 2-A (#66)
 - continual learning ❌ Marco 1 (#30)
 - eficiência radical ❌ Marco 2-B (#70)
-- ✅ **raciocínio temporal** — **Marco 2-C SUCESSO no SHD (#72)** — 1º marco positivo (generalização p/ SSC inconclusiva, #76)
+- ✅ **raciocínio temporal** — **Marco 2-C SUCESSO no SHD (#72)** — 1º marco positivo (generalização p/ SSC fraca mas positiva: timing +5.20 p.p. vs +19.7 SHD, #77)
 
 **Atualização #72 (2026-06-09) — SUCESSO:** sweep formal (5 seeds, IC95%, SHD) — cego 51.56% / SNN-ff 61.02% / **SNN-rec 71.27%**. timing (rec−cego) **+19.71 p.p.** (≥10 ✓), recorrência (rec−ff) +10.26 p.p., rec ≥65% ✓. ICs não-sobrepostos. **Critério atingido → primeiro marco POSITIVO do projeto.** A SNN recorrente explora o timing dos spikes (informação que o histograma/espectro-médio não captura). Honestidade: SHD é temporal por construção (positivo esperado); o valor é a magnitude + contraste com 3 marcos negativos; "raciocínio" é a moldura — o concreto é "classificação SNN explora timing". Decisão de rumo (publicar/estender/consolidar) pendente do Luis. Ver `STRATEGY.md` "Resultado #72" + `experiment_05_temporal/WEEKLY-1.md`.
 
