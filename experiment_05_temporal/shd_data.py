@@ -28,33 +28,44 @@ class SHDDataset(Dataset):
     """Carrega spikes esparsos na memória (SHD é pequeno); binning denso lazy no __getitem__."""
 
     def __init__(self, split: str, n_bins: int = 100, coding: str = "rate",
-                 dataset: str = "shd", max_per_class: int | None = None):
+                 dataset: str = "shd", max_per_class: int | None = None, lazy: bool = False):
         path = os.path.join(DATA_DIR, f"{dataset}_{split}.h5")
-        with h5py.File(path, "r") as f:
-            labels_all = np.asarray(f["labels"][:], dtype=np.int64)
-            if max_per_class is not None:
-                # subset balanceado (SSC é grande: ~75k -> usa N por classe)
-                sel = []
-                for c in np.unique(labels_all):
-                    sel.extend(np.where(labels_all == c)[0][:max_per_class].tolist())
-                sel = sorted(sel)
-                td, ud = f["spikes"]["times"], f["spikes"]["units"]
-                self.times = [np.asarray(td[i], dtype=np.float32) for i in sel]
-                self.units = [np.asarray(ud[i], dtype=np.int64) for i in sel]
-                self.labels = labels_all[sel]
-            else:
-                self.times = [np.asarray(t, dtype=np.float32) for t in f["spikes"]["times"]]
-                self.units = [np.asarray(u, dtype=np.int64) for u in f["spikes"]["units"]]
-                self.labels = labels_all
+        self.lazy = lazy  # lazy: lê do HDF5 por índice (SSC completo ~75k não cabe na RAM)
+        if lazy:
+            self._f = h5py.File(path, "r")
+            self._td = self._f["spikes"]["times"]
+            self._ud = self._f["spikes"]["units"]
+            self.labels = np.asarray(self._f["labels"][:], dtype=np.int64)
+        else:
+            with h5py.File(path, "r") as f:
+                labels_all = np.asarray(f["labels"][:], dtype=np.int64)
+                if max_per_class is not None:
+                    # subset balanceado (SSC é grande: ~75k -> usa N por classe)
+                    sel = []
+                    for c in np.unique(labels_all):
+                        sel.extend(np.where(labels_all == c)[0][:max_per_class].tolist())
+                    sel = sorted(sel)
+                    td, ud = f["spikes"]["times"], f["spikes"]["units"]
+                    self.times = [np.asarray(td[i], dtype=np.float32) for i in sel]
+                    self.units = [np.asarray(ud[i], dtype=np.int64) for i in sel]
+                    self.labels = labels_all[sel]
+                else:
+                    self.times = [np.asarray(t, dtype=np.float32) for t in f["spikes"]["times"]]
+                    self.units = [np.asarray(u, dtype=np.int64) for u in f["spikes"]["units"]]
+                    self.labels = labels_all
         self.n_bins = n_bins
         self.coding = coding  # "rate" (contagem por bin) | "latency" (time-to-first-spike)
-        self.n_classes = int(labels_all.max()) + 1
+        self.n_classes = int(self.labels.max()) + 1
 
     def __len__(self):
         return len(self.labels)
 
     def __getitem__(self, i):
-        t, u = self.times[i], self.units[i]
+        if self.lazy:
+            t = np.asarray(self._td[i], dtype=np.float32)
+            u = np.asarray(self._ud[i], dtype=np.int64)
+        else:
+            t, u = self.times[i], self.units[i]
         x = torch.zeros(self.n_bins, N_UNITS)
         if t.size:
             b = np.clip((t / MAX_T * self.n_bins).astype(np.int64), 0, self.n_bins - 1)
