@@ -37,6 +37,23 @@ do backprop. MEDIANO = 65–75% e 8–15 p.p. FALHA = <65% OU <8 p.p.
 
 **Veredicto literal:** MEDIANO-forte. 2 das 3 sub-condições em nível SUCESSO (acc ≥75% ✓, ≤15 p.p. do backprop ✓); a margem sobre random (+11.67) ficou em MEDIANO. A predição registrada (10–20 p.p.) acertou. **Não é backprop disfarçado** (regra local fechada, zero autograd na pilha), **não é arquitetural** (bate random por +11.67), **não é dispensável** (wta_off colapsa) — sobrevive aos 3 controles que mataram tudo até agora.
 
-## Tentativa de SUCESSO pleno (em curso)
+## Tentativa de SUCESSO pleno — via mais treino FALHOU (achado honesto)
 
-Para cruzar os ≥15 p.p. honestamente: mais passadas de treino Hebbian (random fica fixo em 68.6%; se a pilha Hebbian melhorar com convergência, a margem cresce). Rodando softhebb com unsup-epochs 3/5/10. Resultado a consolidar.
+Hipótese: mais passadas Hebbianas → pilha melhor → margem cresce (random fica fixo em 68.6%). **Refutado:**
+
+| unsup-epochs | softhebb acc | margem vs random |
+|---|---|---|
+| 1 | 80.32% | +11.67 |
+| 3 | 79.75% | +11.16 |
+| 5 | 78.35% | +9.76 |
+| 10 | 77.24% | +8.65 |
+
+Mais treino **PIORA** — confirma que o SoftHebb é genuinamente **single-pass** (a regra satura/degrada com repetição; é o design do paper). A margem *encolhe*, não cresce. A via natural de empurrar não cruza os +15 p.p.
+
+## Veredicto final (honesto)
+
+**SUCESSO em 2 das 3 sub-condições; MEDIANO na 3ª.** O critério literal exigia probe ≥75% (✓ 80.27%), ≤15 p.p. do backprop (✓ −6.84), E margem ≥15 p.p. sobre random (✗ +11.67, ficou na faixa MEDIANO 8–15). Não é SUCESSO *pleno* pela letra — a margem ficou **3,3 p.p. abaixo** do limiar que eu havia fixado.
+
+**Mas é, sem ambiguidade, o primeiro positivo LIMPO da premissa-mãe do projeto.** Por quê o limiar não foi cruzado: o trade-off é estrutural — a arquitetura larga (1536 canais) que dá ao SoftHebb seus 80,3% também dá ao *random* features fortes (68,6%), comprimindo a margem. Arquitetura mais estreita aumentaria a margem mas derrubaria a acc <75%. O +11,67 com 80,3% é perto do ótimo do trade-off; não há via honesta óbvia para ter ambos (acc ≥75% E margem ≥15) nesta família — e forçar arquiteturas até cruzar um limiar arbitrário seria p-hacking, contra o ethos.
+
+**Leitura científica:** plasticidade Hebbiana competitiva local, sem backprop, **aprende uma representação genuinamente útil** (80,3% CIFAR-10, a 6,8 p.p. do backprop), com sinal **real** (+11,67 sobre random, não-arquitetural — oposto do STDP) e **mecanismo essencial** (wta_off colapsa — oposto do C2). Sobrevive aos 3 controles que mataram tudo. É um **sucesso qualitativo da tese**, com a margem numérica honestamente reportada logo abaixo do meu limiar.

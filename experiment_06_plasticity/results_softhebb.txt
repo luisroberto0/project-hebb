@@ -13,3 +13,6 @@ mode=softhebb seed=2 probe_epochs=50 acc=80.12
 mode=random seed=2 probe_epochs=50 acc=68.39
 mode=backprop seed=2 probe_epochs=50 acc=87.47
 mode=wta_off seed=2 probe_epochs=50 acc=42.40
+mode=softhebb seed=0 probe_epochs=50 unsup_epochs=3 acc=79.75
+mode=softhebb seed=0 probe_epochs=50 unsup_epochs=5 acc=78.35
+mode=softhebb seed=0 probe_epochs=50 unsup_epochs=10 acc=77.24
