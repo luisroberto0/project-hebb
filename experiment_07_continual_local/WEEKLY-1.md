@@ -21,6 +21,31 @@ acc_matrix:
 
 **Mecanismo:** o SoftHebb aprende estatísticas visuais genéricas (edges/blobs) que convergem independentemente da ordem das tarefas; ver dados novos enriquece as features em vez de sobrescrevê-las.
 
+## CONTRASTE — backprop e2e sequencial (seed 0)
+
+```
+ACC = 55.46%   BWT = -16.78
+acc_matrix:
+  68.3   .     .     .     .
+  55.5  62.8   .     .     .
+  52.0  54.7  71.1   .     .
+  53.8  46.7  69.9  69.6   .
+  35.2  45.6  61.8  62.0  72.7   (linha final)
+```
+
+**Catastrophic forgetting clássico:** a tarefa 0 DESPENCA de 68,3% → **35,2%** (−33 p.p.) após ver +4 tarefas. BWT = **−16,78**.
+
+## Comparação central (preliminar, seed 0)
+
+| Método | ACC | BWT |
+|---|---|---|
+| **SoftHebb** (plasticidade local) | **65,52%** | **+0,34** (não esquece) |
+| backprop e2e | 55,46% | **−16,78** (esquece) |
+
+**Gap de forgetting = +17,1 p.p. a favor do SoftHebb.** E o SoftHebb tem ACC *maior*. **Isto é potencialmente o achado mais forte do projeto:** pela 1ª vez a bio-inspiração **SUPERA o backprop** numa capacidade — justamente uma que o backprop *não tem* (continual sem esquecimento). No Marco 3, SoftHebb ficava ABAIXO do backprop (80 vs 87); aqui, na capacidade pós-LLM real, fica ACIMA.
+
+**Critério literal (PLAN.md) — 2 de N condições já batem:** SoftHebb BWT ≥ −5 ✓ (+0,34); backprop BWT ≤ −15 ✓ (−16,78). FALTA p/ fechar SUCESSO: (a) controle backprop-NÃO-sup (isolar localidade vs não-sup), (b) SoftHebb joint (acc dentro de 5pp?), (c) 3 seeds + IC95%.
+
 ## Próximos passos (próxima sessão / iteração)
 
 1. **CONTRASTE backprop e2e sequencial** (multi-head) — esperado BWT muito negativo (esquece). É o que torna o achado do SoftHebb significativo.

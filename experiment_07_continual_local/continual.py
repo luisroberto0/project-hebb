@@ -77,6 +77,49 @@ def softhebb_continual(tasks, device, unsup_epochs=1, probe_epochs=15):
     return accm
 
 
+class BackpropBackbone(nn.Module):
+    """Mesma macro-arquitetura do DeepBackpropCNN, mas retorna features (24576) — backbone compartilhado."""
+    def __init__(self):
+        super().__init__()
+        self.feat = nn.Sequential(
+            nn.Conv2d(3, 96, 5, padding=2), nn.BatchNorm2d(96), nn.ReLU(), nn.MaxPool2d(4, 2, 1),
+            nn.Conv2d(96, 384, 3, padding=1), nn.BatchNorm2d(384), nn.ReLU(), nn.MaxPool2d(4, 2, 1),
+            nn.Conv2d(384, 1536, 3, padding=1), nn.BatchNorm2d(1536), nn.ReLU(), nn.AvgPool2d(2, 2, 0),
+            nn.Flatten(), nn.Dropout(0.5),
+        )
+
+    def forward(self, x):
+        return self.feat(x)
+
+
+def backprop_continual(tasks, device, epochs=10):
+    """Backprop e2e sequencial (multi-head): backbone compartilhado treina por tarefa -> esquece."""
+    T = len(tasks)
+    backbone = BackpropBackbone().to(device)
+    heads = [nn.Linear(FEAT_DIM, tasks[i]["n_classes"]).to(device) for i in range(T)]
+    accm = np.full((T, T), np.nan)
+    crit = nn.CrossEntropyLoss()
+    for t in range(T):
+        backbone.train(); heads[t].train()
+        opt = optim.Adam(list(backbone.parameters()) + list(heads[t].parameters()), lr=1e-3)
+        trx, try_ = tasks[t]["train"]; n = trx.shape[0]
+        for _ in range(epochs):
+            perm = torch.randperm(n, device=device)
+            for k in range(0, n, 64):
+                idx = perm[k:k+64]
+                loss = crit(heads[t](backbone(trx[idx])), try_[idx])
+                opt.zero_grad(); loss.backward(); opt.step()
+        for p in heads[t].parameters():
+            p.requires_grad = False
+        backbone.eval()
+        with torch.no_grad():
+            for i in range(t + 1):
+                tex, tey = tasks[i]["test"]
+                pred = torch.cat([heads[i](backbone(tex[k:k+500])).argmax(1) for k in range(0, tex.shape[0], 500)])
+                accm[t, i] = (pred == tey).float().mean().item() * 100
+    return accm
+
+
 def metrics(accm):
     T = accm.shape[0]
     acc = np.nanmean(accm[T-1, :])
@@ -86,7 +129,7 @@ def metrics(accm):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--method", choices=["softhebb"], default="softhebb")  # backprop: proximo passo
+    ap.add_argument("--method", choices=["softhebb", "backprop"], default="softhebb")
     ap.add_argument("--tasks", type=int, default=5)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--unsup-epochs", type=int, default=1)
@@ -96,7 +139,10 @@ def main():
     dev = torch.device(args.device)
     torch.manual_seed(args.seed)
     tasks = load_tasks(n_tasks=args.tasks, seed=args.seed, device=dev)
-    accm = softhebb_continual(tasks, dev, args.unsup_epochs, args.probe_epochs)
+    if args.method == "softhebb":
+        accm = softhebb_continual(tasks, dev, args.unsup_epochs, args.probe_epochs)
+    else:
+        accm = backprop_continual(tasks, dev, epochs=10)
     acc, bwt = metrics(accm)
     print(f"method={args.method} tasks={args.tasks} seed={args.seed} ACC={acc:.2f} BWT={bwt:+.2f}")
     print("acc_matrix (linha t = apos treinar ate tarefa t; col i = acc tarefa i):")
