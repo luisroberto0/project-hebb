@@ -132,7 +132,7 @@ Reabertura pós-#70 (decisão do Luis): atacar a **4ª e última capacidade pós
 
 **Roadmap pós-Marco 3 (confirmado pelo Luis, 2026-06-18):**
 - ⚖️ **Marco 4 (FECHADO — MEDIANO) — continual learning com plasticidade local:** SoftHebb sequencial NÃO esquece (BWT +0.34) e SUPERA backprop-sup (−16.78), MAS o controle autoencoder backprop-não-sup também não esquece (+4.59) → a resistência vem do **não-supervisionado, não da localidade Hebbiana**. Contribuição do SoftHebb é ortogonal (faz local/online/sem-backprop). `experiment_07_continual_local/`.
-- ⬜ **Marco 5 — escala:** ImageNet completo INVIÁVEL (150GB, rede lenta) → caminho viável = **Tiny-ImageNet / Imagenette** (download HF ~MBs, treino na 4070). Caracteriza limites do SoftHebb em escala.
+- ✅ **Marco 5 (FECHADO — escala OK) — Tiny-ImageNet 200 classes:** softhebb 31.67% / random 22.36% / backprop 40.86%. **Margem +9.31pp PERSISTE** (vs +11.67 CIFAR-10, +12.05 CIFAR-100) → sinal do Marco 3 robusto a escala, não específico de CIFAR-10. Plasticidade local escala sem colapsar; gap p/ backprop cresce levemente. `experiment_08_scale/`.
 - ⬜ **Marco 6 — hardware neuromórfico:** medir energia real em silício (Loihi/SpiNNaker via EBRAINS, ou Akida AKD1000 $289). Requer acesso a hardware.
 
 **Atualização #72 (2026-06-09):** sweep formal (5 seeds, IC95%, SHD) — cego 51.56% / SNN-ff 61.02% / **SNN-rec 71.27%**. timing (rec−cego) **+19.71 p.p.**, rec ≥65%. Critério literal atingido → parecia o primeiro marco positivo.
