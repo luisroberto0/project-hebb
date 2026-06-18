@@ -200,8 +200,8 @@ class CIFAR10NPZ(torch.utils.data.Dataset):
 
 
 # ============================ treino/eval ============================
-def train_unsup(model, loader, device):
-    """1 passada Hebbian local (sem backprop). lr negativo = ascent na regra."""
+def train_unsup(model, loader, device, epochs=1):
+    """Treino Hebbian local (sem backprop). lr negativo = ascent na regra. epochs=passadas."""
     opt = TensorLRSGD([
         {"params": model.conv1.parameters(), "lr": -0.08},
         {"params": model.conv2.parameters(), "lr": -0.005},
@@ -209,13 +209,14 @@ def train_unsup(model, loader, device):
     ], lr=0)
     sched = WeightNormDependentLR(opt, power_lr=0.5)
     model.train()
-    for inputs, _ in loader:
-        inputs = inputs.to(device)
-        opt.zero_grad()
-        with torch.no_grad():
-            model(inputs)
-        opt.step()
-        sched.step()
+    for _ in range(epochs):
+        for inputs, _ in loader:
+            inputs = inputs.to(device)
+            opt.zero_grad()
+            with torch.no_grad():
+                model(inputs)
+            opt.step()
+            sched.step()
 
 
 def train_probe(model, loader, device, epochs):
@@ -263,7 +264,7 @@ def evaluate(model, loader, device):
     return 100.0 * correct / total
 
 
-def run(mode, seed, probe_epochs, device):
+def run(mode, seed, probe_epochs, device, unsup_epochs=1):
     torch.manual_seed(seed)
     trainset = CIFAR10NPZ(train=True, device=device)
     testset = CIFAR10NPZ(train=False, device=device)
@@ -278,7 +279,7 @@ def run(mode, seed, probe_epochs, device):
         competitive = (mode != "wta_off")
         model = DeepSoftHebb(competitive=competitive).to(device)
         if mode in ("softhebb", "wta_off"):
-            train_unsup(model, unsup_loader, device)
+            train_unsup(model, unsup_loader, device, epochs=unsup_epochs)
         # mode == "random": pula o treino unsup (pesos random congelados)
         train_probe(model, sup_loader, device, probe_epochs)
 
@@ -291,11 +292,12 @@ def main():
     ap.add_argument("--mode", choices=["softhebb", "random", "wta_off", "backprop"], required=True)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--probe-epochs", type=int, default=50)
+    ap.add_argument("--unsup-epochs", type=int, default=1)
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = ap.parse_args()
     dev = torch.device(args.device)
-    acc = run(args.mode, args.seed, args.probe_epochs, dev)
-    line = f"mode={args.mode} seed={args.seed} probe_epochs={args.probe_epochs} acc={acc:.2f}"
+    acc = run(args.mode, args.seed, args.probe_epochs, dev, unsup_epochs=args.unsup_epochs)
+    line = f"mode={args.mode} seed={args.seed} probe_epochs={args.probe_epochs} unsup_epochs={args.unsup_epochs} acc={acc:.2f}"
     print(line)
     with open(os.path.join(os.path.dirname(__file__), "results_softhebb.txt"), "a", encoding="utf-8") as f:
         f.write(line + "\n")

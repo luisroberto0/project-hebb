@@ -1,0 +1,15 @@
+Marco 3 -- SoftHebb CIFAR-10 linear-probe, 3 seeds, probe-epochs=50
+modos: softhebb (Hebbian local) / random (controle-chave) / backprop (teto) / wta_off (controle b)
+
+mode=softhebb seed=0 probe_epochs=50 acc=80.32
+mode=random seed=0 probe_epochs=50 acc=68.33
+mode=backprop seed=0 probe_epochs=50 acc=86.81
+mode=wta_off seed=0 probe_epochs=50 acc=44.40
+mode=softhebb seed=1 probe_epochs=50 acc=80.36
+mode=random seed=1 probe_epochs=50 acc=69.06
+mode=backprop seed=1 probe_epochs=50 acc=87.05
+mode=wta_off seed=1 probe_epochs=50 acc=42.87
+mode=softhebb seed=2 probe_epochs=50 acc=80.12
+mode=random seed=2 probe_epochs=50 acc=68.39
+mode=backprop seed=2 probe_epochs=50 acc=87.47
+mode=wta_off seed=2 probe_epochs=50 acc=42.40
