@@ -1,0 +1,14 @@
+Sweep formal — Fashion-MNIST, 5 seeds, 5 epochs, device=cuda
+Dense MACs/sample = 203264
+
+DenseMLP                 acc=87.16±0.33 CI[86.86,87.41]  MACs=   203264 ( 1.00x vs denso)  cpu_lat= 0.020ms
+SNN vanilla T=25         acc=84.82±0.72 CI[84.18,85.42]  SynOps=  1446989 ( 0.14x vs denso)  cpu_lat= 6.537ms
+SNN vanilla T=10         acc=83.86±0.64 CI[83.32,84.45]  SynOps=   579047 ( 0.35x vs denso)  cpu_lat= 2.656ms
+SNN kWTAin T=10 ki=64    acc=79.72±0.42 CI[79.34,80.05]  SynOps=   165689 ( 1.23x vs denso)  cpu_lat= 3.247ms
+SNN kWTAin T=5 ki=32     acc=72.56±0.29 CI[72.32,72.80]  SynOps=    42474 ( 4.79x vs denso)  cpu_lat= 1.639ms
+
+=== Critério: acc dentro de -2pp E SynOps>=5x menores E latencia CPU<=denso ===
+SNN vanilla T=25         acc_ok=False syn>=5x=False lat<=denso=False  -> FALHA
+SNN vanilla T=10         acc_ok=False syn>=5x=False lat<=denso=False  -> FALHA
+SNN kWTAin T=10 ki=64    acc_ok=False syn>=5x=False lat<=denso=False  -> FALHA
+SNN kWTAin T=5 ki=32     acc_ok=False syn>=5x=False lat<=denso=False  -> FALHA
