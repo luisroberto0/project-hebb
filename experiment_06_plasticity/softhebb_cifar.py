@@ -84,7 +84,7 @@ class Triangle(nn.Module):
 
 class DeepSoftHebb(nn.Module):
     """Pilha Hebbian de 3 camadas (fiel ao demo) + classificador linear (linear-probe)."""
-    def __init__(self, competitive=True):
+    def __init__(self, competitive=True, n_classes=10):
         super().__init__()
         self.bn1 = nn.BatchNorm2d(3, affine=False)
         self.conv1 = SoftHebbConv2d(3, 96, 5, padding=2, t_invert=1., competitive=competitive)
@@ -99,8 +99,8 @@ class DeepSoftHebb(nn.Module):
         self.activ3 = Triangle(power=1.)
         self.pool3 = nn.AvgPool2d(2, 2, 0)
         self.flatten = nn.Flatten()
-        self.classifier = nn.Linear(24576, 10)
-        self.classifier.weight.data = 0.11048543456039805 * torch.rand(10, 24576)
+        self.classifier = nn.Linear(24576, n_classes)
+        self.classifier.weight.data = 0.11048543456039805 * torch.rand(n_classes, 24576)
         self.dropout = nn.Dropout(0.5)
 
     def features(self, x):
@@ -124,13 +124,13 @@ class DeepSoftHebb(nn.Module):
 
 class DeepBackpropCNN(nn.Module):
     """MESMA macro-arquitetura (96/384/1536, mesmos kernels/pools) treinada e2e por backprop = TETO."""
-    def __init__(self):
+    def __init__(self, n_classes=10):
         super().__init__()
         self.net = nn.Sequential(
             nn.Conv2d(3, 96, 5, padding=2), nn.BatchNorm2d(96), nn.ReLU(), nn.MaxPool2d(4, 2, 1),
             nn.Conv2d(96, 384, 3, padding=1), nn.BatchNorm2d(384), nn.ReLU(), nn.MaxPool2d(4, 2, 1),
             nn.Conv2d(384, 1536, 3, padding=1), nn.BatchNorm2d(1536), nn.ReLU(), nn.AvgPool2d(2, 2, 0),
-            nn.Flatten(), nn.Dropout(0.5), nn.Linear(24576, 10),
+            nn.Flatten(), nn.Dropout(0.5), nn.Linear(24576, n_classes),
         )
 
     def forward(self, x):
@@ -184,13 +184,14 @@ class CustomStepLR(StepLR):
 
 
 class CIFAR10NPZ(torch.utils.data.Dataset):
-    """Carrega CIFAR-10 do cifar10.npz (decodificado dos parquets HF). Pre-carrega no device (GPU)."""
-    def __init__(self, train=True, device="cpu"):
-        d = np.load(os.path.join(DATA_DIR, "cifar10.npz"))
+    """Carrega CIFAR-10/100 do npz (decodificado dos parquets HF). Pre-carrega no device (GPU)."""
+    def __init__(self, train=True, device="cpu", dataset="cifar10"):
+        d = np.load(os.path.join(DATA_DIR, f"{dataset}.npz"))
         x = d["train_x"] if train else d["test_x"]
         y = d["train_y"] if train else d["test_y"]
         self.data = torch.tensor(x, dtype=torch.float, device=device).div_(255).movedim(-1, 1).contiguous()
         self.targets = torch.tensor(y, device=device)
+        self.n_classes = int(d["train_y"].max()) + 1
 
     def __len__(self):
         return len(self.targets)
@@ -281,10 +282,11 @@ def apply_zca(X, mean, zca):
     return ((X.reshape(sh[0], -1) - mean) @ zca).reshape(sh)
 
 
-def run(mode, seed, probe_epochs, device, unsup_epochs=1, whiten=False):
+def run(mode, seed, probe_epochs, device, unsup_epochs=1, whiten=False, dataset="cifar10"):
     torch.manual_seed(seed)
-    trainset = CIFAR10NPZ(train=True, device=device)
-    testset = CIFAR10NPZ(train=False, device=device)
+    trainset = CIFAR10NPZ(train=True, device=device, dataset=dataset)
+    testset = CIFAR10NPZ(train=False, device=device, dataset=dataset)
+    n_classes = trainset.n_classes
     if whiten:
         mean, zca = compute_zca(trainset.data)
         trainset.data = apply_zca(trainset.data, mean, zca)
@@ -294,11 +296,11 @@ def run(mode, seed, probe_epochs, device, unsup_epochs=1, whiten=False):
     test_loader = torch.utils.data.DataLoader(testset, batch_size=1000, shuffle=False)
 
     if mode == "backprop":
-        model = DeepBackpropCNN().to(device)
+        model = DeepBackpropCNN(n_classes=n_classes).to(device)
         train_backprop(model, sup_loader, device, probe_epochs)
     else:
         competitive = (mode != "wta_off")
-        model = DeepSoftHebb(competitive=competitive).to(device)
+        model = DeepSoftHebb(competitive=competitive, n_classes=n_classes).to(device)
         if mode in ("softhebb", "wta_off"):
             train_unsup(model, unsup_loader, device, epochs=unsup_epochs)
         # mode == "random": pula o treino unsup (pesos random congelados)
@@ -315,11 +317,12 @@ def main():
     ap.add_argument("--probe-epochs", type=int, default=50)
     ap.add_argument("--unsup-epochs", type=int, default=1)
     ap.add_argument("--whiten", action="store_true")
+    ap.add_argument("--dataset", default="cifar10", choices=["cifar10", "cifar100"])
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = ap.parse_args()
     dev = torch.device(args.device)
-    acc = run(args.mode, args.seed, args.probe_epochs, dev, unsup_epochs=args.unsup_epochs, whiten=args.whiten)
-    line = f"mode={args.mode} seed={args.seed} probe_epochs={args.probe_epochs} unsup_epochs={args.unsup_epochs} whiten={args.whiten} acc={acc:.2f}"
+    acc = run(args.mode, args.seed, args.probe_epochs, dev, unsup_epochs=args.unsup_epochs, whiten=args.whiten, dataset=args.dataset)
+    line = f"dataset={args.dataset} mode={args.mode} seed={args.seed} probe_epochs={args.probe_epochs} acc={acc:.2f}"
     print(line)
     with open(os.path.join(os.path.dirname(__file__), "results_softhebb.txt"), "a", encoding="utf-8") as f:
         f.write(line + "\n")
