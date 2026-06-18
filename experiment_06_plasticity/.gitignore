@@ -1,0 +1,11 @@
+# dados (baixados/decodificados; reproduziveis via data/prepare_data.py)
+data/*.npz
+data/*.parquet
+data/*.tar.gz
+data/cifar-10-batches-py/
+# referencia bruta de terceiros (repo SoftHebb oficial; ver atribuicao no softhebb_cifar.py)
+softhebb_ref/
+softhebb_demo_official.py
+# logs/checkpoints
+*.log
+checkpoints/
