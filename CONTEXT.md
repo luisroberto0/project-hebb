@@ -127,7 +127,8 @@ Reabertura pós-#70 (decisão do Luis): atacar a **4ª e última capacidade pós
 - one-shot inédito (cross-domain) ❌ Marco 2-A (#66)
 - continual learning ❌ Marco 1 (#30)
 - eficiência radical ❌ Marco 2-B (#70)
-- ⚠️ **raciocínio temporal** — **Marco 2-C: timing genuíno no SHD, mas NÃO spiking-específico (#72→#78)** — a SNN explora timing, MAS um GRU não-spiking a supera em +10.5 p.p.; o "1º positivo" fica qualificado e, na tese pós-LLM, junta-se aos negativos
+- ⚠️ **raciocínio temporal** — **Marco 2-C: timing genuíno no SHD, mas NÃO spiking-específico (#72→#78)** — a SNN explora timing, MAS um GRU não-spiking a supera em +10.5 p.p.; junta-se aos negativos
+- ✅ **plasticidade local SEM backprop (premissa-mãe, §1 linha 16)** — **Marco 3 (eixo SoftHebb): 1º POSITIVO LIMPO (2026-06-18).** Pilha conv treinada só por Hebbiano competitivo local (zero backprop nas features) → **80.27% CIFAR-10** (linear-probe), **+11.67 p.p. sobre pesos-random** (sinal real, oposto do STDP), competição essencial (wta_off colapsa, oposto do C2), a **6.8 p.p. do backprop**. SUCESSO em 2/3 sub-critérios; margem ficou 3.3 p.p. abaixo do limiar +15 (2 vias de empurrar falharam honestamente). A premissa-mãe, finalmente testada limpa, FUNCIONA — o primeiro mecanismo bio-inspirado que carrega sinal genuíno. `experiment_06_plasticity/`
 
 **Atualização #72 (2026-06-09):** sweep formal (5 seeds, IC95%, SHD) — cego 51.56% / SNN-ff 61.02% / **SNN-rec 71.27%**. timing (rec−cego) **+19.71 p.p.**, rec ≥65%. Critério literal atingido → parecia o primeiro marco positivo.
 

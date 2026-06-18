@@ -12,7 +12,7 @@ A régua honesta tem duas camadas: (a) atingir a capacidade numericamente, e (b)
 
 ---
 
-## 2. As 4 capacidades — resultados
+## 2. As capacidades — resultados
 
 | Capacidade | Marco | Resultado | Mecanismo bio-inspirado entregou? |
 |---|---|---|---|
@@ -20,9 +20,10 @@ A régua honesta tem duas camadas: (a) atingir a capacidade numericamente, e (b)
 | One-shot inédito (cross-domain) | 2-A (#52–66) | ❌ k-WTA effect collapse; C3 cross-domain ~22% vs retreinado 34–50% | ❌ anti-transfer; encoder ≈ random |
 | Aprendizado contínuo | 1 (#21–30) | ❌ bio-inspirado ≤ ProtoNet naive (80.65%) | ❌ ProtoNet já é robusto; mecanismos não agregam |
 | Eficiência radical | 2-B (#67–70) | ❌ SNN não eficiente em CPU (latência 80–327× pior) | ❌ vantagem só em SynOps teórico, não realizada em von Neumann |
-| Raciocínio temporal | 2-C (#71–78) | ⚠️ timing genuíno no SHD, **mas GRU não-spiking supera a SNN (+10.5 p.p.)** | ❌ timing é genérico de recorrência, não do spiking; SNN inferior a RNN convencional |
+| Raciocínio temporal | 2-C (#71–78) | ⚠️ timing genuíno no SHD, **mas GRU não-spiking supera a SNN (+10.5 p.p.)** | ❌ timing é genérico de recorrência, não do spiking |
+| **Plasticidade local SEM backprop** (premissa-mãe) | **3 (SoftHebb)** | ✅ **80.27% CIFAR-10, +11.67 p.p. sobre random, a 6.8 p.p. do backprop** | ✅ **SIM — 1º positivo limpo: pilha 100% local, sinal real, competição essencial** |
 
-**Placar honesto (revisado pós-#78):** das 4 capacidades, **3 com achado negativo rigoroso** + **1 que parecia positivo mas foi desinflado** pelo controle GRU (a SNN explora timing, mas pior que um RNN convencional). O one-shot in-domain (C3) é positivo numérico mas usa backprop. **Líquido: nenhuma das 4 capacidades deu vantagem competitiva à abordagem bio-inspirada no regime testável.**
+**Placar honesto (revisado pós-Marco 3):** os Marcos 1–2 (4 capacidades) deram 3 negativos rigorosos + 1 positivo desinflado pelo controle GRU — **nenhum** deu vantagem competitiva à bio-inspiração, e todos os "sucessos" numéricos usavam backprop. **Mas o Marco 3 mudou o quadro:** atacou a *premissa-mãe* (plasticidade local sem backprop, nunca testada antes) e deu o **1º positivo limpo** — o mecanismo bio-inspirado, isolado, carrega sinal genuíno (sobrevive aos 3 controles que mataram tudo). Ressalva: a margem (+11.67) ficou 3,3 p.p. abaixo do limiar pré-registrado, e o probe final usa backprop (a pilha é local). Não é vitória sobre o estado da arte — é a **prova de conceito da tese**, que faltava.
 
 ---
 
@@ -69,7 +70,9 @@ Emergente, não planejado — costura três marcos:
 
 ## 5. Avaliação honesta — isso é um caminho pós-LLM?
 
-**Provavelmente não, com tração — no regime testável.** Três razões:
+> **Atualização pós-Marco 3 (2026-06-18):** a premissa-mãe — *plasticidade local sem backprop* — foi **finalmente testada limpa** (eixo SoftHebb) e deu o **1º positivo limpo** do projeto: pilha conv treinada só por Hebbiano competitivo local atinge **80.3% CIFAR-10**, com sinal **real** (+11.67 p.p. sobre random) e competição **essencial**, a 6.8 p.p. do backprop. As três razões abaixo (escritas antes) permanecem para os Marcos 1–2; o Marco 3 é a exceção que muda o quadro: o mecanismo bio-inspirado, isolado, **carrega sinal genuíno** quando a regra é competitiva e normalizada (o que o STDP não era).
+
+**Para os Marcos 1–2, a resposta era: provavelmente não, no regime testável.** Três razões:
 
 1. **Não é uma capacidade que falta às LLMs.** O único positivo (timing no SHD/SSC) é classificação de áudio — que ASR/transformers fazem com >90%. A SNN explora timing, mas opera muito abaixo do estado da arte. Não supera nem faz algo único.
 
@@ -77,7 +80,7 @@ Emergente, não planejado — costura três marcos:
 
 3. **A única vantagem estrutural única — eficiência event-driven — foi refutada** em hardware comum (2-B). Ela só existiria em silício neuromórfico (Loihi/SpiNNaker/Akida), que o projeto não tem e cujo acesso é restrito (EBRAINS gated por afiliação; Akida exige desktop Linux+PCIe).
 
-**O que o projeto NÃO testou** e onde a tese pós-LLM verdadeira ainda poderia morar: **plasticidade local online, sem backprop** (o eixo B nunca atacado), e **hardware neuromórfico real** (onde a eficiência se materializa). Ambos são apostas muito maiores que um side-project de 5h/semana absorveu.
+**O que o projeto testou no Marco 3** e onde a tese encontrou tração: **plasticidade local sem backprop** (SoftHebb) — e funciona (ver atualização no topo da §5). **O que ainda NÃO foi testado** e onde a tese pós-LLM poderia ir mais longe: plasticidade local *verdadeiramente online* (single-pass streaming, aprendizado contínuo) e **hardware neuromórfico real** (onde a eficiência se materializa). Apostas ainda maiores, mas o Marco 3 mostra que a direção não é um beco — pela primeira vez.
 
 ---
 
