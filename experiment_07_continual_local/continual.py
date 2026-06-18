@@ -120,6 +120,50 @@ def backprop_continual(tasks, device, epochs=10):
     return accm
 
 
+class ConvAE(nn.Module):
+    """CONTROLE-CHAVE: autoencoder (NÃO-supervisionado, mas BACKPROP global). Mesma arq do encoder.
+    Isola se a resistência a forgetting vem da LOCALIDADE Hebbiana ou só do não-supervisionado."""
+    def __init__(self):
+        super().__init__()
+        self.enc = nn.Sequential(
+            nn.Conv2d(3, 96, 5, padding=2), nn.BatchNorm2d(96), nn.ReLU(), nn.MaxPool2d(4, 2, 1),
+            nn.Conv2d(96, 384, 3, padding=1), nn.BatchNorm2d(384), nn.ReLU(), nn.MaxPool2d(4, 2, 1),
+            nn.Conv2d(384, 1536, 3, padding=1), nn.BatchNorm2d(1536), nn.ReLU(), nn.AvgPool2d(2, 2, 0),
+        )
+        self.dec = nn.Sequential(
+            nn.ConvTranspose2d(1536, 384, 4, stride=2, padding=1), nn.ReLU(),
+            nn.ConvTranspose2d(384, 96, 4, stride=2, padding=1), nn.ReLU(),
+            nn.ConvTranspose2d(96, 3, 4, stride=2, padding=1), nn.Sigmoid(),
+        )
+
+    def features(self, x):
+        return self.enc(x).flatten(1)
+
+    def forward(self, x):
+        return self.dec(self.enc(x))
+
+
+def ae_continual(tasks, device, epochs=10, probe_epochs=15):
+    """Autoencoder backprop NÃO-sup, sequencial. Mesmo protocolo de medição (probe por tarefa)."""
+    T = len(tasks)
+    ae = ConvAE().to(device)
+    accm = np.full((T, T), np.nan)
+    crit = nn.MSELoss()
+    for t in range(T):
+        ae.train()
+        opt = optim.Adam(ae.parameters(), lr=1e-3)
+        trx, _ = tasks[t]["train"]; n = trx.shape[0]
+        for _ in range(epochs):
+            perm = torch.randperm(n, device=device)
+            for k in range(0, n, 64):
+                idx = perm[k:k+64]
+                loss = crit(ae(trx[idx]), trx[idx])
+                opt.zero_grad(); loss.backward(); opt.step()
+        for i in range(t + 1):
+            accm[t, i] = probe_task(ae, tasks[i], device, probe_epochs)
+    return accm
+
+
 def metrics(accm):
     T = accm.shape[0]
     acc = np.nanmean(accm[T-1, :])
@@ -129,7 +173,7 @@ def metrics(accm):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--method", choices=["softhebb", "backprop"], default="softhebb")
+    ap.add_argument("--method", choices=["softhebb", "backprop", "ae"], default="softhebb")
     ap.add_argument("--tasks", type=int, default=5)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--unsup-epochs", type=int, default=1)
@@ -141,8 +185,10 @@ def main():
     tasks = load_tasks(n_tasks=args.tasks, seed=args.seed, device=dev)
     if args.method == "softhebb":
         accm = softhebb_continual(tasks, dev, args.unsup_epochs, args.probe_epochs)
-    else:
+    elif args.method == "backprop":
         accm = backprop_continual(tasks, dev, epochs=10)
+    else:
+        accm = ae_continual(tasks, dev, epochs=10, probe_epochs=args.probe_epochs)
     acc, bwt = metrics(accm)
     print(f"method={args.method} tasks={args.tasks} seed={args.seed} ACC={acc:.2f} BWT={bwt:+.2f}")
     print("acc_matrix (linha t = apos treinar ate tarefa t; col i = acc tarefa i):")

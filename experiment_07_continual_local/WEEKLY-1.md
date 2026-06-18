@@ -46,7 +46,32 @@ acc_matrix:
 
 **Critério literal (PLAN.md) — 2 de N condições já batem:** SoftHebb BWT ≥ −5 ✓ (+0,34); backprop BWT ≤ −15 ✓ (−16,78). FALTA p/ fechar SUCESSO: (a) controle backprop-NÃO-sup (isolar localidade vs não-sup), (b) SoftHebb joint (acc dentro de 5pp?), (c) 3 seeds + IC95%.
 
-## Próximos passos (próxima sessão / iteração)
+## CONTROLE-CHAVE — autoencoder backprop NÃO-sup (seed 0) — DESINFLA a narrativa
+
+```
+AE (backprop, não-sup):  ACC = 64.18   BWT = +4.59   (NÃO esquece, até melhor que SoftHebb)
+```
+
+**Achado revelador (a lição do GRU/#78 se repetindo):** o autoencoder — **backprop**, mas **não-supervisionado** — TAMBÉM não esquece. Então a resistência a catastrophic forgetting **NÃO é da localidade Hebbiana** — é do **aprendizado não-supervisionado**. O que esquece é a **supervisão** (otimizar p/ labels de uma tarefa sobrescreve features); aprender features genéricas (com ou sem backprop, local ou não) é naturalmente estável.
+
+| Método | local? | supervisão | ACC | BWT |
+|---|---|---|---|---|
+| SoftHebb | ✅ local, online, sem-backprop | não-sup | 65.52 | +0.34 |
+| Autoencoder | ❌ backprop + decoder | não-sup | 64.18 | **+4.59** |
+| Backprop e2e | ❌ backprop | **sup** | 55.46 | **−16.78** |
+
+## Veredicto honesto — MEDIANO
+
+Pelo critério literal (PLAN.md): SoftHebb BWT ≥−5 ✓; backprop-sup BWT ≤−15 ✓; **MAS gap SoftHebb vs backprop-não-sup = +0.34 − (+4.59) = −4.25** (o AE resiste *mais*, não menos) → a condição "a localidade importa (gap ≥ +8)" **FALHA**. **Resultado: MEDIANO** — exatamente o caso que o PLAN previu: "SoftHebb esquece menos que backprop e2e, mas o backprop-não-sup também resiste → é o não-sup, não a localidade".
+
+**O que é real e o que não é:**
+- ✅ **Aprendizado não-supervisionado resiste a catastrophic forgetting** (SoftHebb E AE); a supervisão é a causa do forgetting. Achado limpo e útil.
+- ❌ **A resistência NÃO é exclusiva da plasticidade local Hebbiana** — um AE backprop faz igual/melhor.
+- ⚖️ **A contribuição genuína do SoftHebb é ORTOGONAL:** atinge a mesma resistência sendo **local, online, single-pass, sem backprop** (o AE precisa de backprop + decoder + 10 épocas). É vantagem de *eficiência/biologia*, não de *capacidade*.
+
+Padrão consistente do projeto: o controle adversarial (que insisti em rodar) desinfla a narrativa fácil ("bio-inspiração ganha em continual") e revela a causa real (não-supervisionado). Honestidade > narrativa.
+
+## Próximos passos (opcionais, próxima sessão)
 
 1. **CONTRASTE backprop e2e sequencial** (multi-head) — esperado BWT muito negativo (esquece). É o que torna o achado do SoftHebb significativo.
 2. **CONTROLE-CHAVE backprop NÃO-supervisionado sequencial** (autoencoder) — isola se a resistência vem da *localidade Hebbiana* ou só do *não-supervisionado* (a lição do GRU/#78).
