@@ -60,6 +60,12 @@ Mais treino **PIORA** — confirma que o SoftHebb é genuinamente **single-pass*
 
 **Leitura científica:** plasticidade Hebbiana competitiva local, sem backprop, **aprende uma representação genuinamente útil** (80,3% CIFAR-10, a 6,8 p.p. do backprop), com sinal **real** (+11,67 sobre random, não-arquitetural — oposto do STDP) e **mecanismo essencial** (wta_off colapsa — oposto do C2). Sobrevive aos 3 controles que mataram tudo. É um **sucesso qualitativo da tese**, com a margem numérica honestamente reportada logo abaixo do meu limiar.
 
+## Extensão — CIFAR-100 (a margem cresce com a dificuldade?)
+
+Hipótese pré-registrada: features aprendidas pesam mais em tarefa difícil → margem maior em CIFAR-100 (100 classes, mesma arquitetura). **Resultado (seed 0):** softhebb 55.36% / random 43.31% / backprop 62.95% → **margem +12.05 p.p.** (vs +11.67 em CIFAR-10).
+
+**Hipótese refutada — mas achado limpo:** a margem **não cresce** com a dificuldade; é praticamente **constante (~+12 p.p.)** em CIFAR-10 e CIFAR-100. A margem Hebbiano−random é uma **propriedade robusta do método**, que **generaliza** entre tarefas (e o softhebb fica consistentemente a ~7 p.p. do backprop em ambas). Não cruza os +15 — confirma que ~+12 p.p. é o sinal real e estável, não um artefato de uma tarefa.
+
 ## Solidificação — filtros aprendidos (confirmação visual do mecanismo)
 
 `viz_filters.py` → `figs/fig_filters.png`. Os 96 filtros da 1ª camada: **random** = ruído i.i.d.; **Hebbiano** = features reais (blobs de cor saturada, detectores de borda/gradiente claro↔escuro). Métrica de diversidade (cos off-diagonal médio): random 0.093, **hebbiano 0.091** — os filtros Hebbianos **não colapsaram** (são tão diversos quanto random), o **oposto exato do STDP** do Exp 01, que colapsava para um "protótipo médio" (cos 0.20–0.55, #11). A regra de Oja + soft-WTA evita o rich-get-richer que matou o STDP. Confirmação visual e quantitativa de que a plasticidade local aprendeu estrutura genuína, não ruído arquitetural.

@@ -20,3 +20,8 @@ mode=softhebb seed=0 probe_epochs=10 unsup_epochs=1 whiten=True acc=77.79
 mode=random seed=0 probe_epochs=10 unsup_epochs=1 whiten=True acc=69.37
 mode=softhebb seed=0 probe_epochs=50 unsup_epochs=1 whiten=True acc=79.02
 mode=random seed=0 probe_epochs=50 unsup_epochs=1 whiten=True acc=71.96
+
+=== CIFAR-100 (hipotese: margem cresce com dificuldade) ===
+dataset=cifar100 mode=softhebb seed=0 probe_epochs=50 acc=55.36
+dataset=cifar100 mode=random seed=0 probe_epochs=50 acc=43.31
+dataset=cifar100 mode=backprop seed=0 probe_epochs=50 acc=62.95
