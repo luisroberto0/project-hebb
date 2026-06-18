@@ -50,6 +50,8 @@ Hipótese: mais passadas Hebbianas → pilha melhor → margem cresce (random fi
 
 Mais treino **PIORA** — confirma que o SoftHebb é genuinamente **single-pass** (a regra satura/degrada com repetição; é o design do paper). A margem *encolhe*, não cresce. A via natural de empurrar não cruza os +15 p.p.
 
+**Segunda via — ZCA whitening (setup Hebbian canônico, Coates 2011 / SoftHebb original) — também FALHOU:** com whitening (probe-50, seed 0), softhebb 80.32→79.02 (piora) e random 68.33→**71.96** (melhora) → margem cai para **+7.06**. O whitening ajuda o *random* mais que o Hebbiano (descorrelacionar o input fortalece features random). Esgotadas as duas vias principled de empurrar a margem.
+
 ## Veredicto final (honesto)
 
 **SUCESSO em 2 das 3 sub-condições; MEDIANO na 3ª.** O critério literal exigia probe ≥75% (✓ 80.27%), ≤15 p.p. do backprop (✓ −6.84), E margem ≥15 p.p. sobre random (✗ +11.67, ficou na faixa MEDIANO 8–15). Não é SUCESSO *pleno* pela letra — a margem ficou **3,3 p.p. abaixo** do limiar que eu havia fixado.

@@ -264,10 +264,31 @@ def evaluate(model, loader, device):
     return 100.0 * correct / total
 
 
-def run(mode, seed, probe_epochs, device, unsup_epochs=1):
+def compute_zca(X, eps=0.1):
+    """ZCA whitening matrix dos dados de treino (X: N,C,H,W em [0,1]). Setup Hebbian canonico."""
+    N = X.shape[0]
+    flat = X.reshape(N, -1)
+    mean = flat.mean(0, keepdim=True)
+    fc = flat - mean
+    cov = (fc.t() @ fc) / N
+    U, S, _ = torch.linalg.svd(cov)
+    zca = U @ torch.diag(1.0 / torch.sqrt(S + eps)) @ U.t()
+    return mean, zca
+
+
+def apply_zca(X, mean, zca):
+    sh = X.shape
+    return ((X.reshape(sh[0], -1) - mean) @ zca).reshape(sh)
+
+
+def run(mode, seed, probe_epochs, device, unsup_epochs=1, whiten=False):
     torch.manual_seed(seed)
     trainset = CIFAR10NPZ(train=True, device=device)
     testset = CIFAR10NPZ(train=False, device=device)
+    if whiten:
+        mean, zca = compute_zca(trainset.data)
+        trainset.data = apply_zca(trainset.data, mean, zca)
+        testset.data = apply_zca(testset.data, mean, zca)
     unsup_loader = torch.utils.data.DataLoader(trainset, batch_size=10, shuffle=True)
     sup_loader = torch.utils.data.DataLoader(trainset, batch_size=64, shuffle=True)
     test_loader = torch.utils.data.DataLoader(testset, batch_size=1000, shuffle=False)
@@ -293,11 +314,12 @@ def main():
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--probe-epochs", type=int, default=50)
     ap.add_argument("--unsup-epochs", type=int, default=1)
+    ap.add_argument("--whiten", action="store_true")
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = ap.parse_args()
     dev = torch.device(args.device)
-    acc = run(args.mode, args.seed, args.probe_epochs, dev, unsup_epochs=args.unsup_epochs)
-    line = f"mode={args.mode} seed={args.seed} probe_epochs={args.probe_epochs} unsup_epochs={args.unsup_epochs} acc={acc:.2f}"
+    acc = run(args.mode, args.seed, args.probe_epochs, dev, unsup_epochs=args.unsup_epochs, whiten=args.whiten)
+    line = f"mode={args.mode} seed={args.seed} probe_epochs={args.probe_epochs} unsup_epochs={args.unsup_epochs} whiten={args.whiten} acc={acc:.2f}"
     print(line)
     with open(os.path.join(os.path.dirname(__file__), "results_softhebb.txt"), "a", encoding="utf-8") as f:
         f.write(line + "\n")
