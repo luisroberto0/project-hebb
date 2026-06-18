@@ -1,0 +1,7 @@
+Eficiência de treino das FEATURES (CIFAR-10, RTX 4070):
+  SoftHebb  :   32.8s  (1 passada local, SEM backprop, SEM labels)  -> features ~80%
+  Backprop  :  685.9s  (50 épocas e2e = 13.7s/época, com labels) -> ~87%
+  => SoftHebb treina features 20.9x MAIS RAPIDO (e sem labels/backprop), a -7pp de acc.
+
+Interpretação: a contribuição do SoftHebb (Marco 4) e ORTOGONAL e agora QUANTIFICADA --
+a mesma resistencia a forgetting / features uteis, por uma fracao do custo de treino.
