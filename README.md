@@ -1,6 +1,6 @@
 # Project Hebb
 
-Pesquisa em arquiteturas neurais bio-inspiradas: plasticidade local, codificação esparsa (k-WTA), dinâmica spiking. Estudo empírico **dos limites** da bio-inspiração como caminho pós-LLM, ao longo de 4 capacidades (one-shot, continual learning, eficiência radical, raciocínio temporal) e múltiplos benchmarks (Omniglot, CUB-200, Fashion-MNIST, SHD/SSC). Síntese honesta da jornada em [`SYNTHESIS.md`](SYNTHESIS.md).
+Pesquisa em arquiteturas neurais bio-inspiradas: plasticidade local **sem backprop**, codificação esparsa (k-WTA), dinâmica spiking. Estudo empírico da bio-inspiração como caminho pós-LLM — das 4 capacidades (one-shot, continual, eficiência, temporal — todas mapeadas) à **premissa-mãe** (plasticidade local sem backprop, **provada** via SoftHebb). Múltiplos benchmarks (Omniglot, CUB-200, Fashion-MNIST, SHD/SSC, CIFAR-10/100, Tiny-ImageNet). **Tese fundamentada:** a bio-inspiração não dá capacidades pós-LLM *novas*, mas entrega features competitivas por **~1/21 do custo** (eficiência, não superioridade). Síntese completa da jornada em [`SYNTHESIS.md`](SYNTHESIS.md).
 
 > *"Não tente construir a mente. Construa um neurônio que funcione diferente."*
 > — Luis Roberto Pinho da Silva Junior, Project Hebb (2026)
@@ -42,6 +42,8 @@ Pesquisa em arquiteturas neurais bio-inspiradas: plasticidade local, codificaç�
 **Paper Marco 2-A** ("When Sparsity Stops Mattering: k-WTA Effect Collapse Under Extreme Domain Shift", `paper_marco2a/`) — **draft-completo**: 6 seções + abstract (#58–#62), 3 figuras 300 DPI (#60), `main.tex` consolidado + bib final (#63, validação estrutural OK; compila via Overleaf), e **peer review interno adversarial** (#64–65, verdict "pequenos ajustes" — todos os números das tabelas conferem; 10 correções de consistência aplicadas; 16 decisões de escopo/tom registradas em `paper_marco2a/peer_review.md`). **#66 (admin, 2026-06-08): Marco 2-A encerrado** — critério refutado conforme previsto; ajustes de rigor do peer review (alta+média) incorporados; paper **arquivado como achado documentado, sem publicar** (decisão do Luis — nem workshop, nem LinkedIn). Project Hebb volta a estado de manutenção; próximo marco (2-B eficiência / 2-C temporal / encerrar projeto) **em aberto**.
 
 ---
+
+> ℹ️ **As seções a seguir são o HISTÓRICO da Fase 1 (C3 / Marco 1, sessões #1-#36).** O estado atual e a jornada completa (Marcos 2-A a 5 + premissa-mãe provada) estão no **Status** (topo) e em [`SYNTHESIS.md`](SYNTHESIS.md). Mantidas como registro reproduzível da fundação.
 
 **Fase 1 — Fundação concluída** (30 sessões). Project Hebb teve 2 experimentos:
 - **Experimento 01 (one-shot Omniglot):** ✅ atingiu metas numéricas via Caminho C (ProtoNet + k-WTA esparso). Vira paper de workshop.
@@ -172,7 +174,10 @@ Ordem de leitura para entender o estado em <10 minutos:
 | [`STRATEGY.md`](STRATEGY.md) | Estratégia de pesquisa: decisões pós-#10, #13, #15, #20, #25, #27, **#30 (Fechamento Marco 1 + Plano paper C3)**. |
 | [`experiment_01_oneshot/`](experiment_01_oneshot/) | Experimento 01 (one-shot). PLAN.md + WEEKLY-1.md (sanity MNIST), WEEKLY-2.md (família C, sessões #15-#20). C3b é o resultado publicável. |
 | [`experiment_02_continual/`](experiment_02_continual/) | Experimento 02 (continual learning). PLAN.md marcado ENCERRADO. WEEKLY-1.md (sessões #22-#29). PAPERS.md (lit review CL). |
-| [`SYNTHESIS.md`](SYNTHESIS.md) | **Capstone da jornada pós-LLM:** 5 marcos (3 ❌ + 1 ✅ modesto), narrativa transversal de k-WTA, avaliação honesta. Leia para o panorama completo. |
+| [`SYNTHESIS.md`](SYNTHESIS.md) | **Capstone da jornada completa:** 4 capacidades pós-LLM (mapeadas) + premissa-mãe **PROVADA** (SoftHebb) + tese da eficiência + o fio do controle adversarial. **Leia para o panorama.** |
+| `experiment_03/04/05_*` + `paper_marco2{a,c}` | Marcos 2-A (cross-domain ❌, #52-66), 2-B (eficiência ❌, #67-70), 2-C (temporal, desinflado pelo GRU, #71-78). |
+| `experiment_06/07/08_*` | **Jornada SoftHebb (Marcos 3-5):** premissa-mãe provada (06), continual mediano (07), escala (08), eficiência 21× (06/efficiency.py). |
+| [`writeups/`](writeups/) | Post da jornada (`linkedin-jornada-pt.md`), scoping do landscape backprop-free (`plasticidade-landscape.md`). |
 | [`CLAUDE.md`](CLAUDE.md) | Guia operacional pra futuras sessões Claude Code. |
 
 ---
@@ -255,6 +260,23 @@ project-hebb/
     ├── refs.bib             # Bibliography (~18 entradas)
     ├── generate_figures.py  # Script reproduzível das 3 figuras (#60)
     └── figs/                # fig1_crossdomain_bars, fig2_effect_collapse, fig3_bottleneck_waterfall (PNG+PDF 300 DPI)
+├── experiment_04_efficiency/      # Marco 2-B (eficiência radical, encerrado #70 — NEGATIVO: SNN não eficiente em CPU)
+├── experiment_05_temporal/        # Marco 2-C (raciocínio temporal SHD/SSC, #71-#78 — desinflado pelo GRU)
+├── paper_marco2c/                 # Paper Marco 2-C (draft-completo + peer review + GRU integrado)
+├── experiment_06_plasticity/      # Marco 3 (SoftHebb — premissa-mãe PROVADA, 80% CIFAR-10) + efficiency.py (21×)
+│   ├── PLAN.md, WEEKLY-1.md
+│   ├── softhebb_cifar.py          # Regra SoftHebb + modos softhebb/random/backprop/wta_off
+│   ├── efficiency.py              # Mede 21× vs backprop
+│   └── data/prepare_data.py       # CIFAR-10/100 dos parquets HF
+├── experiment_07_continual_local/ # Marco 4 (continual local — MEDIANO: é o não-sup, não a localidade)
+│   ├── PLAN.md, WEEKLY-1.md
+│   ├── split_cifar.py             # Split-CIFAR-100 em T tarefas
+│   └── continual.py               # SoftHebb/backprop/autoencoder sequencial + BWT
+├── experiment_08_scale/           # Marco 5 (escala Tiny-ImageNet 200cl, +9.31pp persiste)
+│   ├── WEEKLY-1.md, scale.py
+│   └── data/prepare_tinyimagenet.py
+├── writeups/                      # linkedin-jornada-pt.md (post da jornada), plasticidade-landscape.md (scoping 7 famílias)
+└── SYNTHESIS.md                   # Capstone da jornada pós-LLM completa (na raiz)
 ```
 
 Pastas em `.gitignore`: `data/`, `checkpoints/`, `logs/`, `wandb/`, `.venv/`.
@@ -323,7 +345,13 @@ Centrais para a família STDP (exploração documentada):
 - **Diehl & Cook (2015)** — *Unsupervised learning of digit recognition using spike-timing-dependent plasticity.* Frontiers in Computational Neuroscience.
 - **Kheradpisheh et al. (2018)** — *STDP-based spiking deep convolutional neural networks for object recognition.* Neural Networks.
 
-Bibliography completa do paper em `paper_c3/refs.bib` (BibTeX, ~14 entradas). Lista expandida em `CONTEXT.md` §6.
+Centrais para a jornada SoftHebb / temporal (Marcos 2-C a 5):
+
+- **Journé et al. (2023)** — *Hebbian Deep Learning Without Feedback.* ICLR 2023. (SoftHebb — eixo dos Marcos 3-5)
+- **Krotov & Hopfield (2019)** — *Unsupervised learning by competing hidden units.* PNAS. (Hebbiano competitivo)
+- **Cramer et al. (2022)** — *The Heidelberg Spiking Data Sets.* IEEE TNNLS. (SHD/SSC — Marco 2-C)
+
+Bibliography completa do paper C3 em `paper_c3/refs.bib`; do Marco 2-C em `paper_marco2c/refs.bib`. Lista expandida em `CONTEXT.md` §6.
 
 ---
 
