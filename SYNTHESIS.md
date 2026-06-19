@@ -23,6 +23,8 @@ A régua honesta tem duas camadas: (a) atingir a capacidade numericamente, e (b)
 | Raciocínio temporal | 2-C (#71–78) | ⚠️ timing genuíno no SHD, **mas GRU não-spiking supera a SNN (+10.5 p.p.)** | ❌ timing é genérico de recorrência, não do spiking |
 | **Plasticidade local SEM backprop** (premissa-mãe) | **3 (SoftHebb)** | ✅ **80.27% CIFAR-10, +11.67 p.p. sobre random, a 6.8 p.p. do backprop** | ✅ **SIM — 1º positivo limpo: pilha 100% local, sinal real, competição essencial** |
 | **Continual learning sem esquecer** | **4 (SoftHebb sequencial)** | ⚖️ SoftHebb não esquece (BWT +0.34) e SUPERA backprop-sup (que esquece, −16.78) — **mas o autoencoder backprop-não-sup também não esquece (+4.59)** | ❌ resistência vem do **não-supervisionado**, NÃO da localidade Hebbiana (controle AE desinflou) — MEDIANO |
+| **Escala (200 classes)** | **5 (Tiny-ImageNet)** | ✅ softhebb 31.67% / random 22.36% — **margem +9.31 p.p. persiste** (~63× chance) | ✅ o sinal escala; não é específico de CIFAR-10 |
+| **Eficiência de treino** | **3/4 (medição)** | ✅ SoftHebb treina features **21× mais rápido** que backprop (33s vs 686s, sem labels/backprop, a −7 p.p.) | ✅ a contribuição ortogonal QUANTIFICADA — eficiência, não capacidade |
 
 **Placar honesto (revisado pós-Marco 3):** os Marcos 1–2 (4 capacidades) deram 3 negativos rigorosos + 1 positivo desinflado pelo controle GRU — **nenhum** deu vantagem competitiva à bio-inspiração, e todos os "sucessos" numéricos usavam backprop. **Mas o Marco 3 mudou o quadro:** atacou a *premissa-mãe* (plasticidade local sem backprop, nunca testada antes) e deu o **1º positivo limpo** — o mecanismo bio-inspirado, isolado, carrega sinal genuíno (sobrevive aos 3 controles que mataram tudo). Ressalva: a margem (+11.67) ficou 3,3 p.p. abaixo do limiar pré-registrado, e o probe final usa backprop (a pilha é local). Não é vitória sobre o estado da arte — é a **prova de conceito da tese**, que faltava.
 
@@ -89,23 +91,20 @@ Emergente, não planejado — costura três marcos:
 
 ## 6. O valor real do projeto
 
-Não foi achar o caminho pós-LLM. Foi:
+- **Caracterizar com rigor onde a abordagem bio-inspirada falha e por quê** — 3 achados negativos defensáveis nas capacidades pós-LLM, cada um com mecanismo documentado.
+- **Provar a premissa-mãe** (Marcos 3-5): plasticidade local, sem backprop, aprende features genuínas e úteis (80% CIFAR-10), que escalam (200 classes) e resistem a forgetting — sobrevivendo aos controles adversariais que mataram tudo antes.
+- **Descobrir, e quantificar, qual é de fato a contribuição:** não é capacidade nova (o controle do autoencoder mostrou que a robustez vem do não-supervisionado) — é **eficiência**: as mesmas features, **21× mais rápido** que o backprop, sem labels, single-pass, local.
+- **Disciplina metodológica exemplar:** predições registradas antes, random baselines, critérios literais, peer review adversarial, e — o fio condutor — **o controle contra a própria hipótese favorita**, que vez após vez separou o desejado do real.
 
-- **Caracterizar com rigor onde a abordagem bio-inspirada falha e por quê** — 3 achados negativos defensáveis, cada um com mecanismo documentado.
-- **Um achado positivo honesto e bem-delimitado** (timing) — com a magnitude do confound arquitetural *medida*, não assumida.
-- **Uma narrativa transversal original** (k-WTA tolerante in-domain em espaço e tempo, frágil cross-domain).
-- **Disciplina metodológica exemplar:** predições registradas antes, random baselines, critérios literais, peer review adversarial, e a recusa consistente de inflar resultados.
-
-No espírito do próprio projeto: *falhas bem-documentadas valem mais que sucessos superficiais*. Este é um corpo de evidência negativa rigoroso + um positivo modesto — uma contribuição honesta sobre os limites da bio-inspiração como caminho pós-LLM no regime acessível a um pesquisador independente.
+No espírito do projeto (*falhas bem-documentadas valem mais que sucessos superficiais*): um corpo de evidência negativa rigoroso **+ uma tese positiva honestamente delimitada** — a bio-inspiração não entrega superpoderes pós-LLM, mas entrega features competitivas por uma fração do custo. Uma contribuição honesta e original de um pesquisador independente.
 
 ---
 
 ## 7. Estado e próximos rumos possíveis (decisão do autor)
 
-Exploração das 4 capacidades **completa**. Caminhos, sem prescrição:
-- **Publicar a jornada** — paper/post sobre a exploração das 4 capacidades + a narrativa de k-WTA. Honesto e original.
-- **Consolidar e fechar** — Project Hebb como exploração documentada, encerrada num estado completo.
-- **Pivotar** — para a aposta de fato pós-LLM (plasticidade sem backprop, ou hardware neuromórfico). Aposta maior.
-- **Pausar** — decidir com calma.
+Exploração das 4 capacidades **completa** + premissa-mãe **provada** (pivot Marcos 3-5 + eficiência). Estado atual (2026-06):
+- **🔵 PUBLICANDO a jornada** (decisão do Luis) — rascunho do post LinkedIn (arco de 3 atos) em `writeups/linkedin-jornada-pt.md`, pronto para revisão. É o desfecho mais forte e original do projeto.
+- **⬜ Marco 6 (futuro) — hardware neuromórfico:** medir a *energia real* do SoftHebb em silício (Loihi/SpiNNaker via EBRAINS, ou Akida) — a validação física da tese de eficiência. Aguarda o Luis resolver o acesso a hardware.
+- Os papers anteriores (`paper_c3`, `paper_marco2a`, `paper_marco2c`) permanecem como artefatos por-marco.
 
 Artefatos: `paper_c3/`, `paper_marco2a/`, `experiment_0{1..5}/`, este `SYNTHESIS.md`. Tudo reproduzível e committado.
