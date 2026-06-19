@@ -7,7 +7,17 @@ Pesquisa em arquiteturas neurais bio-inspiradas: plasticidade local, codificaç�
 
 ---
 
-## Status (atualizado em 2026-06-18, pós-Marco 3)
+## Status (atualizado em 2026-06-19, pós-jornada SoftHebb — Marcos 3-5 + eficiência)
+
+**A tese do projeto, fundamentada:** a plasticidade local Hebbiana (sem backprop) **não entrega capacidades pós-LLM que o backprop não tem — mas entrega as mesmas features úteis e robustas por ~1/21 do custo.** É eficiência, não superioridade. Provada (Marco 3), escalada (Marco 5), e quantificada (21× mais rápido), com a contribuição honestamente isolada a cada passo. **Publicando a jornada** ([`writeups/linkedin-jornada-pt.md`](writeups/linkedin-jornada-pt.md), arco de 3 atos; capstone técnico em [`SYNTHESIS.md`](SYNTHESIS.md)).
+
+- **Marco 4 — continual learning com plasticidade local (MEDIANO).** O SoftHebb sequencial **não esquece** (BWT +0,34) e supera o backprop supervisionado (que sofre catastrophic forgetting, −16,78). **Mas o controle decisivo** (autoencoder backprop *não-supervisionado*) também não esquece (+4,59): a resistência vem do **não-supervisionado**, não da localidade Hebbiana. Mesmo padrão do GRU no Marco 2-C — o controle adversarial desinfla a narrativa fácil. `experiment_07_continual_local/`.
+- **Marco 5 — escala (positivo).** Tiny-ImageNet (200 classes): a margem sobre random **persiste** (+9,31 p.p.; softhebb 31,67% ≈ 63× chance). O sinal do Marco 3 é robusto a escala, não específico de CIFAR-10. `experiment_08_scale/`.
+- **Eficiência — quantificada.** SoftHebb treina features **21× mais rápido** que o backprop (33s vs 686s, sem labels/backprop, a −7 p.p.). A contribuição ortogonal medida. `experiment_06_plasticity/efficiency.py`.
+- **Marco 6 (futuro) — hardware neuromórfico.** Medir a *energia real* em silício (EBRAINS/Akida) — validação física da tese de eficiência. Aguarda acesso a hardware.
+
+---
+
 
 **Marco 3 — plasticidade local SEM backprop (eixo SoftHebb): 1º POSITIVO LIMPO da premissa-mãe.** Depois de 4 capacidades testadas (3 negativos + 1 desinflado), o projeto finalmente atacou a *premissa-mãe* (CONTEXT §1, linha 16): pode uma regra de plasticidade **local, sem backprop**, aprender uma representação útil? Eixo escolhido após mapear 7 famílias backprop-free ([`writeups/plasticidade-landscape.md`](writeups/plasticidade-landscape.md)): **SoftHebb** (Hebbiano competitivo, ICLR 2023) — o teste mais limpo (regra local fechada, zero autograd na pilha de features). **Critério literal fixado antes.** Resultado (3 seeds, CIFAR-10, linear-probe): pilha conv treinada **só** por Hebbiano competitivo local atinge **80,27%** — **+11,67 p.p. sobre pesos-random** (IC95 [+11,2, +12,0]: sinal **real**, não-arquitetural, o oposto do STDP), com a **competição essencial** (desligá-la colapsa para 43%, abaixo do random — o oposto do termo Hebbiano dispensável do C2), e a só **−6,84 p.p. do backprop** (mesma arquitetura). **Veredicto:** SUCESSO em 2 das 3 sub-condições (acc ≥75% ✓, ≤15 p.p. do backprop ✓); a margem sobre random (+11,67) ficou 3,3 p.p. abaixo do limiar de SUCESSO pleno (+15) — e 2 vias principled de empurrá-la (mais treino, ZCA whitening) falharam honestamente. **Mas é, sem ambiguidade, o primeiro mecanismo bio-inspirado do projeto que carrega sinal genuíno** — a prova de conceito da tese, que faltava. Ressalvas honestas: o classificador final usa backprop (a *pilha* é 100% local); margem abaixo do limiar; gap de 6,8 p.p. para o backprop. `experiment_06_plasticity/`.
 
